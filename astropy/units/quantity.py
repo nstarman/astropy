@@ -321,7 +321,7 @@ class Quantity(np.ndarray):
         cls,
         unit: UnitableType,
         *annotations: T.Any,
-        action: T.Union[str, T.Callable[UnitableType, Quantity, ...], UnitSpecBase] = "validate"  # TODO replace with Unitable
+        action: T.Union[str, T.Callable[UnitableType, Quantity, ...], UnitSpec] = "validate"
     ):
         """Quantity Type Hints, with control on action.
 
@@ -335,7 +335,7 @@ class Quantity(np.ndarray):
         *annotations : Any
             any annotations for type hint
         action : str or Callable[[unit, ...], UnitSpecBase]
-            The action or callable that makes a UnitSpecBase
+            The action or callable that makes a UnitSpec
 
         Returns
         -------
@@ -362,7 +362,7 @@ class Quantity(np.ndarray):
             typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), ('a1', 'a2')]
 
         """
-        if not isinstance(unit, UnitSpecBase):
+        if not isinstance(unit, UnitSpecBase):  # yes, not UnitSpec
             # check unit / physical type is allowed
             unit = _parse_allowed_type_hint(unit, detailed_exception=True)
 
@@ -421,7 +421,7 @@ class Quantity(np.ndarray):
             unit = unit_and_annotations
             annotations = ()
 
-        return cls.make_unit_typing(unit=unit, *annotations, action="validate")
+        return cls.make_unit_typing(unit, *annotations, action="validate")
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
                 subok=False, ndmin=0):

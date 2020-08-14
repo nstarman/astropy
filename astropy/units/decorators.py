@@ -7,7 +7,7 @@ from numbers import Number
 from collections.abc import Sequence
 import inspect
 
-import typing_extensions as T
+import typing as T
 
 import numpy as np
 
@@ -21,7 +21,15 @@ from .core import (
 )
 from .physical import _unit_physical_mapping
 from .quantity import Quantity
-from .unitspec import UnitSpecBase, UnitSpec, isAnnotated, NullUnitSpec
+from .unitspec import (
+    isAnnotated,
+    NullUnitSpec,
+    UnitSpecBase,
+    UnitSpec,
+    UnitSpecValue,
+    UnitSpecConvert,
+    UnitSpecValidate,
+)
 
 
 __equivalencies_default = []
@@ -30,7 +38,7 @@ __strict_dimensionless_default = False
 
 class QuantityInput:
     @classmethod
-    def as_decorator(cls, func=None, **kwargs):
+    def as_decorator(cls, func: T.Optional[T.Callable] = None, **kwargs):
         r""""""
         self = cls(**kwargs)
         if func is not None and not kwargs:
@@ -40,17 +48,17 @@ class QuantityInput:
 
     def __init__(
         self,
-        func=None,
-        strict_dimensionless=__strict_dimensionless_default,
+        func: T.Optional[T.Callable] = None,
+        strict_dimensionless: bool = __strict_dimensionless_default,
         **kwargs
     ):
-        self.equivalencies = kwargs.pop(
+        self.equivalencies: T.Sequence = kwargs.pop(
             "equivalencies", __equivalencies_default
         )
         self.decorator_kwargs = kwargs
         self.strict_dimensionless = strict_dimensionless
 
-    def __call__(self, wrapped_function):
+    def __call__(self, wrapped_function: T.Callable) -> T.Callable:
 
         # Extract the function signature for the function we are wrapping.
         wrapped_signature = inspect.signature(wrapped_function)
@@ -112,29 +120,89 @@ class QuantityInput:
 # /class
 
 
+# -------------------------------------------------------------------
+
+
+class ValidateQuantityInput(QuantityInput):
+    """
+
+    TODO, maybe rename attribute "dequantify" to "to_value"
+
+    """
+
+    def __call__(self, wrapped_function: T.Callable) -> T.Callable:
+
+        # use all the machinery from superclass
+        wrapper = super().__call__(wrapped_function)
+
+        # but now need to ensure that everything
+        _antns_ = dict()
+        for name, antn in wrapper.__annotations__.items():
+
+            if isAnnotated(antn):
+                unitspec = antn.__metadata__[0]
+                if isinstance(unitspec, UnitSpecBase):
+                    if name == "return":
+                        _antns_[name] = UnitSpecValidate(unitspec)
+                    else:
+                        _antns_[name] = UnitSpecValidate(unitspec)
+
+        wrapper.__annotations__.update(_antns_)
+
+        return wrapper
+
+    # /def
+
+
+# /class
+
+
+# -------------------------------------------------------------------
+
+
+class ConvertQuantityInput(QuantityInput):
+    """
+
+    TODO, maybe rename attribute "dequantify" to "to_value"
+
+    """
+
+    def __call__(self, wrapped_function: T.Callable) -> T.Callable:
+
+        # use all the machinery from superclass
+        wrapper = super().__call__(wrapped_function)
+
+        # but now need to ensure that everything
+        _antns_ = dict()
+        for name, antn in wrapper.__annotations__.items():
+
+            if isAnnotated(antn):
+                unitspec = antn.__metadata__[0]
+                if isinstance(unitspec, UnitSpecBase):
+                    if name == "return":
+                        _antns_[name] = UnitSpecConvert(unitspec)
+                    else:
+                        _antns_[name] = UnitSpecConvert(unitspec)
+
+        wrapper.__annotations__.update(_antns_)
+
+        return wrapper
+
+    # /def
+
+
+# /class
+
+
+# -------------------------------------------------------------------
+
+
 class DeQuantityInput(QuantityInput):
     """
 
     TODO, maybe rename attribute "dequantify" to "to_value"
 
     """
-    def __init__(
-        self,
-        func=None,
-        strict_dimensionless=__strict_dimensionless_default,
-        **kwargs
-    ):
-        if "dequantify" in kwargs:
-            raise ValueError("cannot pass kwarg 'dequantify'")
-
-        super().__init__(
-            func=func, strict_dimensionless=strict_dimensionless, **kwargs
-        )
-
-        self.dequantify = True
-
-    # /def
-
 
     def __call__(self, wrapped_function):
 
@@ -151,7 +219,7 @@ class DeQuantityInput(QuantityInput):
                     if name == "return":
                         _antns_[name] = UnitSpec(unitspec, action="from_value")
                     else:
-                        _antns_[name] = UnitSpec(unitspec, action="to_value")
+                        _antns_[name] = UnitSpecValue(unitspec)
 
         wrapper.__annotations__.update(_antns_)
 
@@ -161,6 +229,9 @@ class DeQuantityInput(QuantityInput):
 
 
 # /class
+
+
+# -------------------------------------------------------------------
 
 
 # def _get_allowed_units(targets):
