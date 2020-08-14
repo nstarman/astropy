@@ -21,7 +21,7 @@ from .core import (
 )
 from .physical import _unit_physical_mapping
 from .quantity import Quantity
-from .unitspec import UnitSpecBase, isAnnotated, NullUnitSpec
+from .unitspec import UnitSpecBase, UnitSpec, isAnnotated, NullUnitSpec
 
 
 __equivalencies_default = []
@@ -55,6 +55,7 @@ class QuantityInput:
         # Extract the function signature for the function we are wrapping.
         wrapped_signature = inspect.signature(wrapped_function)
 
+        # Make the UnitSpec Annotations
         annotations = wrapped_function.__annotations__  # TODO!
 
         # Define a new function to return in place of the wrapped one
@@ -76,16 +77,16 @@ class QuantityInput:
             with add_enabled_equivalencies(equivalencies):
 
                 # this updates with external changes to __annotations__ :)
-                for name, annot in wrapper.__annotations__.items():
+                for name, antn in wrapper.__annotations__.items():
 
-                    if isAnnotated(annot):
-                        unitspec = annot.__metadata__[0]
+                    if isAnnotated(antn):
+                        unitspec = antn.__metadata__[0]
                         if isinstance(unitspec, UnitSpecBase):
                             if name == "return":
                                 return_spec = unitspec
                             else:
                                 ba.arguments[name] = unitspec(
-                                    ba.arguments[name], dtype=annot.__origin__
+                                    ba.arguments[name], dtype=antn.__origin__
                                 )
                         else:
                             pass  # not actually a unitspec
@@ -97,6 +98,7 @@ class QuantityInput:
                 return return_spec(return_, dtype=return_spec.dtype)
 
             # /with
+
         # /def
 
         wrapper.__annotations__ = annotations
@@ -105,6 +107,58 @@ class QuantityInput:
         return wrapper
 
     # /def
+
+
+# /class
+
+
+class DeQuantityInput(QuantityInput):
+    """
+
+    TODO, maybe rename attribute "dequantify" to "to_value"
+
+    """
+    def __init__(
+        self,
+        func=None,
+        strict_dimensionless=__strict_dimensionless_default,
+        **kwargs
+    ):
+        if "dequantify" in kwargs:
+            raise ValueError("cannot pass kwarg 'dequantify'")
+
+        super().__init__(
+            func=func, strict_dimensionless=strict_dimensionless, **kwargs
+        )
+
+        self.dequantify = True
+
+    # /def
+
+
+    def __call__(self, wrapped_function):
+
+        # use all the machinery from superclass
+        wrapper = super().__call__(wrapped_function)
+
+        # but now need to ensure that everything
+        _antns_ = dict()
+        for name, antn in wrapper.__annotations__.items():
+
+            if isAnnotated(antn):
+                unitspec = antn.__metadata__[0]
+                if isinstance(unitspec, UnitSpecBase):
+                    if name == "return":
+                        _antns_[name] = UnitSpec(unitspec, action="from_value")
+                    else:
+                        _antns_[name] = UnitSpec(unitspec, action="to_value")
+
+        wrapper.__annotations__.update(_antns_)
+
+        return wrapper
+
+    # /def
+
 
 # /class
 
