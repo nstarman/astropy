@@ -15,9 +15,12 @@ import warnings
 
 import numpy as np
 
+import typing_extensions as T
+
 # AstroPy
 from .core import (Unit, dimensionless_unscaled, get_current_unit_registry,
                    UnitBase, UnitsError, UnitConversionError, UnitTypeError)
+from .unitspec import UnitSpecBase, UnitSpec
 from .utils import is_effectively_unity
 from .format.latex import Latex
 from astropy.utils.compat import NUMPY_LT_1_17
@@ -32,6 +35,8 @@ from .quantity_helper.function_helpers import (
     SUBCLASS_SAFE_FUNCTIONS, FUNCTION_HELPERS, DISPATCHED_FUNCTIONS,
     UNSUPPORTED_FUNCTIONS)
 
+from .typing import UnitableType
+
 
 __all__ = ["Quantity", "SpecificTypeQuantity",
            "QuantityInfoBase", "QuantityInfo", "allclose", "isclose"]
@@ -42,6 +47,30 @@ __doctest_skip__ = ['Quantity.*']
 
 _UNIT_NOT_INITIALISED = "(Unit not initialised)"
 _UFUNCS_FILTER_WARNINGS = {np.arcsin, np.arccos, np.arccosh, np.arctanh}
+
+
+# TODO move!
+def _parse_allowed_type_hint(target, detailed_exception=True):
+    try:  # unit passed in as a string or unit or Quantity
+        target_unit = Unit(target)
+
+    except ValueError:  # physical type or mistake
+        from astropy.units.physical import _unit_physical_mapping  # TODO move import
+        if target in _unit_physical_mapping:  # valid physical type
+            target_unit = target  # pass through unchanged
+        else:   # Function argument target is invalid
+            if detailed_exception:
+                raise ValueError(
+                    (
+                        f"Invalid unit or physical type '{target}'.\n"
+                        f"Did you mean: {'TODO!'}"
+                        # TODO did_you_mean(target, candidates)
+                    )
+                )
+            else:
+                raise ValueError(f"Invalid unit or physical type '{target}'.")
+
+    return target_unit
 
 
 class Conf(_config.ConfigNamespace):
@@ -286,6 +315,113 @@ class Quantity(np.ndarray):
     _unit = None
 
     __array_priority__ = 10000
+
+    @classmethod
+    def make_unit_typing(
+        cls,
+        unit: UnitableType,
+        *annotations: T.Any,
+        action: T.Union[str, T.Callable[UnitableType, Quantity, ...], UnitSpecBase] = "validate"  # TODO replace with Unitable
+    ):
+        """Quantity Type Hints, with control on action.
+
+        Parameters
+        ----------
+        cls : type
+            The Quantity (or subclass) type
+        unit : `~UnitSpecBase` instance or UnitableType or sequence of UnitableType
+            If tuple, the first element must be unit specification,
+            this can be the physical type.
+        *annotations : Any
+            any annotations for type hint
+        action : str or Callable[[unit, ...], UnitSpecBase]
+            The action or callable that makes a UnitSpecBase
+
+        Returns
+        -------
+        ~`typing_extensions.Annotated` instance
+            Annotated[cls, unit_and_annotations]
+
+        Examples
+        --------
+        The basic example
+            >>> Quantity[Unit("s")]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s")]
+
+        With additional annotations
+            >>> Quantity[Unit("s"), "time"]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), 'time']
+
+        Unpacking annotations
+            >>> annotations = ("a1", "a2")
+            >>> Quantity[(Unit("s"), *annotations)]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), 'a1', 'a2']
+
+        If the annotations are not packed into a tuple
+            >>> Quantity[Unit("s"), annotations]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), ('a1', 'a2')]
+
+        """
+        if not isinstance(unit, UnitSpecBase):
+            # check unit / physical type is allowed
+            unit = _parse_allowed_type_hint(unit, detailed_exception=True)
+
+        if callable(action):
+            unitspec = action(unit, dtype=cls)
+        elif isinstance(action, str):
+            unitspec = UnitSpec(unit, dtype=cls, action=action)
+        else:
+            raise TypeError
+
+        return T.Annotated.__class_getitem__((cls, unitspec, *annotations))
+
+    def __class_getitem__(cls, unit_and_annotations):
+        """Quantity Type Hints.
+
+        Parameters
+        ----------
+        cls : type
+            The Quantity (or subclass) type
+        unit_and_annotations : Unit specification or tuple
+            If tuple, the first element must be unit specification,
+            this can be the physical type.
+
+        Returns
+        -------
+        ~`typing_extensions.Annotated` instance
+            Annotated[cls, unit_and_annotations]
+
+        Examples
+        --------
+        The basic example
+            >>> Quantity[Unit("s")]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s")]
+
+        With additional annotations
+            >>> Quantity[Unit("s"), "time"]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), 'time']
+
+        Unpacking annotations
+            >>> annotations = ("a1", "a2")
+            >>> Quantity[(Unit("s"), *annotations)]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), 'a1', 'a2']
+
+        If the annotations are not packed into a tuple
+            >>> Quantity[Unit("s"), annotations]
+            typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), ('a1', 'a2')]
+
+        """
+        if isinstance(unit_and_annotations, tuple):  # unit and annotations
+            unit = unit_and_annotations[0]
+            if len(unit_and_annotations) > 1:
+                annotations = unit_and_annotations[1:]
+            else:  # just unit
+                annotations = ()
+        else:  # just unit
+            unit = unit_and_annotations
+            annotations = ()
+
+        return cls.make_unit_typing(unit=unit, *annotations, action="validate")
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
                 subok=False, ndmin=0):
