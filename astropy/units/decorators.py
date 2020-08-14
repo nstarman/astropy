@@ -3,23 +3,25 @@
 
 __all__ = ["quantity_input"]
 
-from numbers import Number
-from collections.abc import Sequence
+# from numbers import Number
+# from collections.abc import Sequence
 import inspect
+import warnings
 
 import typing as T
 
-import numpy as np
+# import numpy as np
 
 from astropy.utils.decorators import wraps
 from .core import (
-    Unit,
-    UnitBase,
-    UnitsError,
+    # Unit,
+    # UnitBase,
+    # UnitsError,
     add_enabled_equivalencies,
-    dimensionless_unscaled,
+    # dimensionless_unscaled,
 )
-from .physical import _unit_physical_mapping
+
+# from .physical import _unit_physical_mapping
 from .quantity import Quantity
 from .unitspec import (
     isAnnotated,
@@ -37,6 +39,8 @@ __strict_dimensionless_default = False
 
 
 class QuantityInput:
+    """QuantityInput, with inputs behavior set by unit specifications."""
+
     @classmethod
     def as_decorator(cls, func: T.Optional[T.Callable] = None, **kwargs):
         r""""""
@@ -50,13 +54,12 @@ class QuantityInput:
         self,
         func: T.Optional[T.Callable] = None,
         strict_dimensionless: bool = __strict_dimensionless_default,
+        equivalencies: T.Sequence = __equivalencies_default,
         **kwargs
     ):
-        self.equivalencies: T.Sequence = kwargs.pop(
-            "equivalencies", __equivalencies_default
-        )
-        self.decorator_kwargs = kwargs
+        self.equivalencies = equivalencies
         self.strict_dimensionless = strict_dimensionless
+        self.decorator_kwargs = kwargs
 
     def __call__(self, wrapped_function: T.Callable) -> T.Callable:
 
@@ -65,6 +68,7 @@ class QuantityInput:
 
         # Make the UnitSpec Annotations
         annotations = wrapped_function.__annotations__  # TODO!
+        warnings.warn("Not Implemented!")
 
         # Define a new function to return in place of the wrapped one
         @wraps(wrapped_function)
@@ -124,28 +128,21 @@ class QuantityInput:
 
 
 class ValidateQuantityInput(QuantityInput):
-    """
-
-    TODO, maybe rename attribute "dequantify" to "to_value"
-
-    """
+    """QuantityInput, with validation on all specified inputs."""
 
     def __call__(self, wrapped_function: T.Callable) -> T.Callable:
 
         # use all the machinery from superclass
         wrapper = super().__call__(wrapped_function)
 
-        # but now need to ensure that everything
+        # but now need to ensure that everything is correct UnitSpec
         _antns_ = dict()
         for name, antn in wrapper.__annotations__.items():
 
             if isAnnotated(antn):
                 unitspec = antn.__metadata__[0]
                 if isinstance(unitspec, UnitSpecBase):
-                    if name == "return":
-                        _antns_[name] = UnitSpecValidate(unitspec)
-                    else:
-                        _antns_[name] = UnitSpecValidate(unitspec)
+                    _antns_[name] = UnitSpecValidate(unitspec)
 
         wrapper.__annotations__.update(_antns_)
 
@@ -161,28 +158,21 @@ class ValidateQuantityInput(QuantityInput):
 
 
 class ConvertQuantityInput(QuantityInput):
-    """
-
-    TODO, maybe rename attribute "dequantify" to "to_value"
-
-    """
+    """QuantityInput, with unit conversion on all specified inputs."""
 
     def __call__(self, wrapped_function: T.Callable) -> T.Callable:
 
         # use all the machinery from superclass
         wrapper = super().__call__(wrapped_function)
 
-        # but now need to ensure that everything
+        # but now need to ensure that everything is correct UnitSpec
         _antns_ = dict()
         for name, antn in wrapper.__annotations__.items():
 
             if isAnnotated(antn):
                 unitspec = antn.__metadata__[0]
                 if isinstance(unitspec, UnitSpecBase):
-                    if name == "return":
-                        _antns_[name] = UnitSpecConvert(unitspec)
-                    else:
-                        _antns_[name] = UnitSpecConvert(unitspec)
+                    _antns_[name] = UnitSpecConvert(unitspec)
 
         wrapper.__annotations__.update(_antns_)
 
@@ -198,18 +188,14 @@ class ConvertQuantityInput(QuantityInput):
 
 
 class DeQuantityInput(QuantityInput):
-    """
-
-    TODO, maybe rename attribute "dequantify" to "to_value"
-
-    """
+    """QuantityInput, with ``to_value(unit)`` on all specified inputs."""
 
     def __call__(self, wrapped_function):
 
         # use all the machinery from superclass
         wrapper = super().__call__(wrapped_function)
 
-        # but now need to ensure that everything
+        # but now need to ensure that everything is correct UnitSpec
         _antns_ = dict()
         for name, antn in wrapper.__annotations__.items():
 

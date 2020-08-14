@@ -23,10 +23,11 @@ Description.
 
 from abc import ABC
 from types import MappingProxyType
+import typing as T
 
 # THIRD PARTY
 
-import typing_extensions as T
+from typing_extensions import Annotated
 
 # PROJECT-SPECIFIC
 
@@ -37,17 +38,26 @@ from .typing import UnitableType
 
 
 ##############################################################################
-# Helper Functions
+# Helper Area
 
-
-def isAnnotated(t):
+# TODO Move
+def isAnnotated(t) -> bool:
     """is this thing an annotated type?"""
-    if t == T.Annotated[t.__origin__, t.__metadata__]:
+    if not hasattr(t, "__origin__") or not hasattr(t, "__metadata__"):
+        return False
+
+    if t == Annotated[t.__origin__, t.__metadata__]:
         return True
+
     return False
 
 
 # /def
+
+
+# registry of UnitSpec action options
+_uspec_registry = {}
+
 
 ##############################################################################
 # UnitSpecs
@@ -90,9 +100,6 @@ class NullUnitSpec(UnitSpecBase):
 
 # -------------------------------------------------------------------
 
-# registry of UnitSpec action options
-_uspec_registry = {}
-
 
 class UnitSpec(UnitSpecBase):
     """UnitSpec.
@@ -105,7 +112,9 @@ class UnitSpec(UnitSpecBase):
 
     """
 
-    def __init_subclass__(cls, registry_name=None, **kwargs):
+    def __init_subclass__(
+        cls, registry_name: T.Optional[str] = None, **kwargs
+    ):
         super().__init_subclass__(**kwargs)
 
         # register in subclasses

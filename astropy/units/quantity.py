@@ -321,7 +321,7 @@ class Quantity(np.ndarray):
         cls,
         unit: UnitableType,
         *annotations: T.Any,
-        action: T.Union[str, T.Callable[UnitableType, Quantity, ...], UnitSpec] = "validate"
+        action: T.Union[str, T.Callable[..., UnitSpec]] = "validate"
     ):
         """Quantity Type Hints, with control on action.
 
@@ -334,7 +334,7 @@ class Quantity(np.ndarray):
             this can be the physical type.
         *annotations : Any
             any annotations for type hint
-        action : str or Callable[[unit, ...], UnitSpecBase]
+        action : str or Callable[[unit, ...], UnitSpec]
             The action or callable that makes a UnitSpec
 
         Returns
@@ -371,7 +371,7 @@ class Quantity(np.ndarray):
         elif isinstance(action, str):
             unitspec = UnitSpec(unit, dtype=cls, action=action)
         else:
-            raise TypeError
+            raise TypeError("action must be <str> or <Callable>")
 
         return T.Annotated.__class_getitem__((cls, unitspec, *annotations))
 

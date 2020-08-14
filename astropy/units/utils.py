@@ -294,3 +294,18 @@ def quantity_asanyarray(a, dtype=None):
         return Quantity(a, dtype=dtype)
     else:
         return np.asanyarray(a, dtype=dtype)
+
+
+
+def isAnnotated(t) -> bool:
+    """is this thing an annotated type?"""
+    if not hasattr(t, "__origin__") or not hasattr(t, "__metadata__"):
+        return False
+
+    if t == Annotated[t.__origin__, t.__metadata__]:
+        return True
+
+    return False
+
+
+# /def
