@@ -20,9 +20,9 @@ import typing_extensions as T
 # AstroPy
 from .core import (Unit, dimensionless_unscaled, get_current_unit_registry,
                    UnitBase, UnitsError, UnitConversionError, UnitTypeError)
-from .unitspec import UnitSpecBase, UnitSpec
 from .utils import is_effectively_unity
 from .format.latex import Latex
+
 from astropy.utils.compat import NUMPY_LT_1_17
 from astropy.utils.compat.misc import override__dir__
 from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
@@ -34,8 +34,6 @@ from .quantity_helper import (converters_and_unit, can_have_arbitrary_unit,
 from .quantity_helper.function_helpers import (
     SUBCLASS_SAFE_FUNCTIONS, FUNCTION_HELPERS, DISPATCHED_FUNCTIONS,
     UNSUPPORTED_FUNCTIONS)
-
-from .typing import UnitableType
 
 
 __all__ = ["Quantity", "SpecificTypeQuantity",
@@ -317,12 +315,7 @@ class Quantity(np.ndarray):
     __array_priority__ = 10000
 
     @classmethod
-    def make_unit_typing(
-        cls,
-        unit: UnitableType,
-        *annotations: T.Any,
-        action: T.Union[str, T.Callable[..., UnitSpec]] = "validate"
-    ):
+    def make_unit_typing(cls, unit, *annotations, action="validate"):
         """Quantity Type Hints, with control on action.
 
         Parameters
@@ -362,6 +355,8 @@ class Quantity(np.ndarray):
             typing_extensions.Annotated[astropy.units.quantity.Quantity, UnitSpec("s"), ('a1', 'a2')]
 
         """
+        from .unitspec import UnitSpecBase, UnitSpec
+
         if not isinstance(unit, UnitSpecBase):  # yes, not UnitSpec
             # check unit / physical type is allowed
             unit = _parse_allowed_type_hint(unit, detailed_exception=True)

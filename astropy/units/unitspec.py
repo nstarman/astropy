@@ -1,29 +1,7 @@
-# -*- coding: utf-8 -*-
-
-"""**DOCSTRING**.
-
-Description.
-
-"""
-
-# __all__ = [
-#     # classes
-#     "",
-#     # functions
-#     "",
-#     # other
-#     "",
-# ]
-
-
-##############################################################################
-# IMPORTS
-
-# BUILT-IN
-
 from abc import ABC
 from types import MappingProxyType
 import typing as T
+from collections.abc import ItemsView
 
 # THIRD PARTY
 
@@ -31,10 +9,16 @@ from typing_extensions import Annotated
 
 # PROJECT-SPECIFIC
 
-from .core import UnitBase, Unit
-from .physical import get_physical_type, _physical_unit_mapping
-from .quantity import Quantity
-from .typing import UnitableType
+import astropy.units as u
+from astropy.units.core import UnitBase, Unit
+from astropy.units.physical import (
+    get_physical_type,
+    _physical_unit_mapping,
+    _unit_physical_mapping,
+)
+from astropy.units.quantity import Quantity
+from astropy.units.typing import UnitableType
+from astropy.utils.decorators import classproperty
 
 
 ##############################################################################
@@ -52,11 +36,9 @@ def isAnnotated(t) -> bool:
     return False
 
 
-# /def
-
-
 # registry of UnitSpec action options
-_uspec_registry = {}
+_action_uspec_registry = {}
+_uspec_action_registry = {}
 
 
 ##############################################################################
@@ -67,17 +49,30 @@ _uspec_registry = {}
 class UnitSpecBase(ABC):
     """Base class for UnitSpecs."""
 
+    def __new__(cls, unit, *args, **kwargs):
+        self = super().__new__(cls)
+        self._orig_value = unit  # save value passed at initialization
+
+        return self
+
     def __init__(
-        self,
-        unit_or_physical_type: UnitableType,
-        statictype: Quantity = Quantity,
+        self, unit: UnitableType, statictype: Quantity = Quantity, **kwargs
     ):
         """Initialize class."""
         super().__init__()
-        self.unit_or_physical_type = unit_or_physical_type
-        self.statictype = statictype
 
-    # /def
+        self.statictype = statictype
+        self.unit = unit
+
+    @classmethod
+    def get_action(cls, kls=None):
+        """"""
+        return ItemsView(_uspec_action_registry[kls or cls])
+
+    @classproperty(lazy=True)
+    def action(cls):
+        """read-only of action description."""
+        return cls.get_action()
 
 
 # /class
@@ -91,8 +86,6 @@ class NullUnitSpec(UnitSpecBase):
 
     def __call__(value, *args, **kwargs):
         return value
-
-    # /def
 
 
 # /class
@@ -112,47 +105,71 @@ class UnitSpec(UnitSpecBase):
 
     """
 
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, value):
+        if value != self._action:
+            self._uspec = self._action_uspec_registry[value](
+                self.unit, statictype=self.statictype
+            )
+        self._action = value
+
     def __init_subclass__(
         cls, registry_name: T.Optional[str] = None, **kwargs
     ):
+        #         cls.action = classproperty(fget=cls.get_action, doc="TEST2")
         super().__init_subclass__(**kwargs)
 
         # register in subclasses
         if registry_name is None:
             registry_name = cls.__name__.split("UnitSpec")[1].lower()
 
-        if registry_name in _uspec_registry:
-            raise Exception(
-                "either rename class or pass unique `registry_name`"
-            )  # TODO what type?
+        if registry_name in _action_uspec_registry:
+            # TODO what type of Exception?
+            raise Exception(f"`{registry_name}` already in registry.")
 
-        _uspec_registry[registry_name] = cls
+        _action_uspec_registry[registry_name] = cls
+        _uspec_action_registry[cls] = registry_name
 
-    # /def
+        # set the action to be read-only
+        cls.action = classproperty(fget=cls.get_action, doc="TEST2")
 
-    def __init__(
-        self,
-        physical_type: UnitableType,
+    def __new__(
+        cls,
+        unit: UnitableType,
         statictype: Quantity = Quantity,
         action: str = "validate",
     ):
-        super().__init__(
-            unit_or_physical_type=get_physical_type(physical_type),
-            statictype=statictype,
-        )
+        if action not in _action_uspec_registry:
+            raise KeyError(
+                f"Action {action} must be one of {_action_uspec_registry.keys()}"
+            )
 
-        if action not in _uspec_registry:
-            raise KeyError(f"action must be one of {_uspec_registry.keys()}")
-        self.action = action
+        self = super().__new__(cls, unit, statictype, action)
+        if cls is UnitSpec:
+            self._action = action
+            self._uspec = _action_uspec_registry[action](
+                unit, statictype=statictype
+            )
 
-        self._uspec_registry = MappingProxyType(_uspec_registry)
+        return self
 
-    # /def
+    def __init__(
+        self,
+        unit: UnitableType,
+        statictype: Quantity = Quantity,
+        action: str = "validate",
+    ):
+        if unit not in _unit_physical_mapping.keys():
+            unit = Unit(unit)
+
+        super().__init__(unit=unit, statictype=statictype)
 
     def __call__(self, value, **kwargs):
-        return self._uspec_registry[self.action](value, **kwargs)
-
-    # /def
+        return self._uspec(value, **kwargs)
 
 
 # /class
@@ -161,26 +178,30 @@ class UnitSpec(UnitSpecBase):
 # -------------------------------------------------------------------
 
 
-class UnitSpecValidate(UnitSpecBase):
+class UnitSpecValidate(UnitSpec):
     """UnitSpec."""
 
     def __init__(
         self, physical_type: UnitableType, statictype: Quantity = Quantity,
     ):
         """Initialize class."""
-        super().__init__(
-            unit_or_physical_type=get_physical_type(physical_type),
-            statictype=statictype,
-        )
+        if physical_type in _unit_physical_mapping.keys():
+            pass
+        elif hasattr(physical_type, "unit"):  # quantity
+            physical_type = get_physical_type(physical_type.unit)
+        else:
+            physical_type = get_physical_type(Unit(physical_type))
 
-    # /def
+        super().__init__(
+            unit=physical_type, statictype=statictype,
+        )
 
     def __call__(self, value):
         if not isinstance(value, self.statictype):  # includes subclasses
             raise TypeError
 
-        if not get_physical_type(value) == self.unit_or_physical_type:
-            raise ValueError
+        if not get_physical_type(value.unit) == self.unit:
+            raise UnitConversionError(f"{value} is not type {self.unit}")
 
         return value
 
@@ -191,26 +212,22 @@ class UnitSpecValidate(UnitSpecBase):
 # -------------------------------------------------------------------
 
 
-class UnitSpecConvert(UnitSpecBase):
+class UnitSpecConvert(UnitSpec):
     """UnitSpec."""
 
     def __init__(
-        self,
-        unit_or_physical_type: UnitableType,
-        statictype: Quantity = Quantity,
+        self, unit: UnitableType, statictype: Quantity = Quantity,
     ):
         """Initialize class."""
-        physical_type = get_physical_type(unit_or_physical_type)
-        if (
-            unit_or_physical_type != physical_type
-        ):  # keep only physcal type as str
-            unit_or_physical_type = Unit(unit_or_physical_type)
+        if unit in _unit_physical_mapping.keys():
+            pass
+        # keep only physical type as str
+        else:
+            unit = Unit(unit)
 
         super().__init__(
-            unit_or_physical_type=unit_or_physical_type, statictype=statictype,
+            unit=unit, statictype=statictype,
         )
-
-    # /def
 
     def __call__(self, value, statictype=None):
 
@@ -220,18 +237,13 @@ class UnitSpecConvert(UnitSpecBase):
         if statictype is None:
             statictype = self.statictype
 
-        if isinstance(self.unit_or_physical_type, str):
-            physical_type_id = _physical_unit_mapping[
-                self.unit_or_physical_type
-            ]
+        if isinstance(self.unit, str):
+            physical_type_id = _unit_physical_mapping[self.unit]
             unit = Unit._from_physical_type_id(physical_type_id)
         else:
-            unit = self.unit_or_physical_type
+            unit = self.unit
 
         return self.statictype(value, unit=unit, copy=False)
-
-
-# /class
 
 
 # -------------------------------------------------------------------
@@ -240,37 +252,40 @@ class UnitSpecConvert(UnitSpecBase):
 class UnitSpecValue(UnitSpecConvert, registry_name="to_value"):
     """UnitSpec."""
 
+    def __init__(
+        self, unit: UnitableType, statictype: Quantity = Quantity,
+    ):
+        """Initialize class."""
+        if unit in _unit_physical_mapping.keys():
+            raise ValueError("Cannot be physical type")
+
+        super().__init__(unit=unit, statictype=statictype)
+
     def __call__(self, value, statictype=None):
         return super().__call__(value, statictype=statictype).to_value()
-
-
-# /class
 
 
 # -------------------------------------------------------------------
 
 
-class UnitSpecAssign(UnitSpecBase, registry_name="from_value"):
+class UnitSpecAssign(UnitSpec, registry_name="from_value"):
     """UnitSpec."""
+
+    def __init__(
+        self, unit: UnitableType, statictype: Quantity = Quantity,
+    ):
+        """Initialize class."""
+        if unit in _unit_physical_mapping.keys():
+            raise ValueError("Cannot be physical type")
+
+        super().__init__(unit=unit, statictype=statictype)
+
 
     def __call__(self, value, statictype=None):
 
-        if statictype is None:
-            statictype = self.statictype
+        if not hasattr(value, "unit"):
+            value = value * self.unit
 
-        if isinstance(self.unit_or_physical_type, str):
-            physical_type_id = _physical_unit_mapping[
-                self.unit_or_physical_type
-            ]
-            unit = Unit._from_physical_type_id(physical_type_id)
-        else:
-            unit = self.unit_or_physical_type
+        # TODO allow no conversion if value has right unit type?
 
-        return self.statictype(value, unit=unit, copy=False)
-
-
-# /class
-
-
-##############################################################################
-# END
+        return self.statictype(value, unit=self.unit, copy=False)

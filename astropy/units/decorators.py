@@ -34,8 +34,8 @@ from .unitspec import (
 )
 
 
-__equivalencies_default = []
-__strict_dimensionless_default = False
+_equivalencies_default = []
+_strict_dimensionless_default = False
 
 
 class QuantityInput:
@@ -53,8 +53,8 @@ class QuantityInput:
     def __init__(
         self,
         func: T.Optional[T.Callable] = None,
-        strict_dimensionless: bool = __strict_dimensionless_default,
-        equivalencies: T.Sequence = __equivalencies_default,
+        strict_dimensionless: bool = _strict_dimensionless_default,
+        equivalencies: T.Sequence = _equivalencies_default,
         **kwargs
     ):
         self.equivalencies = equivalencies
@@ -78,10 +78,10 @@ class QuantityInput:
             ba.apply_defaults()
 
             equivalencies = wrapper._meta.get(
-                "equivalencies", __equivalencies_default
+                "equivalencies", _equivalencies_default
             )
             # strict_dimensionless = wrapper._meta.get(
-            #     "strict_dimensionless", __strict_dimensionless_default
+            #     "strict_dimensionless", _strict_dimensionless_default
             # )
 
             return_spec = NullUnitSpec(dtype=Quantity)
@@ -98,12 +98,10 @@ class QuantityInput:
                                 return_spec = unitspec
                             else:
                                 ba.arguments[name] = unitspec(
-                                    ba.arguments[name], dtype=antn.__origin__
+                                    ba.arguments[name],  # dtype=antn.__origin__
                                 )
-                        else:
-                            pass  # not actually a unitspec
-                    else:
-                        pass  # just a normal annotation
+                        # else: pass  # not actually a unitspec
+                    # else: pass  # not annotated
 
                 return_ = wrapped_function(*ba.args, **ba.kwargs)
 
