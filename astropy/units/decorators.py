@@ -6,6 +6,7 @@ __all__ = ['quantity_input']
 from numbers import Number
 from collections.abc import Sequence
 import inspect
+import typing as T
 
 import numpy as np
 
@@ -13,6 +14,8 @@ from astropy.utils.decorators import wraps
 from .core import (Unit, UnitBase, UnitsError, add_enabled_equivalencies,
                    dimensionless_unscaled)
 from .physical import _unit_physical_mapping
+from .quantity import Quantity
+from ._typing import _isAnnotated, _isUnion, NoneType
 
 
 def _get_allowed_units(targets):
@@ -94,6 +97,40 @@ def _validate_arg_value(param_name, func_name, arg, targets, equivalencies,
             raise UnitsError(f"{error_msg} '{str(targets[0])}'.")
 
 
+def _parse_annotation(target):
+    """
+
+    .. todo::
+
+        - look at functions ``get_orgin`` and ``get_args``.
+        These are in ``typing_extensions`` for python 3.7+
+        and ``typing`` for python 3.9+
+
+        - Look at function ``get_type_hints`` for python 3.7+
+
+    """
+    if not _isAnnotated(target):
+        return target
+
+    # Check if its an Annotated with (sub)type Quantity;
+    # then the first annotation is the unit.
+    # origin = target.__args__[0]
+    origin = target.__origin__
+    # There are 2 valid origin types
+    # 1) a TypeVar(bound=Quantity)  (or subclass)
+    if issubclass(origin.__class__, T.TypeVar):
+        # look inside the TypeVar for a Quantity type.
+        if issubclass(origin.__bound__, Quantity):
+            unit = target.__metadata__[0]
+        else:
+            return target
+    # 2) a normal Quantity (or subclass)
+    elif issubclass(origin, Quantity):
+        unit = target.__metadata__[0]
+
+    return unit
+
+
 class QuantityInput:
 
     @classmethod
@@ -137,6 +174,15 @@ class QuantityInput:
             import astropy.units as u
             @u.quantity_input
             def myfunction(myangle: u.arcsec):
+                return myangle**2
+
+        Or using a unit-aware Quantity annotation. In future, this will be
+        valid static type.
+
+        .. code-block:: python
+
+            @u.quantity_input
+            def myfunction(myangle: u.Quantity[u.arcsec]):
                 return myangle**2
 
         Also you can specify a return value annotation, which will
@@ -204,6 +250,18 @@ class QuantityInput:
                     targets = param.annotation
                     is_annotation = True
 
+                    # parses to unit if it's an annotation, else return targets
+                    targets = _parse_annotation(targets)
+
+                    # still need to check if its a Union of things, in which
+                    # case need to turn into a list. For each item, check if
+                    # it's an Annotated, in which case the first annotation is
+                    # the unit.
+                    if _isUnion(targets):
+                        targets = [
+                            _parse_annotation(t) for t in targets.__args__
+                        ]
+
                 # If the targets is empty, then no target units or physical
                 #   types were specified so we can continue to the next arg
                 if targets is inspect.Parameter.empty:
@@ -224,7 +282,7 @@ class QuantityInput:
 
                 # Check for None in the supplied list of allowed units and, if
                 #   present and the passed value is also None, ignore.
-                elif None in targets:
+                elif None in targets or NoneType in targets:
                     if arg is None:
                         continue
                     else:
@@ -250,11 +308,23 @@ class QuantityInput:
             with add_enabled_equivalencies(self.equivalencies):
                 return_ = wrapped_function(*func_args, **func_kwargs)
 
-            valid_empty = (inspect.Signature.empty, None)
-            if wrapped_signature.return_annotation not in valid_empty:
-                return return_.to(wrapped_signature.return_annotation)
-            else:
+            # Return
+            # if there is no annotation, return as-is
+            valid_empty = (inspect.Signature.empty, None, NoneType)
+            if wrapped_signature.return_annotation in valid_empty:
                 return return_
+
+            # annotated output
+            ret_targets = _parse_annotation(
+                wrapped_signature.return_annotation)
+            # TODO for future PR: drop support for Quantity when mean Unit
+            # TODO for future PR: allow for generic annotations.
+            #   # This allows for non unit/Quantity/str annotations.
+            #   if isinstance(ret_targets, (UnitBase, Quantity, str)):
+            _validate_arg_value("return", wrapped_function.__name__,
+                                return_, [ret_targets], self.equivalencies,
+                                self.strict_dimensionless)
+            return return_.to(Unit(ret_targets))
 
         return wrapper
 

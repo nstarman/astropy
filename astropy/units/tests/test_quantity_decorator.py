@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 
 from astropy import units as u
+from astropy.units._typing import Annotated
 
 # list of pairs (target unit/physical type, input unit)
 x_inputs = [(u.arcsec, u.deg), ('angle', u.deg),
@@ -323,16 +324,45 @@ def test_str_unit_typo():
 
 
 def test_type_annotations():
+    # Basic Annotation
     @u.quantity_input
     def myfunc_args(x: u.m, y: str):
         return x, y
 
-    in_quantity = 2 * u.m
-    in_string = "cool string"
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = myfunc_args(i_q, i_str)
+    assert o_q == i_q
+    assert o_str == i_str
 
-    quantity, string = myfunc_args(in_quantity, in_string)
-    assert quantity == in_quantity
-    assert string == in_string
+    # unit-aware Quantity Annotation, manual construction
+    @u.quantity_input
+    def myfunc_args(x: Annotated[u.Quantity, u.m], y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = myfunc_args(i_q, i_str)
+    assert o_q == i_q
+    assert o_str == i_str
+
+    # unit-aware Quantity Annotation, fast construction
+    @u.quantity_input
+    def myfunc_args(x: u.Quantity[u.m], y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = myfunc_args(i_q, i_str)
+    assert o_q == i_q
+    assert o_str == i_str
+
+    # multiple annotations
+    @u.quantity_input
+    def myfunc_args(x: u.Quantity[u.m, "more"], y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = myfunc_args(i_q, i_str)
+    assert o_q == i_q
+    assert o_str == i_str
 
 
 def test_args_None():

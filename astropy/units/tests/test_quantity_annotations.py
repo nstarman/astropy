@@ -2,8 +2,181 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import pytest
-
 from astropy import units as u  # pylint: disable=W0611
+
+import typing as T
+from astropy.units._typing import Annotated
+
+
+def test_ignore_generic_type_annotations():
+    """Test annotations that are not unit related are ignored.
+
+    This test passes if the function works.
+
+    """
+    # one unit, one not (should be ignored)
+    @u.quantity_input
+    def func(x: u.m, y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = func(i_q, i_str)  # if this doesn't fail, it worked.
+    assert i_q == o_q
+    assert i_str == o_str
+
+
+def test_type_Quantity_unit_annotations():
+    """Test Quantity[Unit] type annotation."""
+    # ------------------------------
+    # Simple Annotation
+
+    # full construction
+    @u.quantity_input
+    def func(x: Annotated[u.Quantity, u.m], y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = func(i_q, i_str)
+    assert i_q == o_q
+    assert i_str == o_str
+
+    # --------
+
+    # simple construction
+    @u.quantity_input
+    def func(x: u.Quantity[u.m], y: str):
+        return x, y
+
+    i_q, i_str = 2 * u.m, "cool string"
+    o_q, o_str = func(i_q, i_str)
+    assert i_q == o_q
+    assert i_str == o_str
+
+    # --------------------
+    # Multiple Annotated
+
+    # one Unit annotation & other annotation
+    multi_annot1 = Annotated[u.Quantity, u.m, "the distance"]
+    multi_annot2 = Annotated[u.Quantity, u.km, "output"]
+
+    @u.quantity_input
+    def multi_func(a: multi_annot1) -> multi_annot2:
+        return a.to(u.km)
+
+    i_q = 2 * u.m
+    o_q = multi_func(i_q)
+    assert o_q.to_value(u.m) == i_q.to_value()
+
+    # --------
+
+    # one Unit annotation & other annotation
+    multi_annot1 = u.Quantity[u.m, "the distance"]
+    multi_annot2 = u.Quantity[u.km, "output"]
+
+    @u.quantity_input
+    def multi_func(a: multi_annot1) -> multi_annot2:
+        return a.to(u.km)
+
+    i_q = 2 * u.m
+    o_q = multi_func(i_q)
+    assert o_q.to_value(u.m) == i_q.to_value()
+
+    # --------------------
+    #  Optional and Annotated  # TODO tests when supported
+
+    # one Unit annotation & other annotation
+    opt_annot1 = T.Optional[Annotated[u.Quantity, u.m]]
+    opt_annot2 = Annotated[u.Quantity, u.km]
+
+    @u.quantity_input
+    def opt_func(x: opt_annot1 = None) -> opt_annot2:
+        if x is None:
+            return 1 * u.km
+        return x
+
+    i_q = 2 * u.m
+    o_q = opt_func(i_q)
+    assert o_q.unit == u.km
+    assert o_q == i_q
+
+    i_q = None
+    o_q = opt_func(i_q)
+    assert o_q == 1 * u.km
+
+    # --------
+
+    # one Unit annotation & other annotation
+    opt_annot1 = T.Optional[u.Quantity[u.m]]
+    opt_annot2 = u.Quantity[u.km]
+
+    @u.quantity_input
+    def opt_func(x: opt_annot1) -> opt_annot2:
+        if x is None:
+            return 1 * u.km
+        return x
+
+    i_q = 2 * u.m
+    o_q = opt_func(i_q)
+    assert o_q == i_q
+
+    i_q = None
+    o_q = opt_func(i_q)
+    assert o_q == 1 * u.km
+
+    # --------------------
+    #  Union and Annotated  # TODO tests when supported
+
+    # one Unit annotation & other annotation
+    union_annot1 = T.Union[Annotated[u.Quantity, u.m],
+                           Annotated[u.Quantity, u.s],
+                           None]
+
+    @u.quantity_input
+    def union_func(x: union_annot1):
+        if isinstance(x, u.Quantity):
+            return 2 * x
+        elif x is None:
+            return None
+        else:
+            TypeError
+
+    i_q = 1 * u.m
+    o_q = union_func(i_q)
+    assert o_q == 2 * i_q
+
+    i_q = 1 * u.s
+    o_q = union_func(i_q)
+    assert o_q == 2 * i_q
+
+    i_q = None
+    o_q = union_func(i_q)
+    assert o_q is None
+
+    # --------
+
+    # one Unit annotation & other annotation
+    union_annot1 = T.Union[u.Quantity[u.m], u.Quantity[u.s], None]
+
+    @u.quantity_input
+    def union_func(x: union_annot1):
+        if isinstance(x, u.Quantity):
+            return 2 * x
+        elif x is None:
+            return None
+        else:
+            TypeError
+
+    i_q = 1 * u.m
+    o_q = union_func(i_q)
+    assert o_q == 2 * i_q
+
+    i_q = 1 * u.s
+    o_q = union_func(i_q)
+    assert o_q == 2 * i_q
+
+    i_q = None
+    o_q = union_func(i_q)
+    assert o_q is None
 
 
 @pytest.mark.parametrize("solarx_unit,solary_unit", [

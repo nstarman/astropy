@@ -179,6 +179,7 @@ Using `astropy.units`
    :maxdepth: 2
 
    quantity
+   type_hints
    standard_units
    combining_and_defining
    decomposing_and_composing

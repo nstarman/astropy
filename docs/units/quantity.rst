@@ -386,19 +386,26 @@ input is only checked when a value other than ``None`` is passed:
     >>> myfunction(1.*u.km, 1*u.deg)  # doctest: +FLOAT_CMP
     (<Quantity 1. km>, <Quantity 1. deg>)
 
-Alternatively, you can use the annotations syntax to provide the units:
+Alternatively, you can use the annotations syntax to provide the units.
+While the raw unit or string can be used, the preferred method is with the
+unit-aware Quantity-annotation syntax:
+
+``Quantity[unit or "string", metadata, ...]``
 
     >>> @u.quantity_input  # doctest: +SKIP
-    ... def myfunction(myarg: u.arcsec):
+    ... def myfunction(myarg: u.Quantity[u.arcsec]):
     ...     return myarg.unit
 
     >>> myfunction(100*u.arcsec)  # doctest: +SKIP
     Unit("arcsec")
 
+If you have ``typing_extensions`` installed or are using Python 3.9+ then
+the Quantity-annotation syntax is static type-check compatible.
+
 You can also annotate for different types in non-unit expecting arguments:
 
     >>> @u.quantity_input  # doctest: +SKIP
-    ... def myfunction(myarg: u.arcsec, nice_string: str):
+    ... def myfunction(myarg: u.Quantity[u.arcsec], nice_string: str):
     ...     return myarg.unit, nice_string
     >>> myfunction(100*u.arcsec, "a nice string")  # doctest: +SKIP
     (Unit("arcsec"), 'a nice string')
@@ -407,7 +414,7 @@ You can define a return decoration, to which the return
 value will be converted, for example::
 
     >>> @u.quantity_input  # doctest: +SKIP
-    ... def myfunction(myarg: u.arcsec) -> u.deg:
+    ... def myfunction(myarg: u.Quantity[u.arcsec]) -> u.deg:
     ...     return myarg*1000
 
     >>> myfunction(100*u.arcsec)  # doctest: +SKIP

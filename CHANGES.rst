@@ -68,6 +68,13 @@ astropy.uncertainty
 astropy.units
 ^^^^^^^^^^^^^
 
+- ``Quantity`` gained a ``__class_getitem__`` to create unit-aware annotations
+  with the syntax ``Quantity[unit or physical_type]``. If
+  ``typing_extensions`` is installed, these are valid static type. [#10662]
+
+- ``quantity_input`` accepts ``Quantity[unit or physical_type]`` annotations
+  on wrapped functions. [#10662]
+
 astropy.utils
 ^^^^^^^^^^^^^
 

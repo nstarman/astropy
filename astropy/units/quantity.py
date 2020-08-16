@@ -12,6 +12,7 @@ import re
 import numbers
 from fractions import Fraction
 import warnings
+import typing as T
 
 import numpy as np
 
@@ -20,6 +21,7 @@ from .core import (Unit, dimensionless_unscaled, get_current_unit_registry,
                    UnitBase, UnitsError, UnitConversionError, UnitTypeError)
 from .utils import is_effectively_unity
 from .format.latex import Latex
+from ._typing import Annotated
 from astropy.utils.compat.misc import override__dir__
 from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
 from astropy.utils.misc import isiterable
@@ -56,6 +58,32 @@ class Conf(_config.ConfigNamespace):
 
 
 conf = Conf()
+
+
+_quantitytype_registry = dict()
+
+
+def _parse_allowed_type_hint(arg, detailed_exception=True):  # TODO move!
+    try:  # unit passed in as a string or unit or Quantity
+        unit = Unit(arg)
+
+    except ValueError:  # physical type or mistake
+        from astropy.units.physical import _unit_physical_mapping  # TODO move import
+        if arg in _unit_physical_mapping:  # valid physical type
+            unit = arg  # pass through unchanged
+        else:   # Function argument arg is invalid
+            if detailed_exception:
+                raise ValueError(
+                    (
+                        f"Invalid unit or physical type '{arg}'.\n"
+                        f"Did you mean: {'TODO!'}"
+                        # TODO did_you_mean(arg, candidates)
+                    )
+                )
+            else:
+                raise ValueError(f"Invalid unit or physical type '{arg}'.")
+
+    return unit
 
 
 class QuantityIterator:
@@ -285,6 +313,98 @@ class Quantity(np.ndarray):
     _unit = None
 
     __array_priority__ = 10000
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        # Register the TypeVar for cached reuse.
+        # See __class_getitem__ for usage.
+        _quantitytype_registry[cls] = T.TypeVar(repr(cls), bound=cls)
+
+    def __class_getitem__(cls, unit_annotation):
+        """Quantity Type Hints.
+
+        Unit-aware type hints are ``Annotated`` objects.
+        The origin type is a `~typing.TypeVar` with name
+        ``repr(cls)`` and upper bound  ``cls``.
+        The metadata is ordered by [unit, other, ...]
+
+        Schematically,
+        ``Annotated[TypeVar(repr(cls), bound=cls), *unit_annotation]``
+
+        As a classmethod, the type is the class, ie ``Quantity``
+        produces an ``Annotated[Quantity, ...]`` while a subclass
+        like :class:`~astropy.coordinates.Angle` returns
+        ``Annotated[Angle, ...]``.
+
+        Parameters
+        ----------
+        unit_annotation : :class:`~astropy.units.core.UnitBase` or str or tuple
+            Unit specification, can be the physical type (ie a str).
+            If tuple, then the first element is the unit specification
+            and all other elements are added metadata.
+
+        Returns
+        -------
+        :class:`~astropy.units._typing.Annotated` instance
+
+        Raises
+        ------
+        NotImplementedError
+            If the unit specification is not a ``Unit`` or ``Quantity`` or str
+        ValueError
+            If the unit specification is str but not a physical type.
+
+        Examples
+        --------
+        Create a unit-aware Quantity type annotation
+
+            >>> Quantity[Unit("s")]
+            Annotated[~<class 'Quantity'>, Unit("s")]
+
+        This is equivalent, but easier than, manually creating the
+        annotation. In Python 3.9+ ``Annotated`` is built into
+        :mod:`~typing`. For older python versions, the optional dependency
+        ``typing_extensions`` provides the same class. When neither are
+        available we default to a run-time only compatibility class (in
+        ``astropy.units._typing``) with reduced functionality. The best
+        implementation is automatically detected and used.
+
+            >>> from astropy.units._typing import Annotated  # imports best
+            >>> Annotated[Quantity, Unit("s")]
+            Annotated[~<class 'Quantity'>, Unit("s")]
+
+        These can be used as type annotations.
+
+            >>> def func(x: Quantity[u.kpc]) -> Quantity[u.m]:
+            ...     return x << u.m
+
+        With Python 3.9+ or ``typing_extensions``, Quantity types are also
+        static compatible.
+
+        """
+        if isinstance(unit_annotation, tuple):  # unit and annotations
+            unit = unit_annotation[0]
+            annotations = unit_annotation[1:]
+        else:  # just unit
+            unit = unit_annotation
+            annotations = ()
+
+        # The allowed unit types
+        if isinstance(unit, (UnitBase, str)):
+            # check unit / physical type is allowed
+            # Note: converts Quantity to a Unit(Quantity)
+            unit = _parse_allowed_type_hint(unit, detailed_exception=True)
+
+            # Creating a TypeVar with bound `cls` ensures that Quantity
+            # (or subclass) can be used by a static type checker.
+            origin = _quantitytype_registry[cls]
+
+        else:
+            raise NotImplementedError(
+                "currently, only unit annotations are supported")
+
+        return Annotated.__class_getitem__((origin, unit, *annotations))
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
                 subok=False, ndmin=0):
@@ -1693,6 +1813,12 @@ class Quantity(np.ndarray):
         """
         out_array = np.insert(self.value, obj, self._to_own_unit(values), axis)
         return self._new_view(out_array)
+
+
+# A registry to hold the TypeVar of Quantity and subclasses
+# We make it here so that Quantity is added to the registry
+# All subclasses are automatically registered.
+_quantitytype_registry[Quantity] = T.TypeVar(repr(Quantity), bound=Quantity)
 
 
 class SpecificTypeQuantity(Quantity):
