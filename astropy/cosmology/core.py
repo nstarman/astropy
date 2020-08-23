@@ -72,7 +72,8 @@ __doctest_requires__ = {"*": ["scipy"]}
 #  will always return mks by default -- if this is made faster for simple
 #  cases like this, it should be changed back.
 # Note that the unit tests should catch it if this happens
-H0units_to_invs = (u.km / (u.s * u.Mpc)).to(1.0 / u.s)
+H0units = u.km / (u.s * u.Mpc)
+H0units_to_invs = H0units.to(1.0 / u.s)
 sec_to_Gyr = u.s.to(u.Gyr)
 # const in critical density in cgs units (g cm^-3)
 critdens_const = 3.0 / (
@@ -289,11 +290,11 @@ class FLRW(Cosmology):
             raise ValueError("H0 is a non-scalar quantity")
 
         # 100 km/s/Mpc * h = H0 (so h is dimensionless)
-        self._h = self._H0.value / 100.0
+        self._h = self._H0.to_value(H0units) / 100.0
         # Hubble distance
-        self._hubble_distance = (const.c / self._H0).to(u.Mpc)
+        self._hubble_distance = (const.c / self._H0) << u.Mpc
         # H0 in s^-1; don't use units for speed
-        H0_s = self._H0.value * H0units_to_invs
+        H0_s = self._H0.to_value(H0units) * H0units_to_invs
         # Hubble time; again, avoiding units package for speed
         self._hubble_time = u.Quantity(sec_to_Gyr / H0_s, u.Gyr)
 
@@ -1248,7 +1249,7 @@ class FLRW(Cosmology):
         d : `~astropy.units.Quantity`
           Lookback distance in Mpc
         """
-        return (self.lookback_time(z) * const.c).to(u.Mpc)
+        return (self.lookback_time(z) * const.c) << u.Mpc
 
     def age(self, z):
         """ Age of the universe in Gyr at redshift ``z``.
@@ -1345,9 +1346,9 @@ class FLRW(Cosmology):
         -------
         d : `~astropy.units.Quantity`
           Comoving distance in Mpc to each input redshift.
-        """
 
-        return self._comoving_distance_z1z2(0, z)
+        """
+        return self._comoving_distance_z1z2(0, z) << u.Mpc
 
     def _comoving_distance_z1z2(self, z1, z2):
         """ Comoving line-of-sight distance in Mpc between objects at
@@ -1366,6 +1367,7 @@ class FLRW(Cosmology):
         -------
         d : `~astropy.units.Quantity`
           Comoving distance in Mpc between each input redshift.
+
         """
         return self._integral_comoving_distance_z1z2(z1, z2)
 
@@ -1386,8 +1388,8 @@ class FLRW(Cosmology):
         -------
         d : `~astropy.units.Quantity`
           Comoving distance in Mpc between each input redshift.
-        """
 
+        """
         from scipy.integrate import quad
 
         f = lambda z1, z2: quad(
@@ -1417,8 +1419,8 @@ class FLRW(Cosmology):
         -----
         This quantity also called the 'proper motion distance' in some
         texts.
-        """
 
+        """
         return self._comoving_transverse_distance_z1z2(0, z)
 
     def _comoving_transverse_distance_z1z2(self, z1, z2):
@@ -1448,11 +1450,11 @@ class FLRW(Cosmology):
         """
 
         Ok0 = self._Ok0
-        dc = self._comoving_distance_z1z2(z1, z2)
+        dc = self._comoving_distance_z1z2(z1, z2) << u.Mpc
         if Ok0 == 0:
             return dc
         sqrtOk0 = sqrt(abs(Ok0))
-        dh = self._hubble_distance
+        dh = self._hubble_distance << u.Mpc
         if Ok0 > 0:
             return dh / sqrtOk0 * np.sinh(sqrtOk0 * dc.value / dh.value)
         else:
@@ -1609,8 +1611,8 @@ class FLRW(Cosmology):
         -------
         V : `~astropy.units.Quantity`
           Comoving volume in :math:`Mpc^3` at each input redshift.
-        """
 
+        """
         Ok0 = self._Ok0
         if Ok0 == 0:
             return 4.0 / 3.0 * pi * self.comoving_distance(z) ** 3
@@ -1706,6 +1708,7 @@ class FLRW(Cosmology):
         theta : `~astropy.units.Quantity`
           The angular separation in arcsec corresponding to a comoving kpc
           at each input redshift.
+
         """
         return u.arcsec / (
             self.comoving_transverse_distance(z).to(u.kpc) * arcsec_in_radians

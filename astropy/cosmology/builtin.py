@@ -74,8 +74,6 @@ __all__ = [
 # in the 'Built-in Cosmologies' section of astropy/docs/cosmology/index.rst
 # in addition to the list above.
 
-# TODO, add in entry points for adding in cosmologies from other packages
-
 _parameter_registry = dict(
     # Planck 2018 paper VI v2
     # Unlike Planck 2015, the paper includes massive neutrinos in Om0,
@@ -332,6 +330,12 @@ class default_cosmology(ScienceState):
     The default cosmology can be retrieved by the `get` method
 
         >>> cosmo = default_cosmology.get()
+        >>> print(cosmo.name)
+        Planck15
+
+    Or just by calling :class:`~astropy.cosmology.Cosmology`
+
+        >>> cosmo = Cosmology()
         >>> print(cosmo.name)
         Planck15
 
@@ -606,12 +610,6 @@ class default_cosmology(ScienceState):
 # Create Pre-Defined Cosmologies
 #########################################################################
 
-# Pre-defined cosmologies. This loops over the parameter sets in the
-# parameters module and creates a LambdaCDM or FlatLambdaCDM instance
-# with the same name as the parameter set in the current module's namespace.
-# Note this assumes all the cosmologies in parameters are LambdaCDM,
-# which is true at least as of this writing.
-
 # TODO merge this method with the one in modeling.fitting as a class
 def populate_entry_points(entry_points):
     """
@@ -632,13 +630,12 @@ def populate_entry_points(entry_points):
     An explanation of entry points can be found `here <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`
 
     """
-
     for entry_point in entry_points:
         name = entry_point.name
         try:
             entry_point = entry_point.load()
         except Exception as e:
-            # This stops the fitting from choking if an entry_point produces an error.
+            # Stops choking if an entry_point produces an error.
             warnings.warn(
                 AstropyUserWarning(
                     f"{type(e).__name__} error occurred in entry point {name}."
