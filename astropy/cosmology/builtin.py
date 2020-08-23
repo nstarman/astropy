@@ -22,7 +22,7 @@ Each cosmology has the following parameters defined:
     ==========  =====================================
 
 The list of cosmologies available are given by the tuple
-`available`. Current cosmologies available:
+``available``. Current cosmologies available:
 
 Planck 2018 (Planck18_arXiv_v2) parameters from Planck Collaboration 2018,
  arXiv:1807.06209v2 (Paper VI), Table 2 (TT, TE, EE + lowE + lensing + BAO)
@@ -61,6 +61,7 @@ from ..utils.exceptions import AstropyUserWarning
 # Check pkg_resources exists
 try:
     from pkg_resources import iter_entry_points
+
     HAS_PKG = True
 except ImportError:
     HAS_PKG = False
@@ -303,16 +304,18 @@ class default_cosmology(ScienceState):
     This class controls the default cosmology to use.
 
     This class controls the parameter settings by specifying a string name,
-    or `~Cosmology` instance with the pre-specified options listed
-    in ``.available``
+    or :class:`~astropy.cosmology.core.Cosmology` instance with the
+    pre-specified options listed in ``.available``
 
     Alternatively, user-defined cosmologies may be registered, with
-    :meth:`~astropy.cosmology.default_cosmology.register_parameters` or
-    :meth:`~astropy.cosmology.default_cosmology.register_cosmology_instance`,
+    ``default_cosmology.register_parameters`` or
+    ``default_cosmology.register_cosmology_instance``,
     and used identically as pre-specified options.
 
     Examples
     --------
+    First import two Cosmology classes, an instance, and the ScienceState.
+
         >>> from astropy.cosmology import (Cosmology, LambdaCDM,
         ...                                default_cosmology, WMAP7)
 
@@ -327,13 +330,13 @@ class default_cosmology(ScienceState):
 
         >>> _ = default_cosmology.set('Planck15')
 
-    The default cosmology can be retrieved by the `get` method
+    The default cosmology can be retrieved by the ``get`` method
 
         >>> cosmo = default_cosmology.get()
         >>> print(cosmo.name)
         Planck15
 
-    Or just by calling :class:`~astropy.cosmology.Cosmology`
+    Or just by calling :class:`~astropy.cosmology.core.Cosmology`
 
         >>> cosmo = Cosmology()
         >>> print(cosmo.name)
@@ -401,19 +404,17 @@ class default_cosmology(ScienceState):
             - "references" : dict or str or None
                 References for "parameters".
                 Fields are str or sequence of str.
-            - "cosmo" : :class:`~astropy.cosmology.Cosmology`
+            - "cosmo" : :class:`~astropy.cosmology.core.Cosmology`
 
         Raises
         ------
         KeyError
             If invalid string input to registry
-            to retrieve solar parameters for Galactocentric frame.
 
         """
         # Get the state from the registry.
         # Copy to ensure registry is immutable to modifications of "_value".
-        # Raises KeyError if `name` is invalid string input to registry
-        # to retrieve solar parameters for Galactocentric frame.
+        # Raises KeyError if ``name`` is invalid string input to registry
         state = copy.deepcopy(cls._registry[name])  # ensure mutable
 
         # Get references form the state
@@ -438,7 +439,7 @@ class default_cosmology(ScienceState):
 
         Returns
         -------
-        cosmo : `~astropy.cosmology.Cosmology` instance
+        cosmo : :class:`~astropy.cosmology.core.Cosmology` instance
 
         """
         if name == "no_default":
@@ -460,21 +461,21 @@ class default_cosmology(ScienceState):
 
         Parameters
         ----------
-        value: `~astropy.cosmology.Cosmology` or str or None
+        value: :class:`~astropy.cosmology.core.Cosmology` or str or None
             None becomes default value
-            str calls `~get_cosmology_from_string`
+            str calls ``get_cosmology_from_string``
             Cosmology instance is passed through
 
         Returns
         -------
-        cosmo : `~astropy.cosmology.Cosmology` or None
-            None if `value` was "no_default"
+        cosmo : :class:`~astropy.cosmology.core.Cosmology` or None
+            None if value was "no_default"
             returned cosmology is set to ScienceState value.
 
         Raises
         ------
         TypeError
-            If `value` is not None, str, or Cosmology instance.
+            If value is not None, str, or Cosmology instance.
 
         """
         if value is None:
@@ -511,7 +512,7 @@ class default_cosmology(ScienceState):
         parameters : dict
             The cosomological parameter.
         reference : dict or None, optional
-            References for contents of `parameters`.
+            References for contents of parameters.
         viewonly : bool, optional, kwarg only
             whether to make registrant read-only.
 
@@ -539,7 +540,7 @@ class default_cosmology(ScienceState):
         """
         parameters["name"] = name  # ensure name in parameters
 
-        # check on contents of `parameters`
+        # check on contents of parameters
         must_have: tuple = (
             ("Oc0", "Ob0", "Om0")  # densities
             + ("H0", "n", "Tcmb0", "Neff", "m_nu", "sigma8", "tau")  # ps
@@ -576,13 +577,15 @@ class default_cosmology(ScienceState):
         ----------
         name : str
             The registration name for the parameter and metadata set.
-        cosmo : :class:`~astropy.cosmology.Cosmology` instance
+        cosmo : :class:`~astropy.cosmology.core.Cosmology` instance
 
         """
         if cosmo.name is None:
             raise ValueError("Need to name cosmology.")
         elif cosmo.name in cls._registry:
-            warnings.warn("Overwriting existing cosmology.")
+            warnings.warn(
+                AstropyUserWarning("Overwriting existing cosmology.")
+            )
 
         cls = cosmo.__class__  # overwrite cosmo argument
         if cls is Cosmology:
@@ -613,9 +616,9 @@ class default_cosmology(ScienceState):
 # TODO merge this method with the one in modeling.fitting as a class
 def populate_entry_points(entry_points):
     """
-    This injects entry points into the `astropy.cosmology.fitting` namespace.
-    This provides a means of inserting a fitting routine without requirement
-    of it being merged into astropy's core.
+    Inject entry points into the :mod:`~astropy.cosmology.builtin` namespace.
+    This provides a means of inserting a cosmology instance without requiring
+    it being merged into astropy's core.
 
     Parameters
     ----------
