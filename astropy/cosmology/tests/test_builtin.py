@@ -2,9 +2,11 @@
 
 """Test :mod:`~astropy.cosmology.builtin`."""
 
-from types import MappingProxyType
+import warnings
 
+from types import MappingProxyType
 from unittest import mock
+
 import pytest
 
 try:
@@ -15,6 +17,7 @@ except ImportError:
     HAS_PKG = False
 
 from .. import builtin, core
+from astropy.utils.exceptions import AstropyUserWarning
 
 
 def test_parameter_registry():
@@ -181,53 +184,40 @@ class TestEntryPoint:
         with builtin.default_cosmology.set("test_cosmo"):
             assert builtin.default_cosmology.get().name == "test_cosmo"
 
-    # def test_import_error(self):
-    #     """This raises an import error on load to test that it is handled correctly"""
-    #     with warnings.catch_warnings():
-    #         warnings.filterwarnings('error')
-    #         try:
-    #             mock_entry_importerror = mock.create_autospec(EntryPoint)
-    #             mock_entry_importerror.name = "IErr"
-    #             mock_entry_importerror.load = self.raiseimporterror
-    #             populate_entry_points([mock_entry_importerror])
-    #         except AstropyUserWarning as w:
-    #             if "ImportError" in w.args[0]:  # any error for this case should have this in it.
-    #                 pass
-    #             else:
-    #                 raise w
-    #         else:
-    #             raise self.exception_not_thrown
+    def test_import_error(self):
+        """This raises an import error on load to test that it is handled correctly"""
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            try:
+                mock_entry_importerror = mock.create_autospec(EntryPoint)
+                mock_entry_importerror.name = "IErr"
+                mock_entry_importerror.load = self.raiseimporterror
+                builtin.populate_entry_points([mock_entry_importerror])
+            except AstropyUserWarning as w:
+                if (
+                    "ImportError" in w.args[0]
+                ):  # any error for this case should have this in it.
+                    pass
+                else:
+                    raise w
+            else:
+                raise self.exception_not_thrown
 
-    # def test_bad_func(self):
-    #     """This returns a function which fails the type check"""
-    #     with warnings.catch_warnings():
-    #         warnings.filterwarnings('error')
-    #         try:
-    #             mock_entry_badfunc = mock.create_autospec(EntryPoint)
-    #             mock_entry_badfunc.name = "BadFunc"
-    #             mock_entry_badfunc.load = self.returnbadfunc
-    #             populate_entry_points([mock_entry_badfunc])
-    #         except AstropyUserWarning as w:
-    #             if "Class" in w.args[0]:  # any error for this case should have this in it.
-    #                 pass
-    #             else:
-    #                 raise w
-    #         else:
-    #             raise self.exception_not_thrown
-
-    # def test_bad_class(self):
-    #     """This returns a class which doesn't inherient from fitter """
-    #     with warnings.catch_warnings():
-    #         warnings.filterwarnings('error')
-    #         try:
-    #             mock_entry_badclass = mock.create_autospec(EntryPoint)
-    #             mock_entry_badclass.name = "BadClass"
-    #             mock_entry_badclass.load = self.returnbadclass
-    #             populate_entry_points([mock_entry_badclass])
-    #         except AstropyUserWarning as w:
-    #             if 'modeling.Fitter' in w.args[0]:  # any error for this case should have this in it.
-    #                 pass
-    #             else:
-    #                 raise w
-    #         else:
-    #             raise self.exception_not_thrown
+    def test_bad_class(self):
+        """This returns a class which doesn't inherit from fitter """
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            try:
+                mock_entry_badclass = mock.create_autospec(EntryPoint)
+                mock_entry_badclass.name = "BadClass"
+                mock_entry_badclass.load = self.returnbadclass
+                builtin.populate_entry_points([mock_entry_badclass])
+            except AstropyUserWarning as w:
+                if (
+                    "Cosmology" in w.args[0]
+                ):  # any error for this case should have this in it.
+                    pass
+                else:
+                    raise w
+            else:
+                raise self.exception_not_thrown

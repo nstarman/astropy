@@ -51,6 +51,10 @@ def test_init():
     with pytest.raises(ValueError):
         cosmo = core.FlatLambdaCDM(H0=70, Om0=0.27)
         cosmo.Odm(1)
+
+    with pytest.raises(TypeError):  # can't initiate ABC
+        core.FLRW()
+
     with pytest.raises(TypeError):
         builtin.default_cosmology.validate(4)
 
