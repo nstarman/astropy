@@ -56,6 +56,15 @@ from .. import units as u
 from ..utils.state import ScienceState  # also makes MappingProxyType copyable
 from ..utils.decorators import classproperty
 
+from ..utils.exceptions import AstropyUserWarning
+
+# Check pkg_resources exists
+try:
+    from pkg_resources import iter_entry_points
+    HAS_PKG = True
+except ImportError:
+    HAS_PKG = False
+
 __all__ = [
     "default_cosmology",  # *available (added below)
 ]
@@ -234,17 +243,6 @@ available = _parameter_registry.keys()  # auto-updates to reflect registry
 __all__ += list(available)  # add all available at import
 
 
-#########################################################################
-# Create Pre-Defined Cosmologies
-#########################################################################
-
-# Pre-defined cosmologies. This loops over the parameter sets in the
-# parameters module and creates a LambdaCDM or FlatLambdaCDM instance
-# with the same name as the parameter set in the current module's namespace.
-# Note this assumes all the cosmologies in parameters are LambdaCDM,
-# which is true at least as of this writing.
-
-
 def _parse_cosmology_in_registry(name: str):
     """
     Parse cosmology from string name
@@ -280,7 +278,8 @@ def _parse_cosmology_in_registry(name: str):
             cls = LambdaCDM
 
     # parse parameters
-    params["m_nu"] = u.Quantity(params["m_nu"], u.eV)
+    if "m_nu" in params:
+        params["m_nu"] = u.Quantity(params["m_nu"], u.eV)
 
     # Create class instance
     sig = inspect.signature(cls.__init__)
@@ -294,14 +293,6 @@ def _parse_cosmology_in_registry(name: str):
     cosmo.__doc__ = docstr.format(name, cls.__name__, references)
 
     return cosmo
-
-
-key: str
-for key in available:
-    cosmo = _parse_cosmology_in_registry(key)
-    setattr(sys.modules[__name__], key, cosmo)
-
-del key  # don't leave variable floating around in the namespace
 
 
 #########################################################################
@@ -330,7 +321,9 @@ class default_cosmology(ScienceState):
     To change the default cosmology::
 
         >>> default_cosmology.set(WMAP7)   # doctest: +FLOAT_CMP
-        <ScienceState default_cosmology: FlatLambdaCDM(name="WMAP7", H0=70.4 km / (Mpc s), Om0=0.272, Tcmb0=2.725 K, Neff=3.04, m_nu=[0. 0. 0.] eV, Ob0=0.0455)>
+        <ScienceState default_cosmology:
+            FlatLambdaCDM(name="WMAP7", H0=70.4 km / (Mpc s), Om0=0.272,
+                Tcmb0=2.725 K, Neff=3.04, m_nu=[0. 0. 0.] eV, Ob0=0.0455)>
 
     Or, you may use a string::
 
@@ -604,10 +597,75 @@ class default_cosmology(ScienceState):
         parameters["name"] = cosmo.name
 
         state = MappingProxyType(
-            dict(
-                parameters=parameters,
-                references=references,
-                cosmo=cls,
-            )
+            dict(parameters=parameters, references=references, cosmo=cls,)
         )
         _parameter_registry[cosmo.name] = state
+
+
+#########################################################################
+# Create Pre-Defined Cosmologies
+#########################################################################
+
+# Pre-defined cosmologies. This loops over the parameter sets in the
+# parameters module and creates a LambdaCDM or FlatLambdaCDM instance
+# with the same name as the parameter set in the current module's namespace.
+# Note this assumes all the cosmologies in parameters are LambdaCDM,
+# which is true at least as of this writing.
+
+# TODO merge this method with the one in modeling.fitting as a class
+def populate_entry_points(entry_points):
+    """
+    This injects entry points into the `astropy.cosmology.fitting` namespace.
+    This provides a means of inserting a fitting routine without requirement
+    of it being merged into astropy's core.
+
+    Parameters
+    ----------
+
+    entry_points : a list of `~pkg_resources.EntryPoint`
+                  entry_points are objects which encapsulate
+                  importable objects and are defined on the
+                  installation of a package.
+
+    Notes
+    -----
+    An explanation of entry points can be found `here <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`
+
+    """
+
+    for entry_point in entry_points:
+        name = entry_point.name
+        try:
+            entry_point = entry_point.load()
+        except Exception as e:
+            # This stops the fitting from choking if an entry_point produces an error.
+            warnings.warn(
+                AstropyUserWarning(
+                    f"{type(e).__name__} error occurred in entry point {name}."
+                )
+            )
+        else:
+            if isinstance(entry_point, Cosmology):
+                default_cosmology.register_cosmology_instance(entry_point)
+            else:
+                warnings.warn(
+                    AstropyUserWarning(
+                        f"Cosmology entry point {name} expected to extend "
+                        "astropy.cosmology.builtin._parameter_registry"
+                    )
+                )
+
+
+# this is so fitting doesn't choke if pkg_resources doesn't exist
+if HAS_PKG:
+    populate_entry_points(
+        iter_entry_points(group="astropy.cosmology", name=None)
+    )
+
+
+key: str
+for key in available:
+    cosmo = _parse_cosmology_in_registry(key)
+    setattr(sys.modules[__name__], key, cosmo)
+
+del key  # don't leave variable floating around in the namespace

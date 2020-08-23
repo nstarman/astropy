@@ -4,7 +4,15 @@
 
 from types import MappingProxyType
 
+from unittest import mock
 import pytest
+
+try:
+    from pkg_resources import EntryPoint
+
+    HAS_PKG = True
+except ImportError:
+    HAS_PKG = False
 
 from .. import builtin, core
 
@@ -127,3 +135,99 @@ def test_default_cosmology():
     finally:
         builtin._parameter_registry.pop("test", None)
         assert "test" not in builtin._parameter_registry
+
+
+@pytest.mark.skipif("not HAS_PKG")
+class TestEntryPoint:
+    """Tests population of fitting with entry point fitters"""
+
+    def setup_class(self):
+        self.exception_not_thrown = Exception(
+            "The test should not have gotten here. There was no exception thrown"
+        )
+
+    def successfulimport(self):
+        # This should work
+        goodcosmo = core.FlatLambdaCDM(H0=68, Om0=0.3, name="test_cosmo")
+        return goodcosmo
+
+    def raiseimporterror(self):
+        #  This should fail as it raises an Import Error
+        raise ImportError
+
+    def returnbadfunc(self):
+        def badfunc():
+            # This should import but it should fail type check
+            pass
+
+        return badfunc
+
+    def returnbadclass(self):
+        # This should import But it should fail subclass type check
+        class badclass:
+            pass
+
+        return badclass
+
+    def test_working(self):
+        """This should work fine."""
+        mock_entry_working = mock.create_autospec(EntryPoint)
+        mock_entry_working.name = "Working"
+        mock_entry_working.load = self.successfulimport
+        builtin.populate_entry_points([mock_entry_working])
+
+        assert "test_cosmo" in builtin._parameter_registry
+
+        with builtin.default_cosmology.set("test_cosmo"):
+            assert builtin.default_cosmology.get().name == "test_cosmo"
+
+    # def test_import_error(self):
+    #     """This raises an import error on load to test that it is handled correctly"""
+    #     with warnings.catch_warnings():
+    #         warnings.filterwarnings('error')
+    #         try:
+    #             mock_entry_importerror = mock.create_autospec(EntryPoint)
+    #             mock_entry_importerror.name = "IErr"
+    #             mock_entry_importerror.load = self.raiseimporterror
+    #             populate_entry_points([mock_entry_importerror])
+    #         except AstropyUserWarning as w:
+    #             if "ImportError" in w.args[0]:  # any error for this case should have this in it.
+    #                 pass
+    #             else:
+    #                 raise w
+    #         else:
+    #             raise self.exception_not_thrown
+
+    # def test_bad_func(self):
+    #     """This returns a function which fails the type check"""
+    #     with warnings.catch_warnings():
+    #         warnings.filterwarnings('error')
+    #         try:
+    #             mock_entry_badfunc = mock.create_autospec(EntryPoint)
+    #             mock_entry_badfunc.name = "BadFunc"
+    #             mock_entry_badfunc.load = self.returnbadfunc
+    #             populate_entry_points([mock_entry_badfunc])
+    #         except AstropyUserWarning as w:
+    #             if "Class" in w.args[0]:  # any error for this case should have this in it.
+    #                 pass
+    #             else:
+    #                 raise w
+    #         else:
+    #             raise self.exception_not_thrown
+
+    # def test_bad_class(self):
+    #     """This returns a class which doesn't inherient from fitter """
+    #     with warnings.catch_warnings():
+    #         warnings.filterwarnings('error')
+    #         try:
+    #             mock_entry_badclass = mock.create_autospec(EntryPoint)
+    #             mock_entry_badclass.name = "BadClass"
+    #             mock_entry_badclass.load = self.returnbadclass
+    #             populate_entry_points([mock_entry_badclass])
+    #         except AstropyUserWarning as w:
+    #             if 'modeling.Fitter' in w.args[0]:  # any error for this case should have this in it.
+    #                 pass
+    #             else:
+    #                 raise w
+    #         else:
+    #             raise self.exception_not_thrown
