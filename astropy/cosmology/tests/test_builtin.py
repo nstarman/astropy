@@ -58,7 +58,7 @@ def test_default_cosmology():
     cosmo = builtin.default_cosmology.get_cosmology_from_string("no_default")
     assert cosmo is None
 
-    builtin._parameter_registry.pop("tets", None)  # just to make sure
+    builtin._parameter_registry.pop("test", None)  # just to make sure
 
     # not in registry
     with pytest.raises(ValueError):

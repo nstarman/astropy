@@ -305,7 +305,7 @@ class default_cosmology(ScienceState):
 
     This class controls the parameter settings by specifying a string name,
     or :class:`~astropy.cosmology.core.Cosmology` instance with the
-    pre-specified options listed in ``.available``
+    pre-specified options listed in ``available``
 
     Alternatively, user-defined cosmologies may be registered, with
     ``default_cosmology.register_parameters`` or
@@ -397,7 +397,7 @@ class default_cosmology(ScienceState):
         state : dict
             Copy of the registry for the string name.
             At minimum, includes the fields "parameters", "references", "cosmo"
-            which hold the cosmology parameters, class, and associated references.
+            which hold the cosmology parameters, class, and references.
 
             - "parameters": dict
                 cosmology parameters
