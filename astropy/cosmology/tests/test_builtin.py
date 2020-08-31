@@ -4,7 +4,6 @@
 
 import warnings
 
-from types import MappingProxyType
 from unittest import mock
 
 import pytest
@@ -17,6 +16,7 @@ except ImportError:
     HAS_PKG = False
 
 from .. import builtin, core
+from astropy.utils.state import _StateProxy
 from astropy.utils.exceptions import AstropyUserWarning
 
 
@@ -32,7 +32,7 @@ def test_parameter_registry():
     minkeys = {"parameters", "references", "cosmo"}
 
     for n, state in registry.items():
-        assert isinstance(state, (MappingProxyType, dict))
+        assert isinstance(state, (_StateProxy, dict))
         assert minkeys.issubset(state.keys())
 
         assert n in builtin.available

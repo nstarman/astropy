@@ -48,12 +48,11 @@ import inspect
 import sys
 import typing as T
 import warnings
-
 from types import MappingProxyType
 
 from .core import Cosmology, LambdaCDM, FlatLambdaCDM
 from .. import units as u
-from ..utils.state import ScienceState  # also makes MappingProxyType copyable
+from ..utils.state import ScienceState, _StateProxy
 from ..utils.decorators import classproperty
 
 from ..utils.exceptions import AstropyUserWarning
@@ -80,7 +79,7 @@ _parameter_registry = dict(
     # Unlike Planck 2015, the paper includes massive neutrinos in Om0,
     # which here are included in m_nu.  Hence, the Om0 value differs slightly
     # from the paper.
-    Planck18_arXiv_v2=MappingProxyType(
+    Planck18_arXiv_v2=_StateProxy(
         dict(
             parameters=dict(
                 name="Planck18_arXiv_v2",
@@ -106,7 +105,7 @@ _parameter_registry = dict(
         )
     ),
     # Planck 2015 paper XII Table 4 final column (best fit)
-    Planck15=MappingProxyType(
+    Planck15=_StateProxy(
         dict(
             parameters=dict(
                 name="Planck15",
@@ -132,7 +131,7 @@ _parameter_registry = dict(
         )
     ),
     # Planck 2013 paper XVI Table 5 penultimate column (best fit)
-    Planck13=MappingProxyType(
+    Planck13=_StateProxy(
         dict(
             parameters=dict(
                 name="Planck13",
@@ -157,7 +156,7 @@ _parameter_registry = dict(
             cosmo=FlatLambdaCDM,
         )
     ),
-    WMAP9=MappingProxyType(
+    WMAP9=_StateProxy(
         dict(
             parameters=dict(
                 name="WMAP9",
@@ -183,7 +182,7 @@ _parameter_registry = dict(
             cosmo=FlatLambdaCDM,
         )
     ),
-    WMAP7=MappingProxyType(
+    WMAP7=_StateProxy(
         dict(
             parameters=dict(
                 name="WMAP7",
@@ -209,7 +208,7 @@ _parameter_registry = dict(
             cosmo=FlatLambdaCDM,
         )
     ),
-    WMAP5=MappingProxyType(
+    WMAP5=_StateProxy(
         dict(
             parameters=dict(
                 name="WMAP5",
@@ -415,7 +414,7 @@ class default_cosmology(ScienceState):
         # Get the state from the registry.
         # Copy to ensure registry is immutable to modifications of "_value".
         # Raises KeyError if ``name`` is invalid string input to registry
-        state = copy.deepcopy(cls._registry[name])  # ensure mutable
+        state = copy.deepcopy(cls._registry[name])  # decouple & mutable
 
         # Get references form the state
         references = state.get("references", None) or {}  # get, if has
@@ -560,7 +559,7 @@ class default_cosmology(ScienceState):
             cosmo=cosmo,
         )
         if viewonly:
-            state = MappingProxyType(state)
+            state = _StateProxy(state)
 
         _parameter_registry[name] = state
 
@@ -569,6 +568,7 @@ class default_cosmology(ScienceState):
         cls,
         cosmo: Cosmology,
         # references=None,
+        viewonly=True,
     ):
         """
         Register parameters from a cosmology instance.
@@ -587,25 +587,26 @@ class default_cosmology(ScienceState):
                 AstropyUserWarning("Overwriting existing cosmology.")
             )
 
-        cls = cosmo.__class__  # overwrite cosmo argument
+        cls = cosmo.__class__  # get class from cosmology
         if cls is Cosmology:
             raise TypeError("Cannot register the base cosmology class.")
         # TODO get references
         references = None
 
         # Get parameters
-        # inspect the class
+        # inspect the class, dropping "self"
         sig = inspect.signature(cosmo.__class__.__init__)
         sig = sig.replace(parameters=list(sig.parameters.values())[1:])
         # unpack the parameters used to initialize the class
         ba = sig.bind_partial(**cosmo._init_params)
-        parameters = copy.deepcopy(ba.arguments)
+        parameters = ba.arguments
 
         parameters["name"] = cosmo.name
 
-        state = MappingProxyType(
-            dict(parameters=parameters, references=references, cosmo=cls,)
-        )
+        state = dict(parameters=parameters, references=references, cosmo=cls,)
+        if viewonly:
+            state = _StateProxy(state)
+
         _parameter_registry[cosmo.name] = state
 
 

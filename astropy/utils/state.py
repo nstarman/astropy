@@ -2,30 +2,39 @@
 A simple class to manage a piece of global science state.  See
 :ref:`config-developer` for more details.
 """
-import copyreg
+import copy
+from collections.abc import MappingView
 from types import MappingProxyType
 
 __all__ = ['ScienceState']
 
 
-def _reduce_mappingproxy(mpt: MappingProxyType):
+class _StateProxy(MappingView):
     """
-    Allow MappingProxyType to be deep copied.
-
-    Returns
-    -------
-    `dict`
-        The type
-    Tuple[Tuple[Tuple[Any, Any]]]
-        A 1-element tuple containing the tuple of the itemsview of
-        the MappingProxyType mappable.
+    `~collections.abc.MappingView` with a read-only ``getitem`` through
+    `~types.MappingProxyType`.
 
     """
-    return dict, (tuple(mpt.items()), )
 
+    def __init__(self, mapping):
+        super().__init__(mapping)
+        self._mappingproxy = MappingProxyType(self._mapping)  # read-only
 
-# register MappingProxyType copy method
-copyreg.pickle(MappingProxyType, _reduce_mappingproxy)
+    def __getitem__(self, key):
+        """Read-only ``getitem``."""
+        return self._mappingproxy[key]
+
+    def __deepcopy__(self, memo):
+        return copy.deepcopy(self._mapping, memo=memo)
+
+    def keys(self):
+        return self._mappingproxy.keys()
+
+    def values(self):
+        return self._mappingproxy.values()
+
+    def items(self):
+        return self._mappingproxy.items()
 
 
 class ScienceState:
