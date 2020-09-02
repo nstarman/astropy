@@ -284,7 +284,7 @@ def _parse_cosmology_in_registry(name: str):
     sig = sig.replace(parameters=list(sig.parameters.values())[1:])
     ba = sig.bind_partial(
         **{k: p for k, p in params.items() if k in sig.parameters.keys()},
-    )  # apply any arguments, that can be applied
+    )  # apply any arguments that can be applied
 
     cosmo = cls(*ba.args, **ba.kwargs)
     docstr: str = "{} instance of {} cosmology\n\n(from {})"

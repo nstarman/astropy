@@ -11,8 +11,14 @@ __all__ = ['ScienceState']
 
 class _StateProxy(MappingView):
     """
-    `~collections.abc.MappingView` with a read-only ``getitem`` through
-    `~types.MappingProxyType`.
+    `~collections.abc.MappingView` with mix-in read-only methods from
+    `~types.MappingProxyType`. Adds ``getitem``, ``keys``, ``values``,
+    and ``items`` methods. Deepcopying also now returns decoupled dict.
+
+    Parameters
+    ----------
+    mapping : Mapping
+        The mapping on which to apply the `~collections.abc.MappingView`
 
     """
 
