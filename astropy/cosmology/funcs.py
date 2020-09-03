@@ -9,7 +9,7 @@ import numpy as np
 from .core import CosmologyError
 from astropy.units import Quantity
 
-__all__ = ['z_at_value']
+__all__ = ['z_at_value', "z_matter_radiation_equality"]
 
 __doctest_requires__ = {'*': ['scipy']}
 
@@ -144,3 +144,39 @@ zmin and zmax satisfying fval = func(z).""")
                              "Try re-running with a different zmin.")
 
     return zbest
+
+
+def z_matter_radiation_equality(
+    cosmo, zmin: float = 1e3, zmax: float = 1e4, full_output: bool = False,
+    **rootkw
+):
+    """Calculate matter-radiation equality for a given cosmology.
+
+    Parameters
+    ----------
+    cosmo : Cosmology
+        Must have methods ``Om(z)`` and ``Ogamma(z)``
+    zmin, zmax : float
+        The min/max z in which to search for z-equality
+    full_output : bool
+        Whether to return the full output of the scipy rootfinder,
+        or just z-equality
+    rootkw
+        kwargs into scipy minimizer. See `~scipy.optimize.brentq` for details
+
+    Returns
+    -------
+    z_eq : float
+        If `full_output` is False
+    Any
+        Full results of root finder if `full_outpyt` is True
+
+    """
+    # import rootfinder
+    from scipy.optimize import brentq
+
+    # residual function
+    def f(z):
+        return cosmo.Om(z) - cosmo.Ogamma(z)
+
+    return brentq(f, zmin, zmax, full_output=full_output, **rootkw)

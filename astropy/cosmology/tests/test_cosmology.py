@@ -1637,3 +1637,21 @@ def test_elliptic_comoving_distance_z1z2():
                     cosmo._integral_comoving_distance_z1z2(0., z))
     assert allclose(cosmo._elliptic_comoving_distance_z1z2(0., z),
                     cosmo._integral_comoving_distance_z1z2(0., z))
+
+
+@pytest.mark.skipif('not HAS_SCIPY')
+def test_z_matter_radiation_equality():
+    """Calculate redshift of matter-radiation equality."""
+    with core.default_cosmology.set("Planck18_arXiv_v2"):
+        cosmo = core.cosmology.default_cosmology.get()
+
+    zeq = funcs.z_matter_radiation_equality(cosmo)
+    assert allclose(zeq, 5731.3052997585855, rtol=2e-8)
+
+    zeq, info = funcs.z_matter_radiation_equality(cosmo, full_output=True)
+    assert info.converged is True
+    assert info.root == zeq
+
+    # Test failure
+    with pytest.raises(RuntimeError):
+        funcs.z_matter_radiation_equality(cosmo, zmin=6e3, zmax=1e4)
