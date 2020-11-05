@@ -48,6 +48,7 @@ from .parameters import (Parameter, InputParameterError,
 __all__ = ['Model', 'FittableModel', 'Fittable1DModel', 'Fittable2DModel',
            'CompoundModel', 'fix_inputs', 'custom_model', 'ModelDefinitionError']
 
+NONE_SET = {None}
 
 def _model_oper(oper, **kwargs):
     """
@@ -691,6 +692,9 @@ class Model(metaclass=_ModelMeta):
     # If cov_matrix is availble, then std will set as well
     _cov_matrix = None
     _stds = None
+
+    # inputs with fixed shape that should not be broadcast
+    inputs_fix_shape = None
 
     def __init__(self, *args, meta=None, name=None, **kwargs):
         super().__init__()
@@ -1646,8 +1650,12 @@ class Model(metaclass=_ModelMeta):
 
         n_models = len(self)
 
+        kwargs["inputs_fix_shape"] = fsh = kwargs.get("inputs_fix_shape",
+                                                      self.inputs_fix_shape or [])
+
         params = [getattr(self, name) for name in self.param_names]
-        inputs = [np.asanyarray(_input, dtype=float) for _input in inputs]
+        inputs = [np.asanyarray(_input, dtype=float) if i not in fsh else _input
+                  for i, _input in enumerate(inputs)]
 
         _validate_input_shapes(inputs, self.inputs, n_models,
                                model_set_axis, self.standard_broadcasting)
@@ -3830,9 +3838,13 @@ def render_model(model, arr=None, coords=None):
 
 
 def _prepare_inputs_single_model(model, params, inputs, **kwargs):
+    inputs_fix_shape = kwargs.pop("inputs_fix_shape", [])
     broadcasts = []
 
     for idx, _input in enumerate(inputs):
+        if idx in inputs_fix_shape:
+            broadcasts.append(None)
+            continue
         input_shape = _input.shape
 
         # Ensure that array scalars are always upgrade to 1-D arrays for the
@@ -3867,7 +3879,7 @@ def _prepare_inputs_single_model(model, params, inputs, **kwargs):
         broadcasts.append(max_broadcast)
 
     if model.n_outputs > model.n_inputs:
-        if len(set(broadcasts)) > 1:
+        if len(set(broadcasts).difference(NONE_SET)) > 1:
             raise ValueError(
                 "For models with n_outputs > n_inputs, the combination of "
                 "all inputs and parameters must broadcast to the same shape, "
@@ -3904,6 +3916,10 @@ def _prepare_outputs_single_model(outputs, format_info):
 
 def _prepare_inputs_model_set(model, params, inputs, n_models, model_set_axis_input,
                               **kwargs):
+    inputs_fix_shape = kwargs.pop("inputs_fix_shape", [])
+    if inputs_fix_shape:
+        raise Exception("TODO")
+
     reshaped = []
     pivots = []
 
