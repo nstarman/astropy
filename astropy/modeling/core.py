@@ -695,6 +695,7 @@ class Model(metaclass=_ModelMeta):
 
     # inputs with fixed shape that should not be broadcast
     inputs_no_broadcast = None
+    params_no_broadcast = False
 
     def __init__(self, *args, meta=None, name=None, **kwargs):
         super().__init__()
@@ -2251,6 +2252,9 @@ class Model(metaclass=_ModelMeta):
             else:
                 all_shapes.append(param_shape)
 
+            if self.params_no_broadcast:
+                self._param_metrics[name]['broadcast_shape'] = False
+
         # Now check mutual broadcastability of all shapes
         try:
             check_broadcast(*all_shapes)
@@ -2291,12 +2295,13 @@ class Model(metaclass=_ModelMeta):
                 value = param.value
 
             broadcast_shape = self._param_metrics[name].get('broadcast_shape')
-            if broadcast_shape is not None:
+
+            if broadcast_shape not in (None, False):
                 value = value.reshape(broadcast_shape)
 
             shapes.append(np.shape(value))
 
-            if len(self) == 1:
+            if (len(self) == 1) and (broadcast_shape is not False):
                 # Add a single param set axis to the parameter's value (thus
                 # converting scalars to shape (1,) array values) for
                 # consistency
