@@ -144,14 +144,14 @@ numpydoc_xref_ignore = {
     'pairs', 'similar', 'coordcls', 'iterator', 'Element', 'converter',
     'mask', 'writable', 'strings', 'Astropy', 'fitter', 'argument',
     'ModelLinearityError', 'dictionary', 'where', 'the', 'key', 'identifies',
-    'only', 'transframe', 'The',  'classes', 'Subclass', 'shapes',
+    'only', 'transframe', 'The', 'classes', 'Subclass', 'shapes',
     'm1', 'm2', 'convertible', 'Default', 'slices', 'keywords',
     'dimensionless', 'floats', 'length', 'two', 'numpy.float64', 'ints',
     'flexible', 'unmasked', 'np.ma.mvoid', 'like', 'arrays', 'DELAYED',
     'buffer', 'name', 'like', 'data', 'group', 'WcsValidateResults',
     'readable', 'Whatever', 'two', 'axis', 'flags', 'tuples', 'pair', 'form',
     'Returned', 'bits', 'InvalidTabularParameters',
-    'z', 'file_like', 'OR', 'obj', 'invalid', 'An', 'and',
+    'z', 'OR', 'obj', 'invalid', 'An', 'and',
     'model', 'one', 'more', 'which', 'fix', 'in', 'order', 'undefined', 'cls',
     'list_like', 'scalars', 'N', 'defaults', 'x', 'y', 'bools', 'compatible',
     'lists', 'np.void', 'masked', 'np.ma.MaskedArray', 'returning', 'row',
@@ -173,6 +173,8 @@ numpydoc_xref_ignore = {
 numpydoc_xref_aliases = {
     # python
     'string': 'str',
+    'file-like': ':term:`astropy:file_like`',
+    'file_like': ':term:`astropy:file_like`',
     # astropy
     'Unit-like': ':term:`astropy:unit_like`',
     'Unit_like': ':term:`astropy:unit_like`',
