@@ -118,6 +118,60 @@ rst_epilog += "\n".join(
 .. _`astropy-dev mailing list`: http://groups.google.com/group/astropy-dev
 """
 
+# Whether to create cross-references for the parameter types in the
+# Parameters, Other Parameters, Returns and Yields sections of the docstring.
+numpydoc_xref_param_type = True
+
+# Words not to cross-reference. Most likely, these are common words used in
+# parameter type descriptions that may be confused for classes of the same
+# name.
+# TODO: not need to ignore so many: 1) improve the docs, 2) add to glossary
+numpydoc_xref_ignore = {
+    'type', 'optional', 'default', 'or', 'of', 'method', 'instance',
+    'subclass', 'must', 'same', 'as', 'this', 'val', 'file', 'odd', 'number',
+    'KernelSizeError', 'function', 'functions', 'CompoundModel',
+    'kernel', 'class', 'fromsys', 'tosys', 'be', 'representation', 'with',
+    'angle', 'units', 'coordinate', 'objects', 'integer', 'if', 'shape',
+    'single', 'specified', 'deg', 'coefficients', 'inverse', 'lexical',
+    'path', 'other', 'header', 'value', 'associated', 'containing',
+    'HDU', 'groups', 'record', 'additional', 'native', 'corresponding',
+    'NonseparableSubimageCoordinateSystem',
+    'byte', 'dicts', 'File', 'Table', 'generic', 'handle', 'throw',
+    'parameter', 'away', 'classobj', 'equivalence', 'velocity', 'an',
+    'astropy.Table', 'numpy.complex', 'output_value', 'frame', 'A', 'new',
+    'differential', 'that', 'is', 'This', 'Sequence', 'newrepr', 'unit',
+    'to', 'Quantity', 'valid', 'initializer', 'Representation', 'distance',
+    'pairs', 'similar', 'coordcls', 'iterator', 'Element', 'converter',
+    'mask', 'writable', 'strings', 'Astropy', 'fitter', 'argument',
+    'ModelLinearityError', 'dictionary', 'where', 'the', 'key', 'identifies',
+    'only', 'transframe', 'The', 'equivalent', 'classes', 'Subclass', 'shapes',
+    'm1', 'm2', 'convertible', 'UnitsError', 'Default', 'slices', 'keywords',
+    'dimensionless', 'floats', 'length', 'two', 'numpy.float64', 'ints',
+    'flexible', 'unmasked', 'np.ma.mvoid', 'like', 'arrays', 'DELAYED',
+    'buffer', 'name', 'like', 'data', 'group', 'WcsValidateResults',
+    'readable', 'Whatever', 'two', 'axis', 'flags', 'tuples', 'pair', 'form',
+    'Returned', 'bits', 'InvalidTabularParameters',
+    'z', 'astropy.Quantity', 'file_like', 'OR', 'obj', 'invalid', 'An', 'and',
+    'model', 'one', 'more', 'which', 'fix', 'in', 'order', 'undefined', 'cls',
+    'list_like', 'scalars', 'N', 'defaults', 'x', 'y', 'bools', 'compatible',
+    'lists', 'np.void', 'masked', 'np.ma.MaskedArray', 'returning', 'row',
+    'column', 'etc', 'Columns', 'List', 'will', 'initialize', 'one', 'module',
+    'table', 'nowtime', 'OrderedDict', 'else', 'merged', 'attributes',
+    'Column', 'mixin', 'ndarrays', 'n_samples', 't', 'n_parameters', 'usually',
+    'items', 'Path', 'Arguments', 'variable', 'Standard', 'Python', 'numeric',
+    'lstr', 'search', 'sequences', 'modules', 'area', 'u.Quantity', 'UnitBase',
+    'writeable', 'CacheDamaged', 'content', 'np.dtype', 'warning', 'thereof',
+    'Time', 'Earth', 'rotation', 'columns', 'read', 'Axes', 'see', 'Formatter',
+    'color', 'Primary', 'Image', 'names', 'along', 'each', 'fewer', 'naxis',
+    'axes', 'but', 'swapped', 'flag', 'hdulist', 'networkx.Graph',
+    'angular',
+}
+
+# Mappings to fully qualified paths (or correct ReST references) for the
+# aliases/shortcuts used when specifying the types of parameters.
+numpydoc_xref_aliases = {}
+
+
 # -- Project information ------------------------------------------------------
 
 author = u'The Astropy Developers'

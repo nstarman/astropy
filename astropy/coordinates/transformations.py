@@ -582,8 +582,8 @@ class TransformGraph:
 
         Returns
         -------
-        nxgraph : `networkx.Graph <https://networkx.github.io/documentation/stable/reference/classes/graph.html>`_
-            This `TransformGraph` as a `networkx.Graph`_.
+        nxgraph : ``networkx.Graph``
+            This `TransformGraph` as a `networkx.Graph <https://networkx.github.io/documentation/stable/reference/classes/graph.html>`_.
         """
         import networkx as nx
 
