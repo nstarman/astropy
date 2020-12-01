@@ -13,7 +13,7 @@ from numpy.testing import assert_allclose, assert_equal
 from astropy import units as u
 from astropy.modeling import fitting, models
 from astropy.modeling.models import Gaussian2D
-from astropy.modeling.core import FittableModel
+from astropy.modeling.core import FittableModel, _ModelMeta
 from astropy.modeling.parameters import Parameter
 from astropy.modeling.polynomial import PolynomialBase
 from astropy.utils import minversion
@@ -791,3 +791,33 @@ def test_parameter_inheritance():
     assert b.h == 5
     assert b.f == 3
     assert b.f.fixed == True
+
+
+class _ExtendedModelMeta(_ModelMeta):
+    @classmethod
+    def __prepare__(mcls, name, bases, **kwds):
+        # this shows the parent class machinery still applies
+        namespace = super().__prepare__(name, bases, **kwds)
+        # the custom bit
+        namespace.update(kwds)
+
+        return namespace
+
+
+def test_metaclass_kwargs():
+    """Test can pass kwargs to Models"""
+    class classmodel(FittableModel, flag="flag"):
+        def evaluate(self):
+            pass
+
+    # nothing to test, it should be anywhere.
+    # just want to see that it didn't break
+
+
+def test_submetaclass_kwargs():
+    """Test can pass kwargs to Model subclasses."""
+    class classmodel(FittableModel, metaclass=_ExtendedModelMeta, flag="flag"):
+        def evaluate(self):
+            pass
+
+    assert classmodel.flag == "flag"
