@@ -37,7 +37,7 @@ class SpectralQuantity(SpecificTypeQuantity):
     ----------
     value : ndarray or `~astropy.units.Quantity` or `SpectralQuantity`
         Spectral axis data values.
-    unit : str or `~astropy.units.Unit`
+    unit : Unit-like
         Unit for the given data.
     doppler_rest : `~astropy.units.Quantity`, optional
         The rest value to use for conversions from/to velocities

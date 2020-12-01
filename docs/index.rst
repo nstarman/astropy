@@ -119,6 +119,7 @@ Nuts and bolts
    utils/index
    testhelpers
    development/workflow/get_devel_version
+   glossary
 
 .. _developer-docs:
 

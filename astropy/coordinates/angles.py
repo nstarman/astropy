@@ -88,7 +88,7 @@ class Angle(u.SpecificTypeQuantity):
         values will be in the given ``unit``, or if `None` is provided,
         the unit will be taken from the first given value.
 
-    unit : `~astropy.units.UnitBase`, str, optional
+    unit : Unit-like, optional
         The unit of the value specified for the angle.  This may be
         any string that `~astropy.units.Unit` understands, but it is
         better to give an actual unit object.  Must be an angular
@@ -512,7 +512,7 @@ class Latitude(Angle):
         values will be in the given ``unit``, or if `None` is provided,
         the unit will be taken from the first given value.
 
-    unit : :class:`~astropy.units.UnitBase`, str, optional
+    unit : Unit-like, optional
         The unit of the value specified for the angle.  This may be
         any string that `~astropy.units.Unit` understands, but it is
         better to give an actual unit object.  Must be an angular
@@ -607,7 +607,7 @@ class Longitude(Angle):
         values will be in the given ``unit``, or if `None` is provided,
         the unit will be taken from the first given value.
 
-    unit : :class:`~astropy.units.UnitBase`, str, optional
+    unit : Unit-like, optional
         The unit of the value specified for the angle.  This may be
         any string that `~astropy.units.Unit` understands, but it is
         better to give an actual unit object.  Must be an angular

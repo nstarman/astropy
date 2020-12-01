@@ -140,18 +140,18 @@ numpydoc_xref_ignore = {
     'parameter', 'away', 'classobj', 'equivalence', 'velocity', 'an',
     'astropy.Table', 'numpy.complex', 'output_value', 'frame', 'A', 'new',
     'differential', 'that', 'is', 'This', 'Sequence', 'newrepr', 'unit',
-    'to', 'Quantity', 'valid', 'initializer', 'Representation', 'distance',
+    'to', 'valid', 'initializer', 'Representation',
     'pairs', 'similar', 'coordcls', 'iterator', 'Element', 'converter',
     'mask', 'writable', 'strings', 'Astropy', 'fitter', 'argument',
     'ModelLinearityError', 'dictionary', 'where', 'the', 'key', 'identifies',
-    'only', 'transframe', 'The', 'equivalent', 'classes', 'Subclass', 'shapes',
-    'm1', 'm2', 'convertible', 'UnitsError', 'Default', 'slices', 'keywords',
+    'only', 'transframe', 'The',  'classes', 'Subclass', 'shapes',
+    'm1', 'm2', 'convertible', 'Default', 'slices', 'keywords',
     'dimensionless', 'floats', 'length', 'two', 'numpy.float64', 'ints',
     'flexible', 'unmasked', 'np.ma.mvoid', 'like', 'arrays', 'DELAYED',
     'buffer', 'name', 'like', 'data', 'group', 'WcsValidateResults',
     'readable', 'Whatever', 'two', 'axis', 'flags', 'tuples', 'pair', 'form',
     'Returned', 'bits', 'InvalidTabularParameters',
-    'z', 'astropy.Quantity', 'file_like', 'OR', 'obj', 'invalid', 'An', 'and',
+    'z', 'file_like', 'OR', 'obj', 'invalid', 'An', 'and',
     'model', 'one', 'more', 'which', 'fix', 'in', 'order', 'undefined', 'cls',
     'list_like', 'scalars', 'N', 'defaults', 'x', 'y', 'bools', 'compatible',
     'lists', 'np.void', 'masked', 'np.ma.MaskedArray', 'returning', 'row',
@@ -159,17 +159,24 @@ numpydoc_xref_ignore = {
     'table', 'nowtime', 'OrderedDict', 'else', 'merged', 'attributes',
     'Column', 'mixin', 'ndarrays', 'n_samples', 't', 'n_parameters', 'usually',
     'items', 'Path', 'Arguments', 'variable', 'Standard', 'Python', 'numeric',
-    'lstr', 'search', 'sequences', 'modules', 'area', 'u.Quantity', 'UnitBase',
+    'lstr', 'search', 'sequences', 'modules', 'area',
     'writeable', 'CacheDamaged', 'content', 'np.dtype', 'warning', 'thereof',
     'Time', 'Earth', 'rotation', 'columns', 'read', 'Axes', 'see', 'Formatter',
     'color', 'Primary', 'Image', 'names', 'along', 'each', 'fewer', 'naxis',
     'axes', 'but', 'swapped', 'flag', 'hdulist', 'networkx.Graph',
-    'angular',
+    'distance', 'Quantity', 'UnitsError', 'astropy.Quantity', 'angular',
+    'equivalent',
 }
 
 # Mappings to fully qualified paths (or correct ReST references) for the
 # aliases/shortcuts used when specifying the types of parameters.
-numpydoc_xref_aliases = {}
+numpydoc_xref_aliases = {
+    # python
+    'string': 'str',
+    # astropy
+    'Unit-like': ':term:`astropy:unit_like`',
+    'Unit_like': ':term:`astropy:unit_like`',
+}
 
 
 # -- Project information ------------------------------------------------------

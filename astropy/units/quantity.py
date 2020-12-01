@@ -224,7 +224,7 @@ class Quantity(np.ndarray):
         `unit` units as needed.  If a string, it is converted to a number or
         `Quantity`, depending on whether a unit is present.
 
-    unit : `~astropy.units.UnitBase` instance, str
+    unit : Unit-like
         An object that represents the unit associated with the input value.
         Must be an `~astropy.units.UnitBase` object or a string parseable by
         the :mod:`~astropy.units` package.
@@ -563,7 +563,7 @@ class Quantity(np.ndarray):
             it will be converted to an array scalar.  By default, ``self``
             is converted.
 
-        unit : `UnitBase`, or anything convertible to a :class:`~astropy.units.Unit`, optional
+        unit : Unit-like, optional
             The unit of the resulting object.  It is used to select a
             subclass, and explicitly assigned to the view if given.
             If not given, the subclass and unit will be that of ``self``.
@@ -705,7 +705,7 @@ class Quantity(np.ndarray):
 
         Parameters
         ----------
-        unit : `~astropy.units.UnitBase` instance or str, optional
+        unit : Unit-like, optional
             The unit in which the value should be given. If not given or `None`,
             use the current unit.
 
@@ -1126,7 +1126,7 @@ class Quantity(np.ndarray):
 
         Parameters
         ----------
-        unit : `~astropy.units.UnitBase`, optional
+        unit : Unit-like, optional
             Specifies the unit.  If not provided,
             the unit used to initialize the quantity will be used.
 
@@ -1267,7 +1267,7 @@ class Quantity(np.ndarray):
 
         Parameters
         ----------
-        bases : sequence of UnitBase, optional
+        bases : sequence of :class:`~astropy.units.UnitBase`, optional
             The bases to decompose into.  When not provided,
             decomposes down to any irreducible units.  When provided,
             the decomposed result will only contain the given units.

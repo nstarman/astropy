@@ -44,7 +44,7 @@ class NDUncertainty(metaclass=ABCMeta):
         to a plain `numpy.ndarray`.
         Default is ``None``.
 
-    unit : `~astropy.units.Unit` or str, optional
+    unit : Unit-like, optional
         Unit for the uncertainty ``array``. Strings that can be converted to a
         `~astropy.units.Unit` are allowed.
         Default is ``None``.

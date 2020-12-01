@@ -52,7 +52,7 @@ def rotation_matrix(angle, axis='z', unit=None):
         counterclockwise looking down the + axis (e.g. positive rotations obey
         left-hand-rule).  If given as an array, the last dimension should be 3;
         it will be broadcast against ``angle``.
-    unit : UnitBase, optional
+    unit : Unit-like, optional
         If ``angle`` does not have associated units, they are in this
         unit.  If neither are provided, it is assumed to be degrees.
 

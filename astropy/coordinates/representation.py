@@ -1225,7 +1225,7 @@ class CartesianRepresentation(BaseRepresentation):
         have different shapes, they should be broadcastable. If not quantity,
         ``unit`` should be set.  If only ``x`` is given, it is assumed that it
         contains an array with the 3 coordinates stored along ``xyz_axis``.
-    unit : `~astropy.units.Unit` or str
+    unit : Unit-like
         If given, the coordinates will be converted to this unit (or taken to
         be in this unit if not given.
     xyz_axis : int, optional
