@@ -44,8 +44,10 @@ def normal(center, *, std=None, var=None, ivar=None, n_samples,
 
     Returns
     -------
-    distr : ``cls``, usually `Distribution`
+    distr : `Distribution` or object
         The sampled Gaussian distribution.
+        Type specified by ``cls``.
+
     """
     center = np.asanyarray(center)
     if var is not None:
@@ -90,8 +92,9 @@ def poisson(center, n_samples, cls=Distribution, **kwargs):
 
     Returns
     -------
-    distr : ``cls``, usually `Distribution`
-        The sampled poisson distribution.
+    distr : `Distribution` or object
+        The sampled Poisson distribution.
+        Type specified by ``cls``.
     """
     # we convert to arrays because np.random.poisson has trouble with quantities
     has_unit = False
@@ -151,8 +154,9 @@ def uniform(*, lower=None, upper=None, center=None, width=None, n_samples,
 
     Returns
     -------
-    distr : ``cls``, usually `Distribution`
+    distr : `Distribution` or object
         The sampled uniform distribution.
+        Type specified by ``cls``.
     """
     if center is None and width is None:
         lower = np.asanyarray(lower)

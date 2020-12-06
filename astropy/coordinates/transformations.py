@@ -156,7 +156,7 @@ class TransformGraph:
             The coordinate frame class to start from.
         tosys : class
             The coordinate frame class to transform into.
-        transform : CoordinateTransform or similar callable
+        transform : `CoordinateTransform`
             The transformation object. Typically a `CoordinateTransform` object,
             although it may be some other callable that is called with the same
             signature.
@@ -275,11 +275,11 @@ class TransformGraph:
 
         Returns
         -------
-        path : list of classes or `None`
+        path : list of class or `None`
             The path from ``fromsys`` to ``tosys`` as an in-order sequence
             of classes.  This list includes *both* ``fromsys`` and
             ``tosys``. Is `None` if there is no possible path.
-        distance : number
+        distance : float or int
             The total distance/priority from ``fromsys`` to ``tosys``.  If
             priorities are not set this is the number of transforms
             needed. Is ``inf`` if there is no possible path.
@@ -441,7 +441,7 @@ class TransformGraph:
 
         Returns
         -------
-        coordcls
+        `BaseCoordinateFrame` subclass
             The coordinate class corresponding to the ``name`` or `None` if
             no such class exists.
         """
@@ -624,7 +624,7 @@ class TransformGraph:
             The coordinate frame class to start from.
         tosys : class
             The coordinate frame class to transform into.
-        priority : number
+        priority : float or int
             The priority if this transform when finding the shortest
             coordinate transform path - large numbers are lower priorities.
 
@@ -717,11 +717,11 @@ class CoordinateTransform(metaclass=ABCMeta):
 
     Parameters
     ----------
-    fromsys : class
+    fromsys : `~astropy.coordinates.BaseCoordinateFrame` subclass
         The coordinate frame class to start from.
-    tosys : class
+    tosys : `~astropy.coordinates.BaseCoordinateFrame` subclass
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`
@@ -762,7 +762,7 @@ class CoordinateTransform(metaclass=ABCMeta):
 
         Parameters
         ----------
-        graph : a TransformGraph object
+        graph : `TransformGraph` object
             The graph to register this transformation with.
         """
         graph.add_transform(self.fromsys, self.tosys, self)
@@ -792,7 +792,7 @@ class CoordinateTransform(metaclass=ABCMeta):
 
         Parameters
         ----------
-        fromcoord : fromsys object
+        fromcoord : `~astropy.coordinates.BaseCoordinateFrame` object
             An object of class matching ``fromsys`` that is to be transformed.
         toframe : object
             An object that has the attributes necessary to fully specify the
@@ -803,7 +803,7 @@ class CoordinateTransform(metaclass=ABCMeta):
 
         Returns
         -------
-        tocoord : tosys object
+        tocoord : `BaseCoordinateFrame` subclass instance
             The new coordinate after the transform has been applied.
         """
 
@@ -824,7 +824,7 @@ class FunctionTransform(CoordinateTransform):
         The coordinate frame class to start from.
     tosys : class
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`
@@ -1211,7 +1211,7 @@ class AffineTransform(BaseAffineTransform):
         The coordinate frame class to start from.
     tosys : class
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`
@@ -1262,7 +1262,7 @@ class StaticMatrixTransform(BaseAffineTransform):
         The coordinate frame class to start from.
     tosys : class
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`
@@ -1310,7 +1310,7 @@ class DynamicMatrixTransform(BaseAffineTransform):
         The coordinate frame class to start from.
     tosys : class
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`
@@ -1354,13 +1354,13 @@ class CompositeTransform(CoordinateTransform):
 
     Parameters
     ----------
-    transforms : sequence of `CoordinateTransform` objects
+    transforms : sequence of `CoordinateTransform` object
         The sequence of transformations to apply.
     fromsys : class
         The coordinate frame class to start from.
     tosys : class
         The coordinate frame class to transform into.
-    priority : number
+    priority : float or int
         The priority if this transform when finding the shortest
         coordinate transform path - large numbers are lower priorities.
     register_graph : `TransformGraph` or `None`

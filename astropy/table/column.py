@@ -797,7 +797,7 @@ class BaseColumn(_ColumnGetitemShim, np.ndarray):
         new_unit : str or `astropy.units.UnitBase` instance
             The unit to convert to.
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
            A list of equivalence pairs to try if the unit are not
            directly convertible.  See :ref:`unit_equivalencies`.
 
@@ -879,7 +879,7 @@ class BaseColumn(_ColumnGetitemShim, np.ndarray):
         unit : `~astropy.units.Unit` or str
             The unit to convert to (i.e., a valid argument to the
             :meth:`astropy.units.Quantity.to` method).
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             Equivalencies to use for this conversion.  See
             :meth:`astropy.units.Quantity.to` for more details.
 
@@ -1165,7 +1165,7 @@ class Column(BaseColumn):
 
         Parameters
         ----------
-        obj : int, slice or sequence of ints
+        obj : int, slice or sequence of int
             Object that defines the index or indices before which ``values`` is
             inserted.
         values : array_like
@@ -1473,7 +1473,7 @@ class MaskedColumn(Column, _MaskedColumnGetitemShim, ma.MaskedArray):
 
         Parameters
         ----------
-        obj : int, slice or sequence of ints
+        obj : int, slice or sequence of int
             Object that defines the index or indices before which ``values`` is
             inserted.
         values : array_like

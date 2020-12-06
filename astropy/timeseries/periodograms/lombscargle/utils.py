@@ -47,7 +47,7 @@ def convert_normalization(Z, N, from_normalization, to_normalization,
     ----------
     Z : array_like
         the periodogram output
-    N : integer
+    N : int
         the number of data points
     from_normalization, to_normalization : str
         the normalization to convert from and to. Options are

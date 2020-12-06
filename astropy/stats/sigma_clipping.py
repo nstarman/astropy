@@ -468,7 +468,7 @@ class SigmaClip:
 
         Returns
         -------
-        result : flexible
+        result : array_like
             If ``masked=True``, then a `~numpy.ma.MaskedArray` is
             returned, where the mask is `True` for clipped values and
             where the input mask was `True`.
@@ -635,7 +635,7 @@ def sigma_clip(data, sigma=3, sigma_lower=None, sigma_upper=None, maxiters=5,
 
     Returns
     -------
-    result : flexible
+    result : array_like
         If ``masked=True``, then a `~numpy.ma.MaskedArray` is returned,
         where the mask is `True` for clipped values and where the input
         mask was `True`.

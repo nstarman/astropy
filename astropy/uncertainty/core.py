@@ -199,7 +199,7 @@ class Distribution:
 
         Parameters
         ----------
-        percentile : float or array of floats or `~astropy.units.Quantity`
+        percentile : float or array of float or `~astropy.units.Quantity`
             The desired  precentiles of the distribution (i.e., on [0,100]).
             `~astropy.units.Quantity` will be converted to percent, meaning
             that a ``dimensionless_unscaled`` `~astropy.units.Quantity` will

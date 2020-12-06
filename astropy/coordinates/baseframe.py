@@ -924,7 +924,7 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
 
         Returns
         -------
-        frameobj : same as this frame
+        frameobj : `BaseCoordinateFrame` subclass instance
             Replica of this object, but possibly with new frame attributes.
         """
         return self._replicate(self.data, copy=copy, **kwargs)
@@ -952,7 +952,7 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
 
         Returns
         -------
-        frameobj : same as this frame
+        frameobj : `BaseCoordinateFrame` subclass instance
             Replica of this object, but without data and possibly with new frame
             attributes.
         """
@@ -974,9 +974,10 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
 
         Returns
         -------
-        frameobj : same as this frame
-            A new object with the same frame attributes as this one, but
-            with the ``data`` as the coordinate data.
+        frameobj : `BaseCoordinateFrame` subclass instance
+            A new object in *this* frame, with the same frame attributes as
+            this one, but with the ``data`` as the coordinate data.
+
         """
         return self._replicate(data, **kwargs)
 
@@ -1001,7 +1002,7 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
             a *class* (not an instance), or the string name of the
             differential class.  If equal to 'base' (default), inferred from
             the base class.  If `None`, all velocity information is dropped.
-        in_frame_units : bool, keyword only
+        in_frame_units : bool, keyword-only
             Force the representation units to match the specified units
             particular to this frame
 
@@ -1160,12 +1161,12 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
 
         Parameters
         ----------
-        new_frame : frame object or SkyCoord object
+        new_frame : `BaseCoordinateFrame` subclass or `~astropy.coordinates.SkyCoord` instance
             The frame to transform this coordinate frame into.
 
         Returns
         -------
-        transframe
+        transframe : `BaseCoordinateFrame` subclass instance
             A new object with the coordinate data represented in the
             ``newframe`` system.
 
@@ -1220,7 +1221,7 @@ class BaseCoordinateFrame(ShapedLikeNDArray,
 
         Parameters
         ----------
-        new_frame : class or frame object
+        new_frame : `BaseCoordinateFrame` class or instance
             The proposed frame to transform into.
 
         Returns

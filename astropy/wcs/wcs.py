@@ -237,11 +237,11 @@ class WCS(FITSWCSAPIMixin, WCSBase):
 
     Parameters
     ----------
-    header : astropy.io.fits header object, Primary HDU, Image HDU, string, dict-like, or None, optional
+    header : `~astropy.io.fits.Header` or `~astropy.io.fits.hdu.PrimaryHDU` or `~astropy.io.fits.hdu.ImageHDU` or str or dict-like or None, optional
         If *header* is not provided or None, the object will be
         initialized to default values.
 
-    fobj : An astropy.io.fits file (hdulist) object, optional
+    fobj : `~astropy.io.fits.hdu.HDUList` object, optional
         It is needed when header keywords point to a `distortion
         paper`_ lookup table stored in a different extension.
 
@@ -276,7 +276,7 @@ class WCS(FITSWCSAPIMixin, WCSBase):
         axes from the header.  See :meth:`~astropy.wcs.Wcsprm.sub` for
         more details about this parameter.
 
-    keysel : sequence of flags, optional
+    keysel : sequence of str, optional
         A sequence of flags used to select the keyword types
         considered by wcslib.  When ``None``, only the standard image
         header keywords are considered (and the underlying wcspih() C
@@ -728,7 +728,7 @@ reduce these to 2 dimensions using the naxis kwarg.
             If `True`, take SIP and distortion lookup table into
             account
 
-        axes : length 2 sequence ints, optional
+        axes : (int, int), optional
             If provided, use the given sequence as the shape of the
             image.  Otherwise, use the ``NAXIS1`` and ``NAXIS2``
             keywords from the header that was used to create this
@@ -1913,7 +1913,7 @@ reduce these to 2 dimensions using the naxis kwarg.
 
         {1}
 
-        tolerance : float, optional (Default = 1.0e-4)
+        tolerance : float, optional (default = 1.0e-4)
             Tolerance of solution. Iteration terminates when the
             iterative solver estimates that the "true solution" is
             within this many pixels current estimate, more
@@ -1921,10 +1921,10 @@ reduce these to 2 dimensions using the naxis kwarg.
             during the previous iteration is smaller
             (in the sense of the L2 norm) than ``tolerance``.
 
-        maxiter : int, optional (Default = 20)
+        maxiter : int, optional (default = 20)
             Maximum number of iterations allowed to reach a solution.
 
-        quiet : bool, optional (Default = False)
+        quiet : bool, optional (default = False)
             Do not throw :py:class:`NoConvergence` exceptions when
             the method does not converge to a solution with the
             required accuracy within a specified number of maximum
@@ -1933,7 +1933,7 @@ reduce these to 2 dimensions using the naxis kwarg.
 
         Other Parameters
         ----------------
-        adaptive : bool, optional (Default = False)
+        adaptive : bool, optional (default = False)
             Specifies whether to adaptively select only points that
             did not converge to a solution within the required
             accuracy for the next iteration. Default is recommended
@@ -1972,7 +1972,7 @@ reduce these to 2 dimensions using the naxis kwarg.
                to the adaptive algorithm once divergence has been
                detected.
 
-        detect_divergence : bool, optional (Default = True)
+        detect_divergence : bool, optional (default = True)
             Specifies whether to perform a more detailed analysis
             of the convergence to a solution. Normally
             :py:meth:`all_world2pix` may not achieve the required
@@ -2991,7 +2991,8 @@ reduce these to 2 dimensions using the naxis kwarg.
 
         Returns
         -------
-        A new `~astropy.wcs.WCS` instance with one axis fewer
+        `~astropy.wcs.WCS`
+            A new `~astropy.wcs.WCS` instance with one axis fewer
         """
         inds = list(range(self.wcs.naxis))
         inds.pop(dropax)
@@ -3016,8 +3017,9 @@ reduce these to 2 dimensions using the naxis kwarg.
 
         Returns
         -------
-        A new `~astropy.wcs.WCS` instance with the same number of axes, but two
-        swapped
+        `~astropy.wcs.WCS`
+            A new `~astropy.wcs.WCS` instance with the same number of axes,
+            but two swapped
         """
         inds = list(range(self.wcs.naxis))
         inds[ax0], inds[ax1] = inds[ax1], inds[ax0]
@@ -3148,7 +3150,8 @@ reduce these to 2 dimensions using the naxis kwarg.
 
         Returns
         -------
-        A list of names along each axis
+        list of str
+            A list of names along each axis
         """
         names = list(self.wcs.cname)
         types = self.wcs.ctype
@@ -3320,7 +3323,7 @@ def find_all_wcs(header, relax=True, keysel=None, fix=True,
 
     Returns
     -------
-    wcses : list of `WCS` objects
+    wcses : list of `WCS` object
     """
 
     if isinstance(header, (str, bytes)):
@@ -3361,17 +3364,18 @@ def validate(source):
 
     Parameters
     ----------
-    source : str path, readable file-like object or `astropy.io.fits.HDUList` object
+    source : str or file-like object or `astropy.io.fits.HDUList` object
         The FITS file to validate.
 
     Returns
     -------
-    results : WcsValidateResults instance
+    results : list subclass instance
         The result is returned as nested lists.  The first level
         corresponds to the HDUs in the given file.  The next level has
         an entry for each WCS found in that header.  The special
         subclass of list will pretty-print the results as a table when
         printed.
+
     """
     class _WcsValidateWcsResult(list):
         def __init__(self, key):

@@ -189,8 +189,8 @@ class Kernel1D(Kernel):
     ----------
     model : `~astropy.modeling.FittableModel`
         Model to be evaluated.
-    x_size : odd int, optional
-        Size of the kernel array. Default = 8 * width.
+    x_size : int, optional
+        Size of the kernel array. Default = 8 * width. Must be odd.
     array : `~numpy.ndarray`
         Kernel array.
     width : number
@@ -248,10 +248,12 @@ class Kernel2D(Kernel):
     ----------
     model : `~astropy.modeling.FittableModel`
         Model to be evaluated.
-    x_size : odd int, optional
+    x_size : int, optional
         Size in x direction of the kernel array. Default = 8 * width.
-    y_size : odd int, optional
+        Must be odd.
+    y_size : int, optional
         Size in y direction of the kernel array. Default = 8 * width.
+        Must be odd.
     array : `~numpy.ndarray`
         Kernel array.
     mode : str, optional
@@ -320,7 +322,7 @@ def kernel_arithmetics(kernel, value, operation):
     ----------
     kernel : `astropy.convolution.Kernel`
         Kernel instance
-    value : kernel, float or int
+    value : `astropy.convolution.Kernel`, float or int
         Value to operate with
     operation : {'add', 'sub', 'mul'}
         One of the following operations:

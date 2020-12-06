@@ -44,7 +44,7 @@ def rotation_matrix(angle, axis='z', unit=None):
 
     Parameters
     ----------
-    angle : convertible to `~astropy.coordinates.Angle`
+    angle : angular-Quantity-like
         The amount of rotation the matrices should represent.  Can be an array.
     axis : str or array_like
         Either ``'x'``, ``'y'``, ``'z'``, or a (x,y,z) specifying the axis to

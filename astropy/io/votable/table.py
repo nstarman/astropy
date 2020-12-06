@@ -37,8 +37,9 @@ def parse(source, columns=None, invalid='exception', verify=None,
 
     Parameters
     ----------
-    source : str or readable file-like object
+    source : str or file-like object
         Path or file object containing a VOTABLE_ xml file.
+        If file, must be readable.
 
     columns : sequence of str, optional
         List of field names to include in the output.  The default is
@@ -221,13 +222,15 @@ def validate(source, output=None, xmllint=False, filename=None):
 
     Parameters
     ----------
-    source : str or readable file-like object
+    source : path-like or file-like object
         Path to a VOTABLE_ xml file or pathlib.path
         object having Path to a VOTABLE_ xml file.
+        If file-like, must be readable.
 
-    output : writable file-like object, optional
+    output : file-like object, optional
         Where to output the report.  Defaults to ``sys.stdout``.
         If `None`, the output will be returned as a string.
+        Must be writable.
 
     xmllint : bool, optional
         When `True`, also send the file to ``xmllint`` for schema and
@@ -369,8 +372,9 @@ def is_votable(source):
 
     Parameters
     ----------
-    source : str or readable file-like object
+    source : str or file-like object
         Path or file object containing a VOTABLE_ xml file.
+        If file, must be readable.
 
     Returns
     -------

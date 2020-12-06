@@ -464,8 +464,8 @@ class Chebyshev1D(_PolyDomainWindow1D):
         ----------
         x : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -571,8 +571,8 @@ class Hermite1D(_PolyDomainWindow1D):
         ----------
         x : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -713,8 +713,8 @@ class Hermite2D(OrthoPolynomialBase):
             input
         y : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -823,8 +823,8 @@ class Legendre1D(_PolyDomainWindow1D):
         ----------
         x : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -926,8 +926,8 @@ class Polynomial1D(_PolyDomainWindow1D):
         ----------
         x : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -1085,8 +1085,8 @@ class Polynomial2D(PolynomialModel):
             input
         y : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -1134,7 +1134,8 @@ class Polynomial2D(PolynomialModel):
         Parameters
         ----------
         x, y : array
-        coeffs : array of coefficients in inverse lexical order
+        coeffs : array
+            The coefficients in inverse lexical order
         """
 
         alpha = self._invlex()
@@ -1294,8 +1295,8 @@ class Chebyshev2D(OrthoPolynomialBase):
             input
         y : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -1432,8 +1433,8 @@ class Legendre2D(OrthoPolynomialBase):
             input
         y : ndarray
             input
-        params : throw away parameter
-            parameter list returned by non-linear fitters
+        *params
+            throw-away parameter list returned by non-linear fitters
 
         Returns
         -------
@@ -1577,7 +1578,7 @@ class SIP(Model):
 
     Parameters
     ----------
-    crpix : list or ndarray of length(2)
+    crpix : list or (2,) ndarray
         CRPIX values
     a_order : int
         SIP polynomial order for first axis

@@ -387,7 +387,7 @@ class Angle(u.SpecificTypeQuantity):
 
         Parameters
         ----------
-        wrap_angle : str, `~astropy.coordinates.Angle`, angular `~astropy.units.Quantity`
+        wrap_angle : angular-Quantity-like
             Specifies a single value for the wrap angle.  This can be any
             object that can initialize an `~astropy.coordinates.Angle` object, e.g. ``'180d'``,
             ``180 * u.deg``, or ``Angle(180, unit=u.deg)``.
@@ -430,11 +430,11 @@ class Angle(u.SpecificTypeQuantity):
 
         Parameters
         ----------
-        lower : str, `~astropy.coordinates.Angle`, angular `~astropy.units.Quantity`, `None`
+        lower : angular-Quantity-like or `None`
             Specifies lower bound for checking.  This can be any object
             that can initialize an `~astropy.coordinates.Angle` object, e.g. ``'180d'``,
             ``180 * u.deg``, or ``Angle(180, unit=u.deg)``.
-        upper : str, `~astropy.coordinates.Angle`, angular `~astropy.units.Quantity`, `None`
+        upper : angular-Quantity-like or `None`
             Specifies upper bound for checking.  This can be any object
             that can initialize an `~astropy.coordinates.Angle` object, e.g. ``'180d'``,
             ``180 * u.deg``, or ``Angle(180, unit=u.deg)``.
@@ -613,7 +613,7 @@ class Longitude(Angle):
         better to give an actual unit object.  Must be an angular
         unit.
 
-    wrap_angle : :class:`~astropy.coordinates.Angle` or equivalent, or None
+    wrap_angle : angular-Quantity-like or None
         Angle at which to wrap back to ``wrap_angle - 360 deg``.
         If ``None`` (default), it will be taken to be 360 deg unless ``angle``
         has a ``wrap_angle`` attribute already (i.e., is a ``Longitude``),
@@ -639,7 +639,7 @@ class Longitude(Angle):
         self = super().__new__(cls, angle, unit=unit, **kwargs)
         if wrap_angle is None:
             wrap_angle = getattr(angle, 'wrap_angle', self._default_wrap_angle)
-        self.wrap_angle = wrap_angle
+        self.wrap_angle = Angle(wrap_angle, copy=False)
         return self
 
     def __setitem__(self, item, value):

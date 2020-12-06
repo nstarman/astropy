@@ -185,7 +185,7 @@ class LogQuantity(FunctionQuantity):
 
     Parameters
     ----------
-    value : number, `~astropy.units.Quantity`, `~astropy.units.function.logarithmic.LogQuantity`, or sequence of convertible items.
+    value : number or `~astropy.units.Quantity` or `~astropy.units.function.logarithmic.LogQuantity` or or sequence of convertible items.
         The numerical value of the logarithmic quantity. If a number or
         a `~astropy.units.Quantity` with a logarithmic unit, it will be
         converted to ``unit`` and the physical unit will be inferred from

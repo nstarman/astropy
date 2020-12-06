@@ -20,13 +20,13 @@ def jackknife_resampling(data):
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : `~numpy.ndarray`
         Original sample (1-D array) from which the jackknife resamples will be
         generated.
 
     Returns
     -------
-    resamples : numpy.ndarray
+    resamples : `~numpy.ndarray`
         The i-th row is the i-th jackknife sample, i.e., the original sample
         with the i-th measurement deleted.
 
@@ -62,7 +62,7 @@ def jackknife_stats(data, statistic, confidence_level=0.95):
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : `~numpy.ndarray`
         Original sample (1-D array).
     statistic : function
         Any function (or vector of functions) on the basis of the measured
@@ -74,16 +74,16 @@ def jackknife_stats(data, statistic, confidence_level=0.95):
 
     Returns
     -------
-    estimate : numpy.float64 or numpy.ndarray
+    estimate : `~numpy.double` or `~numpy.ndarray`
         The i-th element is the bias-corrected "jackknifed" estimate.
 
-    bias : numpy.float64 or numpy.ndarray
+    bias : `~numpy.double` or `~numpy.ndarray`
         The i-th element is the jackknife bias.
 
-    std_err : numpy.float64 or numpy.ndarray
+    std_err : `~numpy.double` or `~numpy.ndarray`
         The i-th element is the jackknife standard error.
 
-    conf_interval : numpy.ndarray
+    conf_interval : `~numpy.ndarray`
         If ``statistic`` is single-valued, the first and second elements are
         the lower and upper bounds, respectively. If ``statistic`` is
         vector-valued, each column corresponds to the confidence interval for

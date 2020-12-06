@@ -292,10 +292,12 @@ class IERS(QTable):
 
         Returns
         -------
-        D_x : Quantity with angle units
-            x component of CIP correction for the requested times
-        D_y : Quantity with angle units
+        D_x : `~astropy.units.Quantity`
+            x component of CIP correction for the requested times.
+            Must have angular units.
+        D_y : `~astropy.units.Quantity`
             y component of CIP correction for the requested times
+            Must have angular units.
         status : int or int array
             Status values (if ``return_status``=``True``)::
             ``iers.FROM_IERS_B``
@@ -324,10 +326,12 @@ class IERS(QTable):
 
         Returns
         -------
-        PM_x : Quantity with angle units
-            x component of polar motion for the requested times
-        PM_y : Quantity with angle units
-            y component of polar motion for the requested times
+        PM_x : `~astropy.units.Quantity`
+            x component of polar motion for the requested times.
+            Must have angular units.
+        PM_y : `~astropy.units.Quantity`
+            y component of polar motion for the requested times.
+            Must have angular units.
         status : int or int array
             Status values (if ``return_status``=``True``)::
             ``iers.FROM_IERS_B``
@@ -653,7 +657,8 @@ class IERS_Auto(IERS_A):
 
         Returns
         -------
-        `~astropy.table.QTable` instance with IERS (Earth rotation) data columns
+        `~astropy.table.QTable` instance
+            With IERS (Earth rotation) data columns
 
         """
         if not conf.auto_download:

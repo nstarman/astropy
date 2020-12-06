@@ -110,8 +110,9 @@ def join_skycoord(distance, distance_func='search_around_sky'):
 
     Parameters
     ----------
-    distance : Quantity (angle or length)
-        Maximum distance between points to be considered a join match
+    distance : `~astropy.units.Quantity`
+        Maximum distance between points to be considered a join match.
+        Must have angular or distance units.
     distance_func : str or function
         Specifies the function for performing the cross-match based on
         ``distance``. If supplied as a string this specifies the name of a
@@ -221,7 +222,7 @@ def join_distance(distance, kdtree_args=None, query_args=None):
 
     Parameters
     ----------
-    distance : float, Quantity
+    distance : float or `~astropy.units.Quantity`
         Maximum distance between points to be considered a join match
     kdtree_args : dict, None
         Optional extra args for `~scipy.spatial.cKDTree`
@@ -343,10 +344,10 @@ def join(left, right, keys=None, join_type='inner',
 
     Parameters
     ----------
-    left : Table object or a value that will initialize a Table object
-        Left side table in the join
-    right : Table object or a value that will initialize a Table object
-        Right side table in the join
+    left : `~astropy.table.Table`-like object
+        Left side table in the join. If not a Table, will call ``Table(left)``
+    right : `~astropy.table.Table`-like object
+        Right side table in the join. If not a Table, will call ``Table(right)``
     keys : str or list of str
         Name(s) of column(s) used to match rows of left and right tables.
         Default is to use all columns which are common to both tables.

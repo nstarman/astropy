@@ -194,7 +194,7 @@ class SpectralQuantity(SpecificTypeQuantity):
             An object that represents the unit to convert to. Must be
             an `~astropy.units.UnitBase` object or a string parseable
             by the `~astropy.units` package, and should be a spectral unit.
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of `~astropy.units.equivalencies.Equivalency`, optional
             A list of equivalence pairs to try if the units are not
             directly convertible (along with spectral).  See :ref:`unit_equivalencies`.
             If not provided or ``[]``, spectral equivalencies will be used.

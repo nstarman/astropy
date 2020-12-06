@@ -1379,7 +1379,7 @@ class ColDefs(NotifierMixin):
         Parameters
         ----------
 
-        input : sequence of `Column`, `ColDefs`, other
+        input : sequence of `Column` or `ColDefs` or ndarray or `~numpy.recarray`
             An existing table HDU, an existing `ColDefs`, or any multi-field
             Numpy array or `numpy.recarray`.
 
@@ -1833,7 +1833,7 @@ class ColDefs(NotifierMixin):
             and blanks.  If there are two or more attribute names, they must be
             separated by comma(s).
 
-        output : file, optional
+        output : file-like object, optional
             File-like object to output to.  Outputs to stdout by default.
             If `False`, returns the attributes as a `dict` instead.
 

@@ -325,15 +325,18 @@ class RotateNative2Celestial(_SkyRotation):
         """
         Parameters
         ----------
-        phi_N, theta_N : float (deg) or `~astropy.units.Quantity`
+        phi_N, theta_N : float or `~astropy.units.Quantity`
             Angles in the Native coordinate system.
-        lon, lat, lon_pole : float (in deg) or `~astropy.units.Quantity`
+            If float, assumed in degrees.
+        lon, lat, lon_pole : float or `~astropy.units.Quantity`
             Parameter values when the model was initialized.
+            If float, assumed in degrees.
 
         Returns
         -------
-        alpha_C, delta_C : float (deg) or `~astropy.units.Quantity`
+        alpha_C, delta_C : float or `~astropy.units.Quantity`
             Angles on the Celestial sphere.
+            If float, in degrees.
         """
         # The values are in radians since they have already been through the setter.
         if isinstance(lon, u.Quantity):
@@ -399,15 +402,18 @@ class RotateCelestial2Native(_SkyRotation):
         """
         Parameters
         ----------
-        alpha_C, delta_C : float (deg) or `~astropy.units.Quantity`
+        alpha_C, delta_C : float or `~astropy.units.Quantity`
             Angles in the Celestial coordinate frame.
-        lon, lat, lon_pole : float (deg) or `~astropy.units.Quantity`
+            If float, assumed in degrees.
+        lon, lat, lon_pole : float or `~astropy.units.Quantity`
             Parameter values when the model was initialized.
+            If float, assumed in degrees.
 
         Returns
         -------
-        phi_N, theta_N : float (deg) or `~astropy.units.Quantity`
+        phi_N, theta_N : float or `~astropy.units.Quantity`
             Angles on the Native sphere.
+            If float, in degrees.
 
         """
         if isinstance(lon, u.Quantity):
@@ -465,8 +471,9 @@ class Rotation2D(Model):
         ----------
         x, y : array_like
             Input quantities
-        angle : float (deg) or `~astropy.units.Quantity`
+        angle : float or `~astropy.units.Quantity`
             Angle of rotations.
+            If float, assumed in degrees.
 
         """
 

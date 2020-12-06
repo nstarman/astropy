@@ -160,7 +160,7 @@ class _UnitRegistry:
 
         Parameters
         ----------
-        units : list of sequences, dicts, or modules containing units, or units
+        units : list of sequence, dict, or modules containing units, or units
             This is a list of things in which units may be found
             (sequences, dicts or modules), or units themselves.  The
             entire set will be "enabled" for searching through by
@@ -179,7 +179,7 @@ class _UnitRegistry:
 
         Parameters
         ----------
-        units : list of sequences, dicts, or modules containing units, or units
+        units : list of sequence, dict, or modules containing units, or units
             This is a list of things in which units may be found
             (sequences, dicts or modules), or units themselves.  The
             entire set will be added to the "enabled" set for
@@ -235,7 +235,8 @@ class _UnitRegistry:
 
         Parameters
         ----------
-        equivalencies : list of equivalent pairs
+        equivalencies : list of (2,) tuple
+            list of equivalent pairs
             E.g., as returned by
             `~astropy.units.equivalencies.dimensionless_angles`.
         """
@@ -254,7 +255,8 @@ class _UnitRegistry:
 
         Parameters
         ----------
-        equivalencies : list of equivalent pairs
+        equivalencies : list of (2,) tuple
+            list of equivalent pairs
             E.g., as returned by
             `~astropy.units.equivalencies.dimensionless_angles`.
         """
@@ -401,7 +403,8 @@ def set_enabled_equivalencies(equivalencies):
 
     Parameters
     ----------
-    equivalencies : list of equivalent pairs
+    equivalencies : list of (2,) tuple
+        list of equivalent pairs.
         E.g., as returned by
         `~astropy.units.equivalencies.dimensionless_angles`.
 
@@ -436,7 +439,8 @@ def add_enabled_equivalencies(equivalencies):
 
     Parameters
     ----------
-    equivalencies : list of equivalent pairs
+    equivalencies : list of (2,) tuple
+        list of equivalent pairs
         E.g., as returned by
         `~astropy.units.equivalencies.dimensionless_angles`.
     """
@@ -786,7 +790,7 @@ class UnitBase:
             The unit to convert to. If a tuple of units is specified, this
             method returns true if the unit matches any of those in the tuple.
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to try if the units are not
             directly convertible.  See :ref:`unit_equivalencies`.
             This list is in addition to possible global defaults set by, e.g.,
@@ -957,11 +961,11 @@ class UnitBase:
         other : unit object or string
             The unit to convert to.
 
-        value : scalar int or float, or sequence convertible to array, optional
+        value : scalar int or float or array-like, optional
             Value(s) in the current unit to be converted to the
             specified unit.  If not provided, defaults to 1.0
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to try if the units are not
             directly convertible.  See :ref:`unit_equivalencies`.
             This list is in addition to possible global defaults set by, e.g.,
@@ -1142,7 +1146,7 @@ class UnitBase:
 
         Parameters
         ----------
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to also list.  See
             :ref:`unit_equivalencies`.
             This list is in addition to possible global defaults set by, e.g.,
@@ -1354,7 +1358,7 @@ class UnitBase:
 
         Parameters
         ----------
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to also pull options from.
             See :ref:`unit_equivalencies`.  It must already be
             normalized using `_normalize_equivalencies`.
@@ -1450,7 +1454,7 @@ class UnitBase:
 
         Parameters
         ----------
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to also list.  See
             :ref:`unit_equivalencies`.
             Any list given, including an empty one, supersedes global defaults

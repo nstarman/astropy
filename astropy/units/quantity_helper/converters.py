@@ -136,7 +136,7 @@ def converters_and_unit(function, method, *args):
     method : str
         Method with which the function is evaluated, e.g.,
         '__call__', 'reduce', etc.
-    *args : Quantity or other ndarray subclass
+    *args :  `~astropy.units.Quantity` or ndarray subclass
         Input arguments to the function
 
     Raises

@@ -24,7 +24,7 @@ __all__ = ['parallax', 'spectral', 'spectral_density', 'doppler_radio',
            'brightness_temperature', 'thermodynamic_temperature',
            'beam_angular_area', 'dimensionless_angles', 'logarithmic',
            'temperature', 'temperature_energy', 'molar_mass_amu',
-           'pixel_scale', 'plate_scale', 'with_H0']
+           'pixel_scale', 'plate_scale', 'with_H0', "Equivalency"]
 
 
 class Equivalency(UserList):
@@ -552,14 +552,14 @@ def brightness_temperature(frequency, beam_area=None):
 
     Parameters
     ----------
-    frequency : `~astropy.units.Quantity` with spectral units
+    frequency : `~astropy.units.Quantity`
         The observed ``spectral`` equivalent `~astropy.units.Unit` (e.g.,
         frequency or wavelength).  The variable is named 'frequency' because it
         is more commonly used in radio astronomy.
         BACKWARD COMPATIBILITY NOTE: previous versions of the brightness
         temperature equivalency used the keyword ``disp``, which is no longer
         supported.
-    beam_area : angular area equivalent
+    beam_area : `~astropy.units.Quantity`
         Beam area in angular units, i.e. steradian equivalent
 
     Examples

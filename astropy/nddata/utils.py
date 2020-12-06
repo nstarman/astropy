@@ -90,11 +90,11 @@ def overlap_slices(large_array_shape, small_array_shape, position,
 
     Returns
     -------
-    slices_large : tuple of slices
+    slices_large : tuple of slice
         A tuple of slice objects for each axis of the large array, such
         that ``large_array[slices_large]`` extracts the region of the
         large array that overlaps with the small array.
-    slices_small : tuple of slices
+    slices_small : tuple of slice
         A tuple of slice objects for each axis of the small array, such
         that ``small_array[slices_small]`` extracts the region that is
         inside the large array.
@@ -191,7 +191,7 @@ def extract_array(array_large, shape, position, mode='partial',
         array will be filled with ``fill_value``.  In ``'trim'`` mode
         only the overlapping elements are returned, thus the resulting
         small array may be smaller than the requested ``shape``.
-    fill_value : number, optional
+    fill_value : float or int, optional
         If ``mode='partial'``, the value to fill pixels in the extracted
         small array that do not overlap with the input ``array_large``.
         ``fill_value`` will be changed to have the same ``dtype`` as the
@@ -437,7 +437,7 @@ class Cutout2D:
         thus the resulting cutout array may be smaller than the
         requested ``shape``.
 
-    fill_value : number, optional
+    fill_value : float or int, optional
         If ``mode='partial'``, the value to fill pixels in the
         cutout array that do not overlap with the input ``data``.
         ``fill_value`` must have the same ``dtype`` as the input
@@ -453,27 +453,27 @@ class Cutout2D:
     data : 2D `~numpy.ndarray`
         The 2D cutout array.
 
-    shape : 2 tuple
+    shape : (2,) tuple
         The ``(ny, nx)`` shape of the cutout array.
 
-    shape_input : 2 tuple
+    shape_input : (2,) tuple
         The ``(ny, nx)`` shape of the input (original) array.
 
-    input_position_cutout : 2 tuple
+    input_position_cutout : (2,) tuple
         The (unrounded) ``(x, y)`` position with respect to the cutout
         array.
 
-    input_position_original : 2 tuple
+    input_position_original : (2,) tuple
         The original (unrounded) ``(x, y)`` input position (with respect
         to the original array).
 
-    slices_original : 2 tuple of slice objects
+    slices_original : (2,) tuple of slice object
         A tuple of slice objects for the minimal bounding box of the
         cutout with respect to the original array.  For
         ``mode='partial'``, the slices are for the valid (non-filled)
         cutout values.
 
-    slices_cutout : 2 tuple of slice objects
+    slices_cutout : (2,) tuple of slice object
         A tuple of slice objects for the minimal bounding box of the
         cutout with respect to the cutout array.  For
         ``mode='partial'``, the slices are for the valid (non-filled)

@@ -16,7 +16,7 @@ def leastsquare(measured_vals, updated_model, weights, *x):
 
     Parameters
     ----------
-    measured_vals : `~numpy.ndarray` or Sequence
+    measured_vals : `~numpy.ndarray` or sequence
         Measured data values. Will be cast to array whose
         shape must match the array-cast of the evaluated model.
     updated_model : :class:`~astropy.modeling.Model` instance

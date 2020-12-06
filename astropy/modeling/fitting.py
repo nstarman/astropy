@@ -47,7 +47,8 @@ except ImportError:
 
 
 __all__ = ['LinearLSQFitter', 'LevMarLSQFitter', 'FittingWithOutlierRemoval',
-           'SLSQPLSQFitter', 'SimplexLSQFitter', 'JointFitter', 'Fitter']
+           'SLSQPLSQFitter', 'SimplexLSQFitter', 'JointFitter', 'Fitter',
+           "ModelLinearityError"]
 
 
 # Statistic functions implemented in `astropy.modeling.statistic.py
@@ -511,7 +512,7 @@ class LinearLSQFitter(metaclass=_FitterMeta):
             Cut-off ratio for small singular values of ``a``.
             Singular values are set to zero if they are smaller than ``rcond``
             times the largest singular value of ``a``.
-        equivalencies : list or None, optional and keyword-only argument
+        equivalencies : list or None, optional, keyword-only
             List of *additional* equivalencies that are should be applied in
             case x, y and/or z have units. Default is None.
 
@@ -798,12 +799,12 @@ class FittingWithOutlierRemoval:
 
     Parameters
     ----------
-    fitter : An Astropy fitter
+    fitter : `Fitter`
         An instance of any Astropy fitter, i.e., LinearLSQFitter,
         LevMarLSQFitter, SLSQPLSQFitter, SimplexLSQFitter, JointFitter. For
         model set fitting, this must understand masked input data (as
         indicated by the fitter class attribute ``supports_masked_input``).
-    outlier_func : function
+    outlier_func : callable
         A function for outlier removal.
         If this accepts an ``axis`` parameter like the `numpy` functions, the
         appropriate value will be supplied automatically when fitting model
@@ -1133,7 +1134,7 @@ class LevMarLSQFitter(metaclass=_FitterMeta):
             If False (default) and if the model has a fit_deriv method,
             it will be used. Otherwise the Jacobian will be estimated.
             If True, the Jacobian will be estimated in any case.
-        equivalencies : list or None, optional and keyword-only argument
+        equivalencies : list or None, optional, keyword-only
             List of *additional* equivalencies that are should be applied in
             case x, y and/or z have units. Default is None.
 
@@ -1290,7 +1291,7 @@ class SLSQPLSQFitter(Fitter):
             the step size for finite-difference derivative estimates
         acc : float
             Requested accuracy
-        equivalencies : list or None, optional and keyword-only argument
+        equivalencies : list or None, optional, keyword-only
             List of *additional* equivalencies that are should be applied in
             case x, y and/or z have units. Default is None.
 
@@ -1318,7 +1319,7 @@ class SimplexLSQFitter(Fitter):
 
     Raises
     ------
-    ModelLinearityError
+    `ModelLinearityError`
         A linear model is passed to a nonlinear fitter
 
     """
@@ -1354,7 +1355,7 @@ class SimplexLSQFitter(Fitter):
             maximum number of iterations
         acc : float
             Relative error in approximate solution
-        equivalencies : list or None, optional and keyword-only argument
+        equivalencies : list or None, optional, keyword-only
             List of *additional* equivalencies that are should be applied in
             case x, y and/or z have units. Default is None.
 

@@ -363,7 +363,7 @@ class ConfigItem:
 
         Returns
         -------
-        val
+        val : type
             The new value loaded from the configuration file.
         """
         self.set(self.defaultvalue)
@@ -407,7 +407,7 @@ class ConfigItem:
 
         Returns
         -------
-        val
+        val : type
             This item's value, with a type determined by the ``cfgtype``
             attribute.
 
@@ -605,7 +605,7 @@ def generate_config(pkgname='astropy', filename=None, verbose=False):
     ----------
     pkgname : str or None
         The package for which to retrieve the configuration object.
-    filename : str or file object or None
+    filename : str or file-like object or None
         If None, the default configuration path is taken from `get_config`.
 
     """

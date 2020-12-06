@@ -168,7 +168,7 @@ class QuantityInfo(QuantityInfoBase):
 
         Returns
         -------
-        col : Quantity (or subclass)
+        col : `Quantity` (or subclass)
             Empty instance of this class consistent with ``cols``
 
         """
@@ -217,7 +217,7 @@ class Quantity(np.ndarray):
 
     Parameters
     ----------
-    value : number, `~numpy.ndarray`, `Quantity` object (sequence), str
+    value : number or `~numpy.ndarray` or `Quantity` object (sequence) or str
         The numerical value of this quantity in the units given by unit.  If a
         `Quantity` or sequence of them (or any other valid object with a
         ``unit`` attribute), creates a new `Quantity` object, converting to
@@ -570,7 +570,7 @@ class Quantity(np.ndarray):
 
         Returns
         -------
-        view : Quantity subclass
+        view : `Quantity` subclass
         """
         # Determine the unit and quantity subclass that we need for the view.
         if unit is None:
@@ -671,7 +671,7 @@ class Quantity(np.ndarray):
             an `~astropy.units.UnitBase` object or a string parseable
             by the `~astropy.units` package.
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to try if the units are not
             directly convertible.  See :ref:`unit_equivalencies`.
             If not provided or ``[]``, class default equivalencies will be used
@@ -709,7 +709,7 @@ class Quantity(np.ndarray):
             The unit in which the value should be given. If not given or `None`,
             use the current unit.
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple, optional
             A list of equivalence pairs to try if the units are not directly
             convertible (see :ref:`unit_equivalencies`). If not provided or
             ``[]``, class default equivalencies will be used (none for
@@ -1130,7 +1130,7 @@ class Quantity(np.ndarray):
             Specifies the unit.  If not provided,
             the unit used to initialize the quantity will be used.
 
-        precision : numeric, optional
+        precision : number, optional
             The level of decimal precision. If `None`, or not provided,
             it will be determined from NumPy print options.
 
@@ -1655,7 +1655,7 @@ class Quantity(np.ndarray):
 
         Parameters
         ----------
-        obj : int, slice or sequence of ints
+        obj : int, slice or sequence of int
             Object that defines the index or indices before which ``values`` is
             inserted.
         values : array_like
@@ -1747,7 +1747,7 @@ def isclose(a, b, rtol=1.e-5, atol=None, equal_nan=False, **kwargs):
     ----------
     a, b : array_like or :class:`~astropy.units.Quantity`
         Input values or arrays to compare
-    rtol : array_like or dimensionless :class:`~astropy.units.Quantity`
+    rtol : array_like or :class:`~astropy.units.Quantity`
         The relative tolerance for the comparison, which defaults to
         ``1e-5``.  If ``rtol`` is a :class:`~astropy.units.Quantity`,
         then it must be dimensionless.
@@ -1791,7 +1791,7 @@ def allclose(a, b, rtol=1.e-5, atol=None, equal_nan=False, **kwargs) -> bool:
     ----------
     a, b : array_like or :class:`~astropy.units.Quantity`
         Input values or arrays to compare
-    rtol : array_like or dimensionless :class:`~astropy.units.Quantity`
+    rtol : array_like or :class:`~astropy.units.Quantity`
         The relative tolerance for the comparison, which defaults to
         ``1e-5``.  If ``rtol`` is a :class:`~astropy.units.Quantity`,
         then it must be dimensionless.

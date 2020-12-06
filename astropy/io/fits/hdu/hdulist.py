@@ -146,8 +146,8 @@ def fitsopen(name, mode='readonly', memmap=None, save_backup=False,
 
     Returns
     -------
-        hdulist : an `HDUList` object
-            `HDUList` containing all of the header data units in the file.
+    hdulist : `HDUList` object
+        `HDUList` containing all of the header data units in the file.
 
     """
 
@@ -187,11 +187,11 @@ class HDUList(list, _Verify):
 
         Parameters
         ----------
-        hdus : sequence of HDU objects or single HDU, optional
+        hdus : `_BaseHDU` or sequence of `_BaseHDU` object, optional
             The HDU object(s) to comprise the `HDUList`.  Should be
             instances of HDU classes like `ImageHDU` or `BinTableHDU`.
 
-        file : file object, bytes, optional
+        file : file-like object, bytes, optional
             The opened physical file associated with the `HDUList`
             or a bytes object containing the contents of the FITS
             file.
@@ -563,7 +563,7 @@ class HDUList(list, _Verify):
 
         Returns
         -------
-        hdu : HDU object
+        hdu : `_BaseHDU` object
             The HDU object at position indicated by ``index`` or having name
             and version specified by ``index``.
         """
@@ -582,7 +582,7 @@ class HDUList(list, _Verify):
         index : int
             Index before which to insert the new HDU.
 
-        hdu : HDU object
+        hdu : `_BaseHDU` object
             The HDU object to insert
         """
 
@@ -644,7 +644,7 @@ class HDUList(list, _Verify):
 
         Parameters
         ----------
-        hdu : HDU object
+        hdu : `_BaseHDU` object
             HDU to add to the `HDUList`.
         """
 
@@ -691,7 +691,7 @@ class HDUList(list, _Verify):
 
         Parameters
         ----------
-        key : int, str, tuple of (string, int) or an HDU object
+        key : int or str or tuple of (string, int) or `_BaseHDU` object
            The key identifying the HDU.  If ``key`` is a tuple, it is of the
            form ``(name, ver)`` where ``ver`` is an ``EXTVER`` value that must
            match the HDU being searched for.
@@ -994,7 +994,7 @@ class HDUList(list, _Verify):
 
         Parameters
         ----------
-        output : file, bool, optional
+        output : file-like object or bool, optional
             A file-like object to write the output to.  If `False`, does not
             output to a file and instead returns a list of tuples representing
             the HDU info.  Writes to ``sys.stdout`` by default.
@@ -1037,9 +1037,10 @@ class HDUList(list, _Verify):
 
         Returns
         -------
-        filename : a string containing the file name associated with the
-                   HDUList object if an association exists.  Otherwise returns
-                   None.
+        filename : str
+            a string containing the file name associated with the HDUList
+            object if an association exists.  Otherwise returns None.
+
         """
         if self._file is not None:
             if hasattr(self._file, 'name'):

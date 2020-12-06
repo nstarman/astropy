@@ -128,56 +128,46 @@ numpydoc_xref_param_type = True
 # TODO: not need to ignore so many: 1) improve the docs, 2) add to glossary
 numpydoc_xref_ignore = {
     'type', 'optional', 'default', 'or', 'of', 'method', 'instance',
-    'subclass', 'must', 'same', 'as', 'this', 'val', 'file', 'odd', 'number',
-    'KernelSizeError', 'function', 'functions', 'CompoundModel',
-    'kernel', 'class', 'fromsys', 'tosys', 'be', 'representation', 'with',
-    'angle', 'units', 'coordinate', 'objects', 'integer', 'if', 'shape',
-    'single', 'specified', 'deg', 'coefficients', 'inverse', 'lexical',
-    'path', 'other', 'header', 'value', 'associated', 'containing',
-    'HDU', 'groups', 'record', 'additional', 'native', 'corresponding',
-    'NonseparableSubimageCoordinateSystem',
-    'byte', 'dicts', 'File', 'Table', 'generic', 'handle', 'throw',
-    'parameter', 'away', 'classobj', 'equivalence', 'velocity', 'an',
-    'astropy.Table', 'numpy.complex', 'output_value', 'frame', 'A', 'new',
-    'differential', 'that', 'is', 'This', 'Sequence', 'newrepr', 'unit',
-    'to', 'valid', 'initializer', 'Representation',
-    'pairs', 'similar', 'coordcls', 'iterator', 'Element', 'converter',
-    'mask', 'writable', 'strings', 'Astropy', 'fitter', 'argument',
-    'ModelLinearityError', 'dictionary', 'where', 'the', 'key', 'identifies',
-    'only', 'transframe', 'The', 'classes', 'Subclass', 'shapes',
-    'm1', 'm2', 'convertible', 'Default', 'slices', 'keywords',
-    'dimensionless', 'floats', 'length', 'two', 'numpy.float64', 'ints',
-    'flexible', 'unmasked', 'np.ma.mvoid', 'like', 'arrays', 'DELAYED',
-    'buffer', 'name', 'like', 'data', 'group', 'WcsValidateResults',
-    'readable', 'Whatever', 'two', 'axis', 'flags', 'tuples', 'pair', 'form',
-    'Returned', 'bits', 'InvalidTabularParameters',
-    'z', 'OR', 'obj', 'invalid', 'An', 'and',
-    'model', 'one', 'more', 'which', 'fix', 'in', 'order', 'undefined', 'cls',
-    'list_like', 'scalars', 'N', 'defaults', 'x', 'y', 'bools', 'compatible',
-    'lists', 'np.void', 'masked', 'np.ma.MaskedArray', 'returning', 'row',
-    'column', 'etc', 'Columns', 'List', 'will', 'initialize', 'one', 'module',
-    'table', 'nowtime', 'OrderedDict', 'else', 'merged', 'attributes',
-    'Column', 'mixin', 'ndarrays', 'n_samples', 't', 'n_parameters', 'usually',
-    'items', 'Path', 'Arguments', 'variable', 'Standard', 'Python', 'numeric',
-    'lstr', 'search', 'sequences', 'modules', 'area',
-    'writeable', 'CacheDamaged', 'content', 'np.dtype', 'warning', 'thereof',
-    'Time', 'Earth', 'rotation', 'columns', 'read', 'Axes', 'see', 'Formatter',
-    'color', 'Primary', 'Image', 'names', 'along', 'each', 'fewer', 'naxis',
-    'axes', 'but', 'swapped', 'flag', 'hdulist', 'networkx.Graph',
-    'distance', 'Quantity', 'UnitsError', 'astropy.Quantity', 'angular',
-    'equivalent',
+    'subclass', "class", "object", "keyword-only", "function", "default",
+    # TODO not ignore these
+    'The', 'Representation', "to", "writable", "length", "N", "ints",
+    "defaults", "to", "x", "y", "compatible", "value", "lists", "bools", "in",
+    "tuples", "objects", "iterator", "returning", "row", "column", "etc",
+    "classes", "Columns", "List", "that", "one", "module", "table", "obj",
+    "OrderedDict", "if", "else", "merged", "attributes", "Column", "mixin",
+    "units", "path", "more", "readable", "read", "Axes", "see", "Formatter",
+    "color", "coordinate", "pair", "InvalidTabularParameters", "naxis",
+    "dicts", "groups", "data", "buffer", "writeable", "warning", "flag",
+    "bits", "header", "group", "file", "path", "unit", "Path", "Arguments",
+    "variable", "and", "Standard", "Python", "lstr", "UnitsError", "sequences",
+    "modules", "containing", "with", "np.dtype", "Time", "angular",
+    "equivalent", "Table", "area", "arrays", "content", "CacheDamaged",
+    "convertible", "An", "flags", "items", "search", "dictionary", "nowtime",
+    "undefined"
 }
 
 # Mappings to fully qualified paths (or correct ReST references) for the
 # aliases/shortcuts used when specifying the types of parameters.
+# Numpy provides some defaults
+# https://github.com/numpy/numpydoc/blob/b352cd7635f2ea7748722f410a31f937d92545cc/numpydoc/xref.py#L62-L94
+# so we only need to define Astropy-specific X-refs
 numpydoc_xref_aliases = {
     # python
-    'string': 'str',
-    'file-like': ':term:`astropy:file_like`',
-    'file_like': ':term:`astropy:file_like`',
+    'file-like': ':term:`python:file-like object`',
+    'file_like': ':term:`python:file-like object`',
     # astropy
-    'Unit-like': ':term:`astropy:unit_like`',
-    'Unit_like': ':term:`astropy:unit_like`',
+    'Unit-like': ':term:`Unit-like`',
+    "angular-Quantity-like": ':term:`angular-Quantity-like`',
+    "Quantity-like": ':term:`Quantity-like`',
+    'frame-like': ':term:`frame-like`',
+    'coord-like': ':term:`coord-like`',
+    'coord-like scalar': ':term:`coord-like scalar`',
+    'coord scalar': ':term:`coord-like scalar`',
+    'coord-like array': ':term:`coord-like array`',
+    'coord array': ':term:`coord-like array`',
+    'ColDefs-like': ':term:`ColDefs-like`',
+    "number": ':term:`number`'
+
 }
 
 

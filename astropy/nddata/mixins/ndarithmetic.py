@@ -20,7 +20,7 @@ _arit_doc = """
 
     Parameters
     ----------
-    operand, operand2 : `NDData`-like instance or convertible to one.
+    operand, operand2 : `NDData`-like instance
         If ``operand2`` is ``None`` or not given it will perform the operation
         ``self`` {op} ``operand``.
         If ``operand2`` is given it will perform ``operand`` {op} ``operand2``.

@@ -158,7 +158,7 @@ class BaseRepresentationOrDifferentialInfo(MixinInfo):
 
         Returns
         -------
-        col : Representation or Differential
+        col : `BaseRepresentation` or `BaseDifferential` subclass instance
             Empty instance of this class consistent with ``cols``
 
         """
@@ -306,7 +306,7 @@ class BaseRepresentationOrDifferential(ShapedLikeNDArray):
 
         Returns
         -------
-        representation : object of this class
+        representation : `BaseRepresentation` instance
             A new representation of this class's type.
         """
         # Note: the above docstring gets overridden for differentials.
@@ -908,12 +908,12 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
         Parameters
         ----------
-        differentials : Sequence of `~astropy.coordinates.BaseDifferential`
+        differentials : sequence of `~astropy.coordinates.BaseDifferential`
             The differentials for the new representation to have.
 
         Returns
         -------
-        newrepr
+        `~astropy.coordinates.BaseRepresentation` instance
             A copy of this representation, but with the ``differentials`` as
             its differentials.
         """
@@ -936,7 +936,7 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
         Returns
         -------
-        newrepr
+        `~astropy.coordinates.BaseRepresentation` instance
             A shallow copy of this representation, without any differentials.
             If no differentials were present, no copy is made.
         """
@@ -1145,7 +1145,7 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
         Returns
         -------
-        mean : representation
+        mean : `~astropy.coordinates.BaseRepresentation` subclass instance
             Vector mean, in the same representation as that of the input.
         """
         self._raise_if_has_differentials('mean')
@@ -1164,7 +1164,7 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
         Returns
         -------
-        sum : representation
+        sum : `~astropy.coordinates.BaseRepresentation` subclass instance
             Vector sum, in the same representation as that of the input.
         """
         self._raise_if_has_differentials('sum')
@@ -1201,12 +1201,12 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
         Parameters
         ----------
-        other : representation
+        other : `~astropy.coordinates.BaseRepresentation` instance
             The representation to take the cross product with.
 
         Returns
         -------
-        cross_product : representation
+        cross_product : `~astropy.coordinates.BaseRepresentation` instance
             With vectors perpendicular to both ``self`` and ``other``, in the
             same type of representation as ``self``.
         """
@@ -1467,7 +1467,7 @@ class CartesianRepresentation(BaseRepresentation):
 
         Parameters
         ----------
-        other : representation
+        other : `~astropy.coordinates.BaseRepresentation`
             If not already cartesian, it is converted.
 
         Returns
@@ -1491,7 +1491,7 @@ class CartesianRepresentation(BaseRepresentation):
 
         Parameters
         ----------
-        other : representation
+        other : `~astropy.coordinates.BaseRepresentation`
             If not already cartesian, it is converted.
 
         Returns
@@ -1700,7 +1700,7 @@ class UnitSphericalRepresentation(BaseRepresentation):
 
         Parameters
         ----------
-        other : representation
+        other : `~astropy.coordinates.BaseRepresentation`
             The representation to take the cross product with.
 
         Returns
@@ -2356,7 +2356,9 @@ class BaseDifferential(BaseRepresentationOrDifferential):
 
         Returns
         -------
-        This object as a `CartesianDifferential`
+        `CartesianDifferential`
+            This object, converted.
+
         """
         base_e, base_sf = self._get_base_vectors(base)
         return functools.reduce(
@@ -2378,7 +2380,8 @@ class BaseDifferential(BaseRepresentationOrDifferential):
 
         Returns
         -------
-        A new differential object that is this class' type.
+        `BaseDifferential` subclass
+            A new differential object that is this class' type.
         """
         base_e, base_sf = cls._get_base_vectors(base)
         return cls(*(other.dot(e / base_sf[component])

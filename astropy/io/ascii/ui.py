@@ -880,7 +880,7 @@ def get_read_trace():
 
     Returns
     -------
-    trace : list of dicts
+    trace : list of dict
        Ordered list of format guesses and status
     """
 

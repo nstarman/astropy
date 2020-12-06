@@ -2375,7 +2375,7 @@ class TimeDelta(TimeBase):
         ----------
         unit : `~astropy.units.UnitBase` instance, str
             The unit to convert to.
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to try if the units are not directly
             convertible (see :ref:`unit_equivalencies`). If `None`, no
             equivalencies will be applied at all, not even any set globallyq
@@ -2441,7 +2441,7 @@ class TimeDelta(TimeBase):
             for a given format, i.e., 'float' or 'date_hms').
         unit : `~astropy.units.UnitBase` instance or str, optional
             The unit in which the value should be given.
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
             A list of equivalence pairs to try if the units are not directly
             convertible (see :ref:`unit_equivalencies`). If `None`, no
             equivalencies will be applied at all, not even any set globally or

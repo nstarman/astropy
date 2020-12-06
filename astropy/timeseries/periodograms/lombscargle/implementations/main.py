@@ -62,7 +62,7 @@ def _get_frequency_grid(frequency, assume_regular_frequency=False):
 
     Returns
     -------
-    f0, df, N : scalars
+    f0, df, N : scalar
         Parameters such that all(frequency == f0 + df * np.arange(N))
     """
     frequency = np.asarray(frequency)

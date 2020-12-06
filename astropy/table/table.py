@@ -411,8 +411,9 @@ class Table:
 
         Returns
         -------
-        table_array : np.ndarray (unmasked) or np.ma.MaskedArray (masked)
-            Copy of table as a numpy structured array
+        table_array : array or `~numpy.ma.MaskedArray`
+            Copy of table as a numpy structured array.
+            ndarray for unmasked or `~numpy.ma.MaskedArray` for masked.
         """
         masked = self.masked or self.has_masked_columns or self.has_masked_values
         empty_init = ma.empty if masked else np.empty
@@ -2225,7 +2226,7 @@ class Table:
 
         Parameters
         ----------
-        row_specifier : slice, int, or array of ints
+        row_specifier : slice or int or array of int
             Specification for rows to remove
 
         Examples

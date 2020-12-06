@@ -81,7 +81,7 @@ READ_DOCSTRING = """
 
     Returns
     -------
-    dat : `~astropy.table.Table` OR <generator>
+    dat : `~astropy.table.Table` or <generator>
         Output table
 
     """

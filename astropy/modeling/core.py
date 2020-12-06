@@ -3564,9 +3564,11 @@ def fix_inputs(modelinstance, values):
 
     Parameters
     ----------
-    modelinstance : Model instance. This is the model that one or more of the
+    modelinstance : `~astropy.modeling.Model` instance
+        This is the model that one or more of the
         model input values will be fixed to some constant value.
-    values : A dictionary where the key identifies which input to fix
+    values : dict
+        A dictionary where the key identifies which input to fix
         and its value is the value to fix it at. The key may either be the
         name of the input or a number reflecting its order in the inputs.
 

@@ -60,7 +60,7 @@ def pdf_single(z, N, normalization, dH=1, dK=3):
         The number of data points from which the periodogram was computed.
     normalization : {'standard', 'model', 'log', 'psd'}
         The periodogram normalization.
-    dH, dK : integers, optional
+    dH, dK : int, optional
         The number of parameters in the null hypothesis and the model.
 
     Returns
@@ -110,7 +110,7 @@ def fap_single(z, N, normalization, dH=1, dK=3):
         The number of data points from which the periodogram was computed.
     normalization : {'standard', 'model', 'log', 'psd'}
         The periodogram normalization.
-    dH, dK : integers, optional
+    dH, dK : int, optional
         The number of parameters in the null hypothesis and the model.
 
     Returns
@@ -160,7 +160,7 @@ def inv_fap_single(fap, N, normalization, dH=1, dK=3):
         The number of data points from which the periodogram was computed.
     normalization : {'standard', 'model', 'log', 'psd'}
         The periodogram normalization.
-    dH, dK : integers, optional
+    dH, dK : int, optional
         The number of parameters in the null hypothesis and the model.
 
     Returns
@@ -212,7 +212,7 @@ def cdf_single(z, N, normalization, dH=1, dK=3):
         The number of data points from which the periodogram was computed.
     normalization : {'standard', 'model', 'log', 'psd'}
         The periodogram normalization.
-    dH, dK : integers, optional
+    dH, dK : int, optional
         The number of parameters in the null hypothesis and the model.
 
     Returns

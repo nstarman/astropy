@@ -47,11 +47,11 @@ def cartesian_to_spherical(x, y, z):
     Parameters
     ----------
     x : scalar, array_like, or `~astropy.units.Quantity`
-        The first cartesian coordinate.
+        The first Cartesian coordinate.
     y : scalar, array_like, or `~astropy.units.Quantity`
-        The second cartesian coordinate.
+        The second Cartesian coordinate.
     z : scalar, array_like, or `~astropy.units.Quantity`
-        The third cartesian coordinate.
+        The third Cartesian coordinate.
 
     Returns
     -------
@@ -180,7 +180,7 @@ def get_constellation(coord, short_name=False, constellation_list='iau'):
 
     Parameters
     ----------
-    coord : coordinate object
+    coord : coord-like
         The object to determine the constellation of.
     short_name : bool
         If True, the returned names are the IAU-sanctioned abbreviated
@@ -291,7 +291,7 @@ def concatenate_representations(reps):
 
     Parameters
     ----------
-    reps : sequence of representation objects
+    reps : sequence of `~astropy.coordinates.BaseRepresentation` object
         The objects to concatenate
 
     Returns
@@ -350,7 +350,7 @@ def concatenate(coords):
 
     Parameters
     ----------
-    coords : sequence of coordinate objects
+    coords : sequence of coord-like
         The objects to concatenate
 
     Returns

@@ -281,13 +281,13 @@ frame-specific names can be used as keyword arguments:
 
 The following keywords can be specified for any frame:
 
-*distance*: valid `~astropy.coordinates.Distance` initializer, optional
+*distance*: distance Quantity-like, optional
     Distance from reference from center to source
 
-*obstime*: valid `~astropy.time.Time` initializer, optional
+*obstime*: Time-like, optional
     Time of observation
 
-*equinox*: valid `~astropy.time.Time` initializer, optional
+*equinox*: Time-like, optional
     Coordinate frame equinox
 
 If custom user-defined frames are included in the transform graph and they

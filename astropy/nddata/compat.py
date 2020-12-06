@@ -252,7 +252,7 @@ class NDDataArray(NDArithmeticMixin, NDSlicingMixin, NDIOMixin, NDData):
         unit : `astropy.units.UnitBase` instance or str
             The unit to convert to.
 
-        equivalencies : list of equivalence pairs, optional
+        equivalencies : list of (2,) tuple
            A list of equivalence pairs to try if the units are not
            directly convertible.  See :ref:`unit_equivalencies`.
 

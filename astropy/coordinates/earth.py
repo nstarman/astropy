@@ -338,8 +338,9 @@ class EarthLocation(u.Quantity):
 
         Returns
         -------
-        site : This class (a `~astropy.coordinates.EarthLocation` or subclass)
+        site : `~astropy.coordinates.EarthLocation` or subclass
             The location of the observatory.
+            Will be of type(this class)
 
         Examples
         --------
@@ -414,8 +415,9 @@ class EarthLocation(u.Quantity):
 
         Returns
         -------
-        location : This class (a `~astropy.coordinates.EarthLocation` or subclass)
+        location : `~astropy.coordinates.EarthLocation` or subclass
             The location of the input address.
+            Will be type(this class)
 
         References
         ----------
@@ -757,7 +759,7 @@ class EarthLocation(u.Quantity):
             the Moon.  Earth is always included (because the class represents
             an *Earth* location).
 
-        masses : dict of str to Quantity, optional
+        masses : dict[str, `~astropy.units.Quantity`], optional
             The mass or gravitational parameters (G * mass) to assume for the
             bodies requested in ``bodies``. Can be used to override the
             defaults for the Sun, Jupiter, the Moon, and the Earth, or to

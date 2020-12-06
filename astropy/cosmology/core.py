@@ -414,8 +414,8 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        newcos : Subclass of FLRW
-        A new instance of this class with the specified changes.
+        newcos : `FLRW` subclass instance
+            A new instance of this class with the specified changes.
 
         Notes
         -----
@@ -481,8 +481,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
-          The dark energy equation of state
+        w : ndarray or float
+          The dark energy equation of state.
+          float if scalar input.
 
         Notes
         -----
@@ -506,9 +507,10 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Om : ndarray, or float if input scalar
+        Om : ndarray or float
           The density of non-relativistic matter relative to the critical
           density at each redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -530,9 +532,10 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Ob : ndarray, or float if input scalar
+        Ob : ndarray or float
           The density of baryonic matter relative to the critical density at
           each redshift.
+          Returns float if input scalar.
 
         Raises
         ------
@@ -556,9 +559,10 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Odm : ndarray, or float if input scalar
+        Odm : ndarray or float
           The density of non-relativistic dark matter relative to the critical
           density at each redshift.
+          Returns float if input scalar.
 
         Raises
         ------
@@ -589,8 +593,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Ok : ndarray, or float if input scalar
+        Ok : ndarray or float
           The equivalent density parameter for curvature at each redshift.
+          Returns float if input scalar.
         """
 
         if isiterable(z):
@@ -614,9 +619,10 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Ode : ndarray, or float if input scalar
+        Ode : ndarray or float
           The density of non-relativistic matter relative to the critical
           density at each redshift.
+          Returns float if input scalar.
         """
 
         if isiterable(z):
@@ -640,9 +646,10 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Ogamma : ndarray, or float if input scalar
+        Ogamma : ndarray or float
           The energy density of photons relative to the critical
           density at each redshift.
+          Returns float if input scalar.
         """
 
         if isiterable(z):
@@ -659,12 +666,13 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        Onu : ndarray, or float if input scalar
+        Onu : ndarray or float
           The energy density of neutrinos relative to the critical
           density at each redshift.  Note that this includes their
           kinetic energy (if they have mass), so it is not equal to
           the commonly used :math:`\\sum \\frac{m_{\\nu}}{94 eV}`,
           which does not include kinetic energy.
+          Returns float if input scalar.
         """
 
         if isiterable(z):
@@ -719,14 +727,15 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Parameters
         ----------
-        z : array like
+        z : array_like
            Redshift
 
         Returns
         -------
-         f : ndarray, or float if z is scalar
+        f : `~numpy.ndarray` or float
            The neutrino density scaling factor relative to the density
-           in photons at each redshift
+           in photons at each redshift.
+           Only returns float if z is scalar.
 
         Notes
         -----
@@ -803,8 +812,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -853,8 +863,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -887,8 +898,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the inverse Hubble constant.
+          Returns float if input scalar.
         """
 
         # Avoid the function overhead by repeating code
@@ -1023,8 +1035,9 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Returns
         -------
-        a : ndarray, or float if input scalar
+        a : ndarray or float
           Scale factor at each input redshift.
+          Returns float if input scalar.
         """
 
         if isiterable(z):
@@ -1378,14 +1391,15 @@ class FLRW(Cosmology, metaclass=ABCMeta):
 
         Parameters
         ----------
-        z1, z2 : array_like, shape (N,)
+        z1, z2 : (N,) array_like
           Input redshifts. z2 must be large than z1.
 
         Returns
         -------
-        d : `~astropy.units.Quantity`, shape (N,) or single if input scalar
+        d : (N,) `~astropy.units.Quantity`
           The angular diameter distance between each input redshift
           pair.
+          scalar output if input scalar.
 
         """
 
@@ -1693,8 +1707,9 @@ class LambdaCDM(FLRW):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
-          The dark energy equation of state
+        w : ndarray or float
+          The dark energy equation of state.
+          Returns float if input scalar.
 
         Notes
         ------
@@ -1720,8 +1735,9 @@ class LambdaCDM(FLRW):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2065,8 +2081,9 @@ class LambdaCDM(FLRW):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2097,8 +2114,9 @@ class LambdaCDM(FLRW):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The inverse redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2206,8 +2224,9 @@ class FlatLambdaCDM(LambdaCDM):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2238,8 +2257,9 @@ class FlatLambdaCDM(LambdaCDM):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The inverse redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2364,8 +2384,9 @@ class wCDM(FLRW):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
+        w : ndarray or float
           The dark energy equation of state
+          Returns float if input scalar.
 
         Notes
         ------
@@ -2391,8 +2412,9 @@ class wCDM(FLRW):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2415,8 +2437,9 @@ class wCDM(FLRW):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2445,8 +2468,9 @@ class wCDM(FLRW):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The inverse redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2566,8 +2590,9 @@ class FlatwCDM(wCDM):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2596,8 +2621,9 @@ class FlatwCDM(wCDM):
 
         Returns
         -------
-        E : ndarray, or float if input scalar
+        E : ndarray or float
           The inverse redshift scaling of the Hubble constant.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -2735,8 +2761,9 @@ class w0waCDM(FLRW):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
+        w : ndarray or float
           The dark energy equation of state
+          Returns float if input scalar.
 
         Notes
         ------
@@ -2762,8 +2789,9 @@ class w0waCDM(FLRW):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -3017,8 +3045,9 @@ class wpwaCDM(FLRW):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
+        w : ndarray or float
           The dark energy equation of state
+          Returns float if input scalar.
 
         Notes
         ------
@@ -3046,8 +3075,9 @@ class wpwaCDM(FLRW):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----
@@ -3193,8 +3223,9 @@ class w0wzCDM(FLRW):
 
         Returns
         -------
-        w : ndarray, or float if input scalar
+        w : ndarray or float
           The dark energy equation of state
+          Returns float if input scalar.
 
         Notes
         ------
@@ -3220,8 +3251,9 @@ class w0wzCDM(FLRW):
 
         Returns
         -------
-        I : ndarray, or float if input scalar
+        I : ndarray or float
           The scaling of the energy density of dark energy with redshift.
+          Returns float if input scalar.
 
         Notes
         -----

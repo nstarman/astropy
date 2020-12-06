@@ -28,10 +28,10 @@ def convert_to_writable_filelike(fd, compressed=False):
 
     Parameters
     ----------
-    fd : file path string or writable file-like object
+    fd : str or file-like object
         May be:
 
-            - a file path, in which case it is opened, and the file
+            - a file path string, in which case it is opened, and the file
               object is returned.
 
             - an object with a :meth:``write`` method, in which case that

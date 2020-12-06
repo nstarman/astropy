@@ -118,7 +118,7 @@ def trig_sum(t, h, df, N, f0=0, freq_factor=1,
 
     Returns
     -------
-    S, C : ndarrays
+    S, C : ndarray
         summation arrays for frequencies f = df * np.arange(1, N + 1)
     """
     df *= freq_factor
