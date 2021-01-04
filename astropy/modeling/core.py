@@ -694,7 +694,7 @@ class Model(metaclass=_ModelMeta):
     _stds = None
 
     # inputs with fixed shape that should not be broadcast
-    inputs_fix_shape = None
+    inputs_no_broadcast = None
 
     def __init__(self, *args, meta=None, name=None, **kwargs):
         super().__init__()
@@ -1650,19 +1650,23 @@ class Model(metaclass=_ModelMeta):
 
         n_models = len(self)
 
-        kwargs["inputs_fix_shape"] = fsh = kwargs.get("inputs_fix_shape",
-                                                      self.inputs_fix_shape or [])
+        kwargs["inputs_no_broadcast"] = fsh = kwargs.get(
+            "inputs_no_broadcast", self.inputs_no_broadcast or []
+        )
+        # print(self.name, fsh)
 
         params = [getattr(self, name) for name in self.param_names]
         inputs = [np.asanyarray(_input, dtype=float) if i not in fsh else _input
                   for i, _input in enumerate(inputs)]
 
         _validate_input_shapes(inputs, self.inputs, n_models,
-                               model_set_axis, self.standard_broadcasting)
+                               model_set_axis, self.standard_broadcasting,
+                               skip=fsh)
 
         inputs_map = kwargs.get('inputs_map', None)
 
         inputs = self._validate_input_units(inputs, equivalencies, inputs_map)
+        # print("\t", list(map(np.shape, inputs)))
 
         # The input formatting required for single models versus a multiple
         # model set are different enough that they've been split into separate
@@ -3737,7 +3741,7 @@ def _custom_model_wrapper(func, fit_deriv=None):
 
     members.update(params)
 
-    return type(model_name, (FittableModel,), members)
+    return type(model_name, (CustomModel,), members)
 
 
 def render_model(model, arr=None, coords=None):
@@ -3838,11 +3842,12 @@ def render_model(model, arr=None, coords=None):
 
 
 def _prepare_inputs_single_model(model, params, inputs, **kwargs):
-    inputs_fix_shape = kwargs.pop("inputs_fix_shape", [])
+    inputs_no_broadcast = kwargs.pop("inputs_no_broadcast", [])
+    max_broadcast = None
     broadcasts = []
 
     for idx, _input in enumerate(inputs):
-        if idx in inputs_fix_shape:
+        if idx in inputs_no_broadcast:
             broadcasts.append(None)
             continue
         input_shape = _input.shape
@@ -3877,6 +3882,9 @@ def _prepare_inputs_single_model(model, params, inputs, **kwargs):
                 max_broadcast = max(max_broadcast, broadcast)
 
         broadcasts.append(max_broadcast)
+
+    for idx in inputs_no_broadcast:
+        broadcasts[idx] = max_broadcast
 
     if model.n_outputs > model.n_inputs:
         if len(set(broadcasts).difference(NONE_SET)) > 1:
@@ -3916,8 +3924,8 @@ def _prepare_outputs_single_model(outputs, format_info):
 
 def _prepare_inputs_model_set(model, params, inputs, n_models, model_set_axis_input,
                               **kwargs):
-    inputs_fix_shape = kwargs.pop("inputs_fix_shape", [])
-    if inputs_fix_shape:
+    inputs_no_broadcast = kwargs.pop("inputs_no_broadcast", [])
+    if inputs_no_broadcast:
         raise Exception("TODO")
 
     reshaped = []
@@ -4003,7 +4011,7 @@ def _prepare_outputs_model_set(model, outputs, format_info, model_set_axis):
 
 
 def _validate_input_shapes(inputs, argnames, n_models, model_set_axis,
-                           validate_broadcasting):
+                           validate_broadcasting, skip=None):
     """
     Perform basic validation of model inputs--that they are mutually
     broadcastable and that they have the minimum dimensions for the given
@@ -4011,12 +4019,19 @@ def _validate_input_shapes(inputs, argnames, n_models, model_set_axis,
 
     If validation succeeds, returns the total shape that will result from
     broadcasting the input arrays with each other.
+
+    .. todo:: 
+
+        `fix_inputs_shape` compatible with model sets (axis)
+
     """
 
     check_model_set_axis = n_models > 1 and model_set_axis is not False
 
     all_shapes = []
     for idx, _input in enumerate(inputs):
+        if idx in skip:
+            continue
         input_shape = np.shape(_input)
         # Ensure that the input's model_set_axis matches the model's
         # n_models
@@ -4042,6 +4057,7 @@ def _validate_input_shapes(inputs, argnames, n_models, model_set_axis,
 
     input_shape = check_consistent_shapes(*all_shapes)
     if input_shape is None:
+        # print("all_shapes: ", all_shapes)
         raise ValueError(
             "All inputs must have identical shapes or must be scalars.")
 
@@ -4103,6 +4119,7 @@ def get_bounding_box(self):
 def generic_call(self, *inputs, **kwargs):
     """ The base ``Model. __call__`` method."""
     inputs, format_info = self.prepare_inputs(*inputs, **kwargs)
+    # print("finfo: ", list(map(np.shape, inputs)), "\t", format_info)
     if isinstance(self, CompoundModel):
         # CompoundModels do not normally hold parameters at that level
         parameters = ()
@@ -4114,7 +4131,7 @@ def generic_call(self, *inputs, **kwargs):
     if with_bbox and bbox is not None:
         input_shape = _validate_input_shapes(
             inputs, self.inputs, self._n_models, self.model_set_axis,
-            self.standard_broadcasting)
+            self.standard_broadcasting, skip=self.inputs_no_broadcast)
         vinputs, valid_ind, allout = prepare_bounding_box_inputs(
             self, input_shape, inputs, bbox)
         valid_result_unit = None
