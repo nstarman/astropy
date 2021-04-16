@@ -3,6 +3,10 @@
 Header Data Units
 *****************
 
+Header Data Unit are the fundamental container structure of the FITS format
+consisting of a ``data`` member and its associated metadata in a ``header``.
+They are defined in ``astropy.io.fits.hdu``.
+
 The :class:`ImageHDU` and :class:`CompImageHDU` classes are discussed in the
 section on :ref:`Images`.
 
