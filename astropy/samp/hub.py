@@ -1173,7 +1173,7 @@ class SAMPHubServer:
         ----------
         recipient_private_key
             The private key of the receiver of the call
-        recipient_public_key
+        recipient_public_id
             The public key of the receiver of the call
         samp_method_name : str
             The name of the SAMP method to call

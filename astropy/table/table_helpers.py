@@ -57,7 +57,7 @@ def simple_table(size=3, cols=None, kinds='ifS', masked=False):
     """
     Return a simple table for testing.
 
-    Example
+    Examples
     --------
     ::
 

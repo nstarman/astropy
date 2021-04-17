@@ -96,8 +96,7 @@ def getheader(filename, *args, **kwargs):
     ext, extname, extver
         The rest of the arguments are for extension specification.  See the
         `getdata` documentation for explanations/examples.
-
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
 
@@ -129,7 +128,7 @@ def getdata(filename, *args, header=None, lower=None, upper=None, view=None,
         File to get data from.  If opened, mode must be one of the
         following rb, rb+, or ab+.
 
-    ext
+    *args
         The rest of the arguments are for extension specification.
         They are flexible and are best illustrated by examples.
 
@@ -176,7 +175,7 @@ def getdata(filename, *args, header=None, lower=None, upper=None, view=None,
 
            data.view(view)
 
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
 
@@ -250,8 +249,7 @@ def getval(filename, keyword, *args, **kwargs):
     ext, extname, extver
         The rest of the arguments are for extension specification.
         See `getdata` for explanations/examples.
-
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
         *Note:* This function automatically specifies ``do_not_scale_image_data
@@ -318,8 +316,7 @@ def setval(filename, keyword, *args, value=None, comment=None, before=None,
     ext, extname, extver
         The rest of the arguments are for extension specification.
         See `getdata` for explanations/examples.
-
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
         *Note:* This function automatically specifies ``do_not_scale_image_data
@@ -358,8 +355,7 @@ def delval(filename, keyword, *args, **kwargs):
     ext, extname, extver
         The rest of the arguments are for extension specification.
         See `getdata` for explanations/examples.
-
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
         *Note:* This function automatically specifies ``do_not_scale_image_data
@@ -634,7 +630,7 @@ def append(filename, data, header=None, checksum=False, verify=True, **kwargs):
         to the end of the file.  Setting ``verify`` to `False` can be much
         faster.
 
-    kwargs
+    **kwargs
         Additional arguments are passed to:
 
         - `~astropy.io.fits.writeto` if the file does not exist or is empty.
@@ -754,8 +750,7 @@ def info(filename, output=None, **kwargs):
         A file-like object to write the output to.  If ``False``, does not
         output to a file and instead returns a list of tuples representing the
         HDU info.  Writes to ``sys.stdout`` by default.
-
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `astropy.io.fits.open`.
         *Note:* This function sets ``ignore_missing_end=True`` by default.
@@ -825,7 +820,7 @@ def printdiff(inputa, inputb, *args, **kwargs):
             printdiff('inA.fits', 'inB.fits',
                       ext=('sci', 1), extname='err', extver=2)
 
-    kwargs
+    **kwargs
         Any additional keyword arguments to be passed to
         `~astropy.io.fits.FITSDiff`.
 

@@ -648,7 +648,7 @@ def get_index_by_names(table, names):
     ----------
     table : `Table`
         Input table
-    nmaes : tuple, list
+    names : tuple, list
         Column names
     '''
     names = list(names)

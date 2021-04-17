@@ -303,7 +303,7 @@ class Fitter(metaclass=_FitterMeta):
         ----------
         fps : list
             parameters returned by the fitter
-        args : list
+        *args : list
             [model, [other_args], [input coordinates]]
             other_args may include weights or any other quantities specific for
             a statistic
@@ -505,13 +505,10 @@ class LinearLSQFitter(metaclass=_FitterMeta):
             Weights for fitting.
             For data with Gaussian uncertainties, the weights should be
             1/sigma.
-        rcond :  float, optional
+        rcond : float, optional
             Cut-off ratio for small singular values of ``a``.
             Singular values are set to zero if they are smaller than ``rcond``
             times the largest singular value of ``a``.
-        equivalencies : list or None, optional, keyword-only
-            List of *additional* equivalencies that are should be applied in
-            case x, y and/or z have units. Default is None.
 
         Returns
         -------
@@ -861,7 +858,7 @@ class FittingWithOutlierRemoval:
             Data measurements (2D case).
         weights : array-like, optional
             Weights to be passed to the fitter.
-        kwargs : dict, optional
+        **kwargs : dict, optional
             Keyword arguments to be passed to the fitter.
         Returns
         -------
@@ -1070,7 +1067,7 @@ class LevMarLSQFitter(metaclass=_FitterMeta):
         ----------
         fps : list
             parameters returned by the fitter
-        args : list
+        *args : list
             [model, [weights], [input coordinates]]
 
         """
@@ -1132,9 +1129,6 @@ class LevMarLSQFitter(metaclass=_FitterMeta):
             If False (default) and if the model has a fit_deriv method,
             it will be used. Otherwise the Jacobian will be estimated.
             If True, the Jacobian will be estimated in any case.
-        equivalencies : list or None, optional, keyword-only
-            List of *additional* equivalencies that are should be applied in
-            case x, y and/or z have units. Default is None.
 
         Returns
         -------
@@ -1279,7 +1273,7 @@ class SLSQPLSQFitter(Fitter):
             Weights for fitting.
             For data with Gaussian uncertainties, the weights should be
             1/sigma.
-        kwargs : dict
+        **kwargs : dict
             optional keyword arguments to be passed to the optimizer or the statistic
         verblevel : int
             0-silent
@@ -1351,7 +1345,7 @@ class SimplexLSQFitter(Fitter):
             Weights for fitting.
             For data with Gaussian uncertainties, the weights should be
             1/sigma.
-        kwargs : dict
+        **kwargs : dict
             optional keyword arguments to be passed to the optimizer or the statistic
         maxiter : int
             maximum number of iterations
@@ -1434,7 +1428,7 @@ class JointFitter(metaclass=_FitterMeta):
         fps : list
             the fitted parameters - result of an one iteration of the
             fitting algorithm
-        args : dict
+        *args : dict
             tuple of measured and input coordinates
             args is always passed as a tuple from optimize.leastsq
 

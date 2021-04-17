@@ -430,8 +430,7 @@ class HDUList(list, _Verify):
             It should be noted that if that memory is read-only (such as a
             Python string) the returned :class:`HDUList`'s data portions will
             also be read-only.
-
-        kwargs : dict
+        **kwargs : dict
             Optional keyword arguments.  See
             :func:`astropy.io.fits.open` for details.
 

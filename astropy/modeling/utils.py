@@ -521,7 +521,7 @@ class _BoundingBox(tuple):
 
         Parameters
         ----------
-        resolution: float
+        resolution : float
             The resolution of the grid.
         """
 
@@ -543,9 +543,8 @@ def make_binary_operator_eval(oper, f, g):
     ``f`` and ``g`` are assumed to return tuples (which may be 1-tuples).  The
     given operator is applied element-wise to tuple outputs).
 
-    Example
-    -------
-
+    Examples
+    --------
     >>> from operator import add
     >>> def prod(x, y):
     ...     return (x * y,)

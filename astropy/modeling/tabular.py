@@ -204,7 +204,7 @@ class _Tabular(Model):
 
         Parameters
         ----------
-        inputs : list of scalar or list of ndarray
+        *inputs : list of scalar or list of ndarray
             Input coordinates. The number of inputs must be equal
             to the dimensions of the lookup table.
         """

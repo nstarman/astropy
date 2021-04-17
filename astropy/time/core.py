@@ -1791,7 +1791,7 @@ class Time(TimeBase):
         """Calculate sidereal time.
 
         Parameters
-        ---------------
+        ----------
         kind : str
             ``'mean'`` or ``'apparent'``, i.e., accounting for precession
             only, or also for nutation.

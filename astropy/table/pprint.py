@@ -54,9 +54,8 @@ def get_auto_format_func(
 
     Parameters
     ----------
-    col_name : object, optional
+    col : object, optional
         Hashable object to identify column like id or name. Default is None.
-
     possible_string_format_functions : func, optional
         Function that yields possible string formatting functions
         (defaults to internal function to do this).

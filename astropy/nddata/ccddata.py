@@ -298,7 +298,7 @@ class CCDData(NDDataArray):
             .. versionadded:: 3.1
 
         Raises
-        -------
+        ------
         ValueError
             - If ``self.mask`` is set but not a `numpy.ndarray`.
             - If ``self.uncertainty`` is set but not a astropy uncertainty type.
@@ -568,7 +568,7 @@ def fits_ccddata_reader(filename, hdu=0, unit=None, hdu_uncertainty='UNCERT',
 
         .. versionadded:: 3.1
 
-    kwd :
+    **kwd
         Any additional keyword parameters are passed through to the FITS reader
         in :mod:`astropy.io.fits`; see Notes for additional discussion.
 
@@ -694,7 +694,7 @@ def fits_ccddata_writer(
         All additional keywords are passed to :py:mod:`astropy.io.fits`
 
     Raises
-    -------
+    ------
     ValueError
         - If ``self.mask`` is set but not a `numpy.ndarray`.
         - If ``self.uncertainty`` is set but not a

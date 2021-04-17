@@ -387,7 +387,7 @@ class _KnuthF:
 
         Parameters
         ----------
-        dx : float
+        M : float
             Width of bins
 
         Returns

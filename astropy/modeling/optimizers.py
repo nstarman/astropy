@@ -129,7 +129,7 @@ class SLSQP(Optimization):
             initial guess for the parameter values
         fargs : tuple
             other arguments to be passed to the statistic function
-        kwargs : dict
+        **kwargs : dict
             other keyword arguments to be passed to the solver
 
         """
@@ -211,7 +211,7 @@ class Simplex(Optimization):
             initial guess for the parameter values
         fargs : tuple
             other arguments to be passed to the statistic function
-        kwargs : dict
+        **kwargs : dict
             other keyword arguments to be passed to the solver
 
         """
