@@ -116,13 +116,17 @@ class FieldRepresentationBase(BaseRepresentation):
 
         # add properties to access the field and points components
         for i, k in enumerate(base_rep.attr_classes):
-            # a more descriptive name than q1
+            # invariant set component name
+            setattr(cls, f"q{i+1}",
+                    property(_make_getter(f"q{i+1}"),
+                             doc=f"Component q{i} of the field."))
+
+            # a more descriptive name than the invariant
             setattr(cls, f"q_{k}",
                     property(_make_getter(f"q{i+1}"),
                              doc=f"Component q{i} ({k}) of the field."))
 
             # access to the underlying points' components
-            # TODDO a la _make_getter this
             setattr(cls, k,
                     property(_make_point_getter(k),
                              doc=f"Component q{i+1} ({k}) of the field."))
@@ -136,9 +140,8 @@ class FieldRepresentationBase(BaseRepresentation):
         if len(args) == 1:
             args = args[0].T
         # store each component
-        self._q1 = args[0]
-        self._q2 = args[1]
-        self._q3 = args[2]
+        for i, arg in enumerate(args):
+            setattr(self, f"_q{i+1}", arg)
         # there can be no differentials
         self._differentials = MappingProxyType({})
 
@@ -146,18 +149,6 @@ class FieldRepresentationBase(BaseRepresentation):
     def points(self):
         """The points at which the field values are defined."""
         return self._points
-
-    @property
-    def q1(self):
-        return self._q1
-
-    @property
-    def q2(self):
-        return self._q2
-
-    @property
-    def q3(self):
-        return self._q3
 
     # =====================================================
     # Representation Conversion
@@ -243,7 +234,7 @@ class FieldRepresentationBase(BaseRepresentation):
             return self
 
         # process the other_class options
-        if inspect.isclass(other_class) and issubclass(other_class,FieldRepresentationBase,):
+        if inspect.isclass(other_class) and issubclass(other_class,FieldRepresentationBase):
             pass
         elif inspect.isclass(other_class) and issubclass(other_class, BaseRepresentation):
             other_class = _REPRESENTATION_TO_FIELD_MAPPING[other_class]
