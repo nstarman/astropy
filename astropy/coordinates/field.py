@@ -57,6 +57,8 @@ class FieldRepresentationBase(BaseRepresentation):
         The points of the field.
 
     """
+ 
+    attr_classes = {}  # needed b/c of BaseRepresentation meta
 
     def __init_subclass__(cls):
         # discover the base representation from the MRO
@@ -66,7 +68,7 @@ class FieldRepresentationBase(BaseRepresentation):
         _REPRESENTATION_TO_FIELD_MAPPING[base_rep] = cls
 
         # an invariant set of component names
-        cls.attr_classes = {f"q{i}": u.Quantity for i in
+        cls.attr_classes = {f"q{i+1}": u.Quantity for i in
                             range(len(base_rep.attr_classes.keys()))}
 
         # add properties to access the field and points components
@@ -236,8 +238,8 @@ class FieldRepresentationBase(BaseRepresentation):
 #         )
     
     def _combine_operation(self, op, other, reverse = False):
-        diff = (self.points.represent_as(coord.CartesianRepresentation)
-                - other.points.represent_as(coord.CartesianRepresentation))
+        diff = (self.points.represent_as(CartesianRepresentation)
+                - other.points.represent_as(CartesianRepresentation))
         if not np.allclose(diff.norm().value, 0):
             raise Exception("can't combine mismatching points.")
 
@@ -327,7 +329,7 @@ class FieldRepresentationBase(BaseRepresentation):
 
 
 class CartesianFieldRepresentation(FieldRepresentationBase,
-                                   coord.CartesianRepresentation):
+                                   CartesianRepresentation):
 
     def get_xyz(self, xyz_axis=0):
         return np.stack([self._q1, self._q2, self._q3], axis=xyz_axis)
@@ -341,21 +343,21 @@ class CartesianFieldRepresentation(FieldRepresentationBase,
 # -------------------------------------------------------------------
 
 class SphericalFieldRepresentation(FieldRepresentationBase,
-                                   coord.SphericalRepresentation):
+                                   SphericalRepresentation):
     pass
 
 
 # -------------------------------------------------------------------
 
 class PhysicsSphericalFieldRepresentation(FieldRepresentationBase,
-                                          coord.PhysicsSphericalRepresentation):
+                                          PhysicsSphericalRepresentation):
     pass
 
 
 # -------------------------------------------------------------------
 
 class CylindricalFieldRepresentation(FieldRepresentationBase,
-                                     coord.CylindricalRepresentation):
+                                     CylindricalRepresentation):
     pass
 
 
@@ -380,7 +382,7 @@ class Field:
 
     # =====================================================
     # Initialization
-    
+
     def __new__(cls, points, *args, **kwargs):
         if isinstance(points, table.Table):
             return cls.from_table(points)
@@ -393,12 +395,13 @@ class Field:
         self.meta["__fieldtype__"] = dict()
         for k, v in fields.items():
             self[k] = v
-    
+
     @classmethod
     def from_table(cls, tbl, copy=True):
         # TODO! validation
         self = super().__new__(cls)
         self._data = table.QTable(tbl, copy=copy)
+        return self
 
     # =====================================================
 
@@ -436,6 +439,12 @@ class Field:
             self._data[k] = self._data[k].represent_as(representation_type)
 
         return self
+
+    # =====================================================
+    # Misc
+
+    def __repr__(self):
+        return repr(self._data).replace("QTable", "Field")
 
 
 ##############################################################################
