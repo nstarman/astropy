@@ -26,7 +26,7 @@ Example
         vector=np.c_[np.linspace(0, 10),
                        np.linspace(10, 100),
                        np.linspace(100, 1000)] * u.km / u.s**2,)
-    
+
     field.points[:4]
 
     field.vector[:4]
