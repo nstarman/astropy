@@ -83,6 +83,11 @@ _REPRESENTATION_TO_FIELD_MAPPING = dict()
 # CODE
 ##############################################################################
 
+def _make_point_getter(component):
+    def getter(self):
+        return getattr(self._points, component)
+    
+    return getter
 
 class FieldRepresentationBase(BaseRepresentation):
     """Representation of Components of a Field.
@@ -113,13 +118,14 @@ class FieldRepresentationBase(BaseRepresentation):
         for i, k in enumerate(base_rep.attr_classes):
             # a more descriptive name than q1
             setattr(cls, f"q_{k}",
-                    property(_make_getter(f"_q{i}"),
+                    property(_make_getter(f"q{i+1}"),
                              doc=f"Component q{i} ({k}) of the field."))
 
             # access to the underlying points' components
+            # TODDO a la _make_getter this
             setattr(cls, k,
-                property(lambda self: getattr(self._points, k),
-                         doc=f"Component q{i} ({k}) of the field."))
+                    property(_make_point_getter(k),
+                             doc=f"Component q{i+1} ({k}) of the field."))
 
     def __init__(self, *args, points, copy=True):
         # store the points, in the correct representation
