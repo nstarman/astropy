@@ -1,6 +1,44 @@
 # -*- coding: utf-8 -*-
 
-"""Fields on Representations."""
+"""Fields on Representations.
+
+Example
+
+.. code-block:: python
+
+    from astropy import table, coordinates as coord, units as u
+    import numpy as np
+
+    points = coord.CartesianRepresentation(x=np.linspace(0, 10) * u.kpc,
+                                           y=np.linspace(-1, -11) * u.kpc,
+                                           z=np.linspace(-3, 3) * u.kpc)
+    fr = coord.SphericalFieldRepresentation(np.linspace(0, 10) * u.km / u.s**2,
+                                            np.linspace(10, 100) * u.km / u.s**2,
+                                            np.linspace(100, 1000) * u.km / u.s**2,
+                                            points=points)
+    fr[:3]
+
+    field = coord.Field(
+        coord.CartesianRepresentation(x=np.linspace(0, 10) * u.kpc,
+                                      y=np.linspace(-1, -11) * u.kpc,
+                                      z=np.linspace(-3, 3) * u.kpc),
+        mass=1 * u.solMass,
+        vector=np.c_[np.linspace(0, 10),
+                       np.linspace(10, 100),
+                       np.linspace(100, 1000)] * u.km / u.s**2,)
+    
+    field.points[:4]
+
+    field.vector[:4]
+
+    field.fieldtypes
+
+    field.represent_as("spherical").vector[:3]
+
+    field._data
+
+
+"""
 
 __all__ = [
     "Field",
