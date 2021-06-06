@@ -1314,6 +1314,45 @@ class FLRW(Cosmology):
                              args=self._inv_efunc_scalar_args)[0]
         return self._hubble_distance * vectorize_if_needed(f, z1, z2)
 
+    def conformal_time(self, z):
+        """Conformal time since the Big Bang to a given redshift.
+
+        Given by :math:`\eta = \frac{1}{H_0} \int_{z}^{\inf} \frac{dz}{E(z)}`.
+
+        Parameters
+        ----------
+        z : array-like
+          Input redshifts. Must be 1D or scalar.
+
+        Returns
+        -------
+        t : `~astropy.units.Quantity` ['time']
+          Conformal time in Gyr to each input redshift.
+        """
+        return self._integral_conformal_time_z1z2(z, np.inf)
+
+    comoving_time = conformal_time
+
+    def _integral_conformal_time_z1z2(self, z1, z2):
+        """Conformal time in Gyr between objects at redshifts z2 and z1.
+
+        Given by :math:`\eta = \frac{1}{H_0} \int_{z2}^{z1} \frac{dz}{E(z)}`.
+
+        Parameters
+        ----------
+        z1, z2 : (N,) array-like
+          Input redshifts. Must be 1D or scalar.
+
+        Returns
+        -------
+        t : `~astropy.units.Quantity` ['time']
+          Conformal time in Gyr between each input redshift.
+        """
+        from scipy.integrate import quad
+        f = lambda z1, z2: quad(self._inv_efunc_scalar, z2, z1,
+                                args=self._inv_efunc_scalar_args)[0]
+        return self._hubble_time * vectorize_if_needed(f, z2, z1)
+
     def comoving_transverse_distance(self, z):
         """ Comoving transverse distance in Mpc at a given redshift.
 
