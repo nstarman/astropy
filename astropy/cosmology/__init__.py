@@ -8,9 +8,11 @@ detailed usage examples and references.
 
 """
 
-from . import core, funcs, realizations
+from . import core, funcs, realizations, redshift as _redshift
 from .core import *
 from .funcs import *
 from .realizations import *
+from .redshift import *
 
-__all__ = core.__all__ + realizations.__all__ + funcs.__all__
+__all__ = (core.__all__ + realizations.__all__ + funcs.__all__
+           + _redshift.__all__)
