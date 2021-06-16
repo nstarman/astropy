@@ -78,7 +78,7 @@ Planck18 = dict(
 )
 
 # Planck 2018 paper VI v2.  Identical to Planck18 above.
-# Warning: deprecated and will be removed in future versions.
+# Warning: deprecated and will be removed in v5.1.
 Planck18_arXiv_v2 = dict(
     cosmology="FlatLambdaCDM",
     Oc0=0.2607,
