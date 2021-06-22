@@ -2,15 +2,12 @@
 
 import sys
 import warnings
+from collections import ChainMap
+from collections.abc import KeysView
 from types import MappingProxyType
 
-try:
-    from importlib.metadata import entry_points
-except ImportError:
-    from importlib_metadata import entry_points
-
 from astropy import units as u
-from astropy.utils.decorators import deprecated
+from astropy.utils.decorators import deprecated, classproperty
 from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyUserWarning
 from astropy.utils.state import ScienceState
 
@@ -40,6 +37,34 @@ del key, params, cosmo  # clean the namespace
 # The science state below contains the current cosmology.
 #########################################################################
 
+class KeysView(KeysView):
+    def __repr__(self):
+        return f"KeysView({list(self)})"
+
+
+class _DeepChainMap(ChainMap):
+    """Variant of ChainMap that allows direct updates to inner scopes
+
+    Code copied from # https://docs.python.org/3/library/collections.html    
+    """
+
+    def __repr__(self):
+        return super().__repr__().replace('_DeepChainMap', 'ChainMap')
+
+    def __setitem__(self, key, value):
+        for mapping in self.maps:
+            if key in mapping:
+                mapping[key] = value
+                return
+        self.maps[0][key] = value
+
+    def __delitem__(self, key):
+        for mapping in self.maps:
+            if key in mapping:
+                del mapping[key]
+                return
+        raise KeyError(key)
+
 
 class default_cosmology(ScienceState):
     """
@@ -67,9 +92,12 @@ class default_cosmology(ScienceState):
     _value = None  # the current value
 
     # Registry of realizations. Starts with the built-ins.
-    _registry = {k: getattr(sys.modules[__name__], k)
-                 for k in parameters.available}
-    available = _registry.keys()  # names of registered
+    registry = _DeepChainMap(  # ChainMap enables separate user and builtin
+        {},  # user additions is mutable, builtins is read-only
+        MappingProxyType({k: getattr(sys.modules[__name__], k)
+                          for k in parameters.available}))
+
+    available = KeysView(registry.keys())
 
     @classmethod
     def register(cls, cosmology, key=None):
@@ -99,14 +127,14 @@ class default_cosmology(ScienceState):
         name = cosmology.name if key is None else key
         if name in ("latest", "no_default"):
             raise ValueError("Name cannot be one of {'latest', 'no_default'}.")
-        elif name in parameters.available:  # an Astropy built-in
-            raise ValueError(f"Cannot override built-in realization {name}.")
+        # elif name in parameters.available:  # an Astropy built-in
+        #     raise ValueError(f"Cannot override built-in realization {name}.")
         elif name in cls._registry:  # registered, but not built-in
             warnings.warn(f"Registering cosmology realization '{name}', "
                           "overwriting existing registered realization.",
                           category=AstropyUserWarning)
         # register
-        cls._registry[name] = cosmology
+        cls.registry[name] = cosmology
 
     @deprecated("v5.0", alternative="`get`")
     @classmethod
@@ -156,16 +184,15 @@ class default_cosmology(ScienceState):
         elif name == "no_default":
             return None
 
-        # Resolve the meaning of 'latest': 
         if name == 'latest':
             name = cls._latest_value
         # Get the state from the registry.
         try:
             cosmo = cls._registry[name]
         except KeyError:
-            s = (f"Unknown cosmology '{name}'. Valid cosmologies:\n"
+            msg = (f"Unknown cosmology '{name}'. Valid cosmologies:\n"
                  f"{cls._registry.keys()}")
-            raise ValueError(s) from None
+            raise ValueError(msg) from None
 
         return cosmo
 
