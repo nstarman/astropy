@@ -14,6 +14,7 @@ from . import scalar_inv_efuncs
 from astropy import constants as const
 from astropy import units as u
 from astropy.utils import isiterable
+from astropy.utils.data_info import MixinInfo
 from astropy.utils.exceptions import (AstropyDeprecationWarning,
                                       AstropyUserWarning)
 from astropy.utils.metadata import MetaData
@@ -86,6 +87,10 @@ class CosmologyError(Exception):
     pass
 
 
+class CosmologyInfo(MixinInfo):
+    _supports_indexing = False
+
+
 class Cosmology(metaclass=ABCMeta):
     """Base-class for all Cosmologies.
 
@@ -108,6 +113,7 @@ class Cosmology(metaclass=ABCMeta):
 
     """
 
+    info = CosmologyInfo()
     meta = MetaData()
 
     def __init_subclass__(cls):
@@ -199,6 +205,16 @@ class Cosmology(metaclass=ABCMeta):
         return self.__class__(*ba.args, **ba.kwargs)
 
     # -----------------------------------------------------
+
+    @property
+    def shape(self):
+        return (1,)
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        return self
 
     def __eq__(self, other):
         """Check equality on all immutable fields (i.e. not "meta").
