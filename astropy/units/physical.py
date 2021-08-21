@@ -550,6 +550,30 @@ def get_physical_type(obj):
         return PhysicalType(unit, "unknown")
 
 
+def isPhysicalTypeLike(target):
+    """Check if target is `~astropy.units.PhysicalType`-like.
+
+    Parameters
+    ----------
+    target : Any
+        recognized types are:
+        - PhysicalType
+        - str
+        - `~astropy.units.Unit`
+        - `~astropy.units.Quantity`
+
+    Returns
+    -------
+    bool
+        True if target is `~astropy.units.PhysicalType`-like, False otherwise.
+    """
+    try:
+        get_physical_type(target)
+    except TypeError:
+        return False
+    return True
+
+
 # ------------------------------------------------------------------------------
 # Script section creating the physical types and the documentation
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-__all__ = ['quantity_input']
+__all__ = ['quantity_input', 'dequantity_input']
 
 from numbers import Number
 from collections.abc import Sequence
@@ -10,93 +10,122 @@ import inspect
 import numpy as np
 
 from astropy.utils.decorators import wraps
-from .core import (Unit, UnitBase, UnitsError, add_enabled_equivalencies,
-                   dimensionless_unscaled)
-from .function.core import FunctionUnitBase
-from .physical import _unit_physical_mapping
+from .core import Unit, add_enabled_equivalencies
+from .physical import get_physical_type
+from .quantity import Quantity
+from .structured import StructuredUnit
+from .unitspec import UnitSpec, NullUnitSpec, UnitSpecBase
 
 
-def _get_allowed_units(targets):
+def _is_unitlike(target, allow_structured=True):
+    """Check if target is `~astropy.units.Unit`-like.
+
+    Parameters
+    ----------
+    target : Any
+    allow_structured : bool
+        Whether to count a `~astropy.units.StructuredUnit` as a
+        `~astropy.units.Unit`, allowing for a distinction between a list of
+        units and a structured unit.
+
+    Returns
+    -------
+    bool
+        True if target is `~astropy.units.Unit`-like, False otherwise.
     """
-    From a list of target units (either as strings or unit objects) and physical
-    types, return a list of Unit objects.
+    # check if unit-like
+    try:
+        unit = Unit(target)
+    except (TypeError, ValueError):
+        return False
+
+    # distinguish between list of units and a structured unit
+    ulike = True
+    if not allow_structured and isinstance(unit, StructuredUnit):
+        ulike = False
+
+    return ulike
+
+
+def _is_physicaltypelike(target):
+    """Check if target is `~astropy.units.PhysicalType`-like.
+
+    Parameters
+    ----------
+    target : Any
+        recognized types are:
+        - PhysicalType
+        - str
+        - `~astropy.units.Unit`
+        - `~astropy.units.Quantity`
+
+    Returns
+    -------
+    bool
+        True if target is `~astropy.units.PhysicalType`-like, False otherwise.
     """
-
-    allowed_units = []
-    for target in targets:
-
-        try:  # unit passed in as a string
-            target_unit = Unit(target)
-
-        except ValueError:
-
-            try:  # See if the function writer specified a physical type
-                physical_type_id = _unit_physical_mapping[target]
-
-            except KeyError:  # Function argument target is invalid
-                raise ValueError(f"Invalid unit or physical type '{target}'.")
-
-            # get unit directly from physical type id
-            target_unit = Unit._from_physical_type_id(physical_type_id)
-
-        allowed_units.append(target_unit)
-
-    return allowed_units
+    try:
+        get_physical_type(target)
+    except TypeError:
+        return False
+    return True
 
 
-def _validate_arg_value(param_name, func_name, arg, targets, equivalencies,
-                        strict_dimensionless=False):
+def _parse_target(target, error=False):
+    """Parse unit / physical type target.
+
+    Parameters
+    ----------
+    target : Any
+        recognized types are:
+        - `~astropy.units.UnitSpecBase`
+        - list (not tuple) of recognized types
+        - unit-like
+        - PhysicalType-like
+
+    error : bool
+        Whether to raise a `TypeError` if 'target' is not one of its recognized
+        types.
+
+    Raises
+    ------
+    TypeError
+        If 'error' is True and 'target' is not one of its recognized types.
     """
-    Validates the object passed in to the wrapped function, ``arg``, with target
-    unit or physical type, ``target``.
-    """
-
-    if len(targets) == 0:
-        return
-
-    allowed_units = _get_allowed_units(targets)
-
-    # If dimensionless is an allowed unit and the argument is unit-less,
-    #   allow numbers or numpy arrays with numeric dtypes
-    if (dimensionless_unscaled in allowed_units and not strict_dimensionless
-            and not hasattr(arg, "unit")):
-        if isinstance(arg, Number):
-            return
-
-        elif (isinstance(arg, np.ndarray)
-              and np.issubdtype(arg.dtype, np.number)):
-            return
-
-    for allowed_unit in allowed_units:
-        try:
-            is_equivalent = arg.unit.is_equivalent(allowed_unit,
-                                                   equivalencies=equivalencies)
-
-            if is_equivalent:
-                break
-
-        except AttributeError:  # Either there is no .unit or no .is_equivalent
-            if hasattr(arg, "unit"):
-                error_msg = ("a 'unit' attribute without an 'is_equivalent' "
-                             "method")
-            else:
-                error_msg = "no 'unit' attribute"
-
-            raise TypeError(f"Argument '{param_name}' to function '{func_name}'"
-                            f" has {error_msg}. You should pass in an astropy "
-                            "Quantity instead.")
-
+    if target is None:
+        spec = NullUnitSpec()
+    elif isinstance(target, UnitSpecBase):
+        spec = target
+    elif isinstance(target, list):
+        spec = [_parse_target(n, error=error) for n in target]
+    # determine it's a unit
+    elif _is_unitlike(target):
+        spec = Unit(target)
+    # determine if PhysicalType-like
+    elif _is_physicaltypelike(target):
+        spec = get_physical_type(target)
+    # none of the recognized types. either error or pass through.
+    elif not error:
+        spec = None
     else:
-        error_msg = (f"Argument '{param_name}' to function '{func_name}' must "
-                     "be in units convertible to")
-        if len(targets) > 1:
-            targ_names = ", ".join([f"'{str(targ)}'" for targ in targets])
-            raise UnitsError(f"{error_msg} one of: {targ_names}.")
-        else:
-            raise UnitsError(f"{error_msg} '{str(targets[0])}'.")
+        raise TypeError(f"{target} is neither a Unit or PhysicalType and cannot be parsed into either.") from None
+
+    return spec
 
 
 class QuantityInput:
+    """Quantity-aware functions, with behavior set by unit specifications.
+    
+    Parameters
+    ----------
+    equivalencies : list
+    strict_dimensionless : bool, optional
+    action : str, optional
+        The `~astropy.units.UnitSpec` 'action' for each `~inspect.Parameter`
+        in ``sig``.
+    return_action : str or None, optional
+
+    """
 
     @classmethod
     def as_decorator(cls, func=None, **kwargs):
@@ -119,10 +148,6 @@ class QuantityInput:
 
         Notes
         -----
-
-        The checking of arguments inside variable arguments to a function is not
-        supported (i.e. \*arg or \**kwargs).
-
         The original function is accessible by the attributed ``__wrapped__``.
         See :func:`functools.wraps` for details.
 
@@ -164,105 +189,227 @@ class QuantityInput:
 
         """
         self = cls(**kwargs)
+        # allow for pie-syntax without parentheses -- ``@as_decorator``.
         if func is not None and not kwargs:
             return self(func)
-        else:
-            return self
+        return self
 
-    def __init__(self, func=None, strict_dimensionless=False, **kwargs):
-        self.equivalencies = kwargs.pop('equivalencies', [])
-        self.decorator_kwargs = kwargs
+    def __init__(self, strict_dimensionless=False,
+                 equivalencies=(), action="validate", return_action=None,
+                 parameters={}, **kwargs):
+        self.equivalencies = equivalencies
         self.strict_dimensionless = strict_dimensionless
+        self.decorator_kwargs = {**parameters, ** kwargs}
+
+        # UnitSpec action
+        self.action = action
+        self.return_action = action if return_action is None else return_action
 
     def __call__(self, wrapped_function):
 
-        # Extract the function signature for the function we are wrapping.
-        wrapped_signature = inspect.signature(wrapped_function)
+        wsig = inspect.signature(wrapped_function)
+        wrapped_function.__signature__ = wsig
+        uspecs = self._make_uspecs_from_signature(wsig)
 
-        # Define a new function to return in place of the wrapped one
+        # Define the wrapper function
+        # inside this function is evaluated every function call
         @wraps(wrapped_function)
-        def wrapper(*func_args, **func_kwargs):
+        def wrapper(*args, **kwargs):
+
             # Bind the arguments to our new function to the signature of the original.
-            bound_args = wrapped_signature.bind(*func_args, **func_kwargs)
+            ba = wrapper.__wrapped__.__signature__.bind(*args, **kwargs)
+            ba.apply_defaults()  # ensures (kw)args exist, even if blank
+            arguments = ba.arguments  # store reference. updates in-place.
 
-            # Iterate through the parameters of the original signature
-            for param in wrapped_signature.parameters.values():
-                # We do not support variable arguments (*args, **kwargs)
-                if param.kind in (inspect.Parameter.VAR_KEYWORD,
-                                  inspect.Parameter.VAR_POSITIONAL):
-                    continue
+            equivalencies = wrapper.__units_specs__["equivalencies"]
+            strict = wrapper.__units_specs__["strict_dimensionless"]  # TODO!!
 
-                # Catch the (never triggered) case where bind relied on a default value.
-                if (param.name not in bound_args.arguments
-                        and param.default is not param.empty):
-                    bound_args.arguments[param.name] = param.default
+            with add_enabled_equivalencies(equivalencies):
 
-                # Get the value of this parameter (argument to new function)
-                arg = bound_args.arguments[param.name]
-
-                # Get target unit or physical type, either from decorator kwargs
-                #   or annotations
-                if param.name in self.decorator_kwargs:
-                    targets = self.decorator_kwargs[param.name]
-                    is_annotation = False
-                else:
-                    targets = param.annotation
-                    is_annotation = True
-
-                # If the targets is empty, then no target units or physical
-                #   types were specified so we can continue to the next arg
-                if targets is inspect.Parameter.empty:
-                    continue
-
-                # If the argument value is None, and the default value is None,
-                #   pass through the None even if there is a target unit
-                if arg is None and param.default is None:
-                    continue
-
-                # Here, we check whether multiple target unit/physical type's
-                #   were specified in the decorator/annotation, or whether a
-                #   single string (unit or physical type) or a Unit object was
-                #   specified
-                if (isinstance(targets, str)
-                        or not isinstance(targets, Sequence)):
-                    valid_targets = [targets]
-
-                # Check for None in the supplied list of allowed units and, if
-                #   present and the passed value is also None, ignore.
-                elif None in targets:
-                    if arg is None:
-                        continue
+                # this updates with external changes to __units_specs__
+                for name, uspec in wrapper.__units_specs__["uspecs"].items():
+                    # normal argument
+                    if name in arguments:
+                        arguments[name] = uspec(arguments[name], strict=strict)
+                    # variable keyword arguments (apply uspec over all)
+                    elif name.startswith("**"):
+                        kwargs = arguments[name[2:]]  # updates in-place.
+                        for k, v in kwargs.items():
+                            kwargs[k] = uspec(v, strict=strict)
+                    # variable arguments (apply uspec over all)
+                    elif name.startswith("*"):
+                        args = [uspec(v, strict=strict) for v in arguments[name[1:]]]
+                        arguments[name[1:]] = tuple(args)
+                    # callable's return annotation (guaranteed to exist)
+                    # TODO? speed up by making optional
+                    # TODO! allow to handle multiple outputs
+                    elif name == "return":
+                        return_spec = uspec  # store for later
                     else:
-                        valid_targets = [t for t in targets if t is not None]
+                        raise Exception(f"no arg for uspec {name}")
 
-                else:
-                    valid_targets = targets
+                return_ = wrapped_function(*ba.args, **ba.kwargs)
+                return return_spec(return_)
 
-                # If we're dealing with an annotation, skip all the targets that
-                #    are not strings or subclasses of Unit. This is to allow
-                #    non unit related annotations to pass through
-                if is_annotation:
-                    valid_targets = [t for t in valid_targets
-                                     if isinstance(t, (str, UnitBase))]
+        # store all necessary information on the wrapper
+        wrapper.__units_specs__ = dict(uspecs=uspecs,
+                                       equivalencies=self.equivalencies,
+                                       strict_dimensionless=self.strict_dimensionless)
 
-                # Now we loop over the allowed units/physical types and validate
-                #   the value of the argument:
-                _validate_arg_value(param.name, wrapped_function.__name__,
-                                    arg, valid_targets, self.equivalencies,
-                                    self.strict_dimensionless)
+        # method to update wrapper if e.g. parameter defaults are changed
+        def update_wrapper(equivalencies=None, strict_dimensionless=None):
+            """Update (in-place) {0!r}'s QuantityInput wrapper.
 
-            # Call the original function with any equivalencies in force.
-            with add_enabled_equivalencies(self.equivalencies):
-                return_ = wrapped_function(*func_args, **func_kwargs)
+            Parameters
+            ----------
+            equivalencies : list or None, optional
+                New equivalencies for wrapper. Only set if not None.
+            strict_dimensionless : bool or None, optional
+                New flag for wrapper. Only set if not None.
+            """
+            self._update_wrapper(wrapper, equivalencies=equivalencies,
+                                 strict_dimensionless=strict_dimensionless)
 
-            valid_empty = (inspect.Signature.empty, None)
-            if (wrapped_signature.return_annotation not in valid_empty) and isinstance(
-                wrapped_signature.return_annotation, (str, UnitBase, FunctionUnitBase)):
-                return return_.to(wrapped_signature.return_annotation)
-            else:
-                return return_
+
+        update_wrapper.__doc__ = update_wrapper.__doc__.format(wrapped_function)
+        wrapper.update_wrapper = update_wrapper
 
         return wrapper
 
+    def _make_uspecs_from_signature(self, sig):
+        """Get `~astropy.units.Unit` specifications from `~inspect.Signature`.
+
+        Parameters
+        ----------
+        sig : `~inspect.Signature`
+            Function signature from which to create `~astropy.units.UnitSpec`
+            (or subclass of kind ``uspec_cls``)
+
+        Returns
+        -------
+        uspecs : dict[str, `~astropy.units.UnitSpec`]
+            Key is parameter name. If parameter is the variable positional
+            argument the name is prepended with a '*'. Similarly, the variable
+            keyword parameter's name is prepended with a '**'.
+            The value is the corresponding `~astropy.units.UnitSpec`.
+        """
+        uspecs = {}
+
+        # 1) parse (kw)args
+        for param in sig.parameters.values():
+            name, spec = self._make_uspec_from_parameter(param, action=self.action)
+            if spec is not None:  # spec is None if no target
+                uspecs[name] = spec
+
+        # 2) parse return annotation
+        param = inspect.Parameter("return", 0, default=inspect.Parameter.empty,
+                                  annotation=sig.return_annotation)
+        _, spec = self._make_uspec_from_parameter(param, action=self.return_action)
+        uspecs["return"] = spec if spec is not None else NullUnitSpec()
+        # always wrap in UnitSpec for code simplicity in wrapper
+
+        return uspecs
+
+    def _make_uspec_from_parameter(self, param, action):
+        """Make `~astropy.units.UnitSpec` from `~inspect.Parameter`
+
+        Parameters
+        ----------
+        param : `~inspect.Parameter`
+        action : str
+            The `~astropy.units.UnitSpec` 'action'
+
+        Returns
+        -------
+        name : str
+        uspec : `~astropy.units.UnitSpec`
+        """
+        # name is parameter name, unless variable positional or keyword,
+        # in which case it is prepended by '*' or '**', respectively
+        name = (param.name if param.kind not in (2, 4)
+                else ("*", "**")[param.kind // 2 - 1] + param.name)
+        dec_key = param.name if name != "return" else "return_"
+
+        # annotation and decorator arg        
+        dnote = self.decorator_kwargs.get(dec_key, ...)  # ... = pass-thru
+        anote = param.annotation
+
+        # parse target:
+        # 1) skip if set target=False in decorator
+        # 2) decorator overrides annotations, unless ... (Ellipsis)
+        # 3) parse the annotation, skipping if empty
+        if dnote is False:  # skip if set parameter to False in decorator
+            name = target = None
+        elif dnote is not ...:  # unless pass-thru, prioritize decorator arguments
+            # decorator arguments must be correct, so error if not.
+            target = _parse_target(dnote, error=True)
+        elif anote is inspect.Parameter.empty:  # no dec arg nor annotation
+            name = target = None
+        else:  # annotation (becomes `None` if not recognized)
+            target = _parse_target(anote, error=False)
+
+        # target -> Unitspec, composite thereof, or None (no target)
+        if isinstance(target, UnitSpecBase) or target is None:
+            # don't check the uspec if already a UnitSpec. This allows for
+            # the 'action' to be ignored.  # TODO? option to enforce 'action'?
+            uspec = target
+        elif isinstance(target, list):  # multiple targets -> CompoundUnitSpec
+            uspec = np.sum([UnitSpec(t, action=action, strict=self.strict_dimensionless)
+                            for t in target])
+            # note that UnitSpec does not convert, so if any 't' in target
+            # was a UnitSpec, 'action' did not apply
+        else:
+            uspec = UnitSpec(target, action=action, strict=self.strict_dimensionless)
+
+        # If the default value is None, allow the argument value to be None
+        # even if there is a target unit.
+        if param.default is None and target is not None:
+            uspec = uspec + NullUnitSpec()
+
+        return name, uspec
+
+    def _update_wrapper(self, wrapper, equivalencies=None, strict_dimensionless=None):
+        """Update (in-place) a QuantityInput wrapped functions' wrapper.
+
+        Parameters
+        ----------
+        wrapper : callable
+
+        equivalencies : list or None, optional
+            New equivalencies for wrapper. Only set if not None.
+        strict_dimensionless : bool or None, optional
+            New flag for wrapper. Only set if not None.
+        """
+        # get and store updated signature
+        wrapped_sig = inspect.signature(wrapper.__wrapped__)
+        wrapper.__wrapped__.__signature__ = wrapped_sig
+        # process signature for uspecs
+        wrapper.__units_specs__["uspecs"] = self._make_uspecs_from_signature(wrapped_sig)
+        # optionally update equivalencies and strict_dimensionless
+        if equivalencies is not None:
+            wrapper.__units_specs__["equivalencies"] = equivalencies
+        if strict_dimensionless is not None:
+            wrapper.__units_specs__["strict_dimensionless"] = strict_dimensionless
+
 
 quantity_input = QuantityInput.as_decorator
+
+
+# -------------------------------------------------------------------
+
+class DeQuantityInput(QuantityInput):
+    """QuantityInput but strips units beforehand and reinstates after.
+
+    Parameters
+    ----------
+    """
+
+    def __init__(self, func=None, strict_dimensionless=False,
+                 equivalencies=(), parameters={}, **kwargs):
+        super().__init__(func=func, strict_dimensionless=strict_dimensionless,
+                         equivalencies=equivalencies, parameters=parameters,
+                         action="to_value", return_action="from_value",
+                         **kwargs)
+
+
+dequantity_input = DeQuantityInput.as_decorator
