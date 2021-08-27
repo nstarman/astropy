@@ -19,6 +19,7 @@ from astropy.utils.metadata import MetaData
 
 from . import scalar_inv_efuncs
 from .connect import CosmologyFromFormat, CosmologyRead, CosmologyToFormat, CosmologyWrite
+from .parameter import Parameter, PrivateParameter
 from .utils import _float_or_none, inf_like, vectorize_if_needed
 
 # Originally authored by Andrew Becker (becker@astro.washington.edu),
@@ -56,6 +57,7 @@ class CosmologyError(Exception):
     pass
 
 
+# TODO! update to take use Parameter in conjunction with _init_signature/arguments
 class Cosmology(metaclass=ABCMeta):
     """Base-class for all Cosmologies.
 
@@ -93,6 +95,14 @@ class Cosmology(metaclass=ABCMeta):
     def __init_subclass__(cls):
         super().__init_subclass__()
 
+        # create private descriptors for parameters
+        cls.__parameters__ = frozenset({
+            n for n in dir(cls)
+            if (not n.startswith("_") and isinstance(getattr(cls, n), Parameter))})
+        for name in tuple(cls.__parameters__):  # (need to 'freeze')
+            setattr(cls, "_" + name, PrivateParameter(name))
+
+        # add class to registry
         _COSMOLOGY_CLASSES[cls.__qualname__] = cls
 
     def __new__(cls, *args, **kwargs):
@@ -209,6 +219,20 @@ class Cosmology(metaclass=ABCMeta):
                     if k != "meta"))
 
 
+class FlatFLRWMixin:
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        # Do some twiddling after the fact to get flatness
+        self._Ode0 = 1.0 - self._Om0 - self._Ogamma0 - self._Onu0
+        self._Ok0 = 0.0
+
+    @property  # remove from __parameters__
+    def Ode0(self):
+        """Omega dark energy; dark energy density/critical density at z=0"""
+        return self._Ode0
+
+
 class FLRW(Cosmology):
     """ A class describing an isotropic and homogeneous
     (Friedmann-Lemaitre-Robertson-Walker) cosmology.
@@ -269,6 +293,15 @@ class FLRW(Cosmology):
     documentation on :ref:`astropy-cosmology-fast-integrals`.
     """
 
+    H0 = Parameter(unit=u.km / u.s / u.Mpc, doc="Hubble constant at z=0")
+    Om0 = Parameter(doc="Omega matter; matter density/critical density at z=0")
+    Ode0 = Parameter(doc="Omega dark energy; dark energy density/critical density at z=0")
+    Tcmb0 = Parameter(0.0, unit=u.K,
+                      doc="Temperature of the CMB as `~astropy.units.Quantity` at z=0")
+    Neff = Parameter(3.04, doc="Number of effective neutrino species")
+    m_nu = Parameter(doc="Mass of neutrino species")
+    Ob0 = Parameter(doc="Omega baryon; baryonic matter density/critical density at z=0")
+
     def __init__(self, H0, Om0, Ode0, Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV,
                  Ob0=None, *, name=None, meta=None):
         super().__init__(name=name, meta=meta)
@@ -301,7 +334,7 @@ class FLRW(Cosmology):
             raise ValueError("Tcmb0 is a non-scalar quantity")
 
         # Hubble parameter at z=0, km/s/Mpc
-        self._H0 = u.Quantity(H0, unit=u.km / u.s / u.Mpc)
+        self._H0 = H0
         if not self._H0.isscalar:
             raise ValueError("H0 is a non-scalar quantity")
 
@@ -429,28 +462,8 @@ class FLRW(Cosmology):
                              self._Tcmb0, self._Neff, self.m_nu,
                              _float_or_none(self._Ob0))
 
-    # Set up a set of properties for H0, Om0, Ode0, Ok0, etc. for user access.
+    # Set up a set of properties for user access.
     # Note that we don't let these be set (so, obj.Om0 = value fails)
-
-    @property
-    def H0(self):
-        """ Return the Hubble constant as an `~astropy.units.Quantity` at z=0"""
-        return self._H0
-
-    @property
-    def Om0(self):
-        """ Omega matter; matter density/critical density at z=0"""
-        return self._Om0
-
-    @property
-    def Ode0(self):
-        """ Omega dark energy; dark energy density/critical density at z=0"""
-        return self._Ode0
-
-    @property
-    def Ob0(self):
-        """ Omega baryon; baryonic matter density/critical density at z=0"""
-        return self._Ob0
 
     @property
     def Odm0(self):
@@ -464,19 +477,9 @@ class FLRW(Cosmology):
         return self._Ok0
 
     @property
-    def Tcmb0(self):
-        """ Temperature of the CMB as `~astropy.units.Quantity` at z=0"""
-        return self._Tcmb0
-
-    @property
     def Tnu0(self):
         """ Temperature of the neutrino background as `~astropy.units.Quantity` at z=0"""
         return self._Tnu0
-
-    @property
-    def Neff(self):
-        """ Number of effective neutrino species"""
-        return self._Neff
 
     @property
     def has_massive_nu(self):
@@ -485,7 +488,7 @@ class FLRW(Cosmology):
             return False
         return self._massivenu
 
-    @property
+    @m_nu.getter
     def m_nu(self):
         """ Mass of neutrino species"""
         if self._Tnu0.value == 0:
@@ -2194,7 +2197,7 @@ class LambdaCDM(FLRW):
         return (zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) + Ode0)**(-0.5)
 
 
-class FlatLambdaCDM(LambdaCDM):
+class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
     """FLRW cosmology with a cosmological constant and no curvature.
 
     This has no additional attributes beyond those of FLRW.
@@ -2251,9 +2254,6 @@ class FlatLambdaCDM(LambdaCDM):
                  Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=0.0, Tcmb0=Tcmb0, Neff=Neff,
                          m_nu=m_nu, Ob0=Ob0, name=name, meta=meta)
-        # Do some twiddling after the fact to get flatness
-        self._Ode0 = 1.0 - self._Om0 - self._Ogamma0 - self._Onu0
-        self._Ok0 = 0.0
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
@@ -2409,6 +2409,8 @@ class wCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
+    w0 = Parameter(-1.0, doc="Dark energy equation of state at z=0")
+
     def __init__(self, H0, Om0, Ode0, w0=-1.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=Ode0, Tcmb0=Tcmb0, Neff=Neff,
@@ -2432,11 +2434,6 @@ class wCDM(FLRW):
                                            self._Ogamma0, self._neff_per_nu,
                                            self._nmasslessnu,
                                            self._nu_y_list, self._w0)
-
-    @property
-    def w0(self):
-        """ Dark energy equation of state"""
-        return self._w0
 
     def w(self, z):
         """Returns dark energy equation of state at redshift ``z``.
@@ -2561,7 +2558,7 @@ class wCDM(FLRW):
                              self.m_nu, _float_or_none(self._Ob0))
 
 
-class FlatwCDM(wCDM):
+class FlatwCDM(FlatFLRWMixin, wCDM):
     """FLRW cosmology with a constant dark energy equation of state
     and no spatial curvature.
 
@@ -2625,9 +2622,6 @@ class FlatwCDM(wCDM):
                  Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=0.0, w0=w0, Tcmb0=Tcmb0,
                          Neff=Neff, m_nu=m_nu, Ob0=Ob0, name=name, meta=meta)
-        # Do some twiddling after the fact to get flatness
-        self._Ode0 = 1.0 - self._Om0 - self._Ogamma0 - self._Onu0
-        self._Ok0 = 0.0
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
@@ -2784,6 +2778,9 @@ class w0waCDM(FLRW):
     >>> z = 0.5
     >>> dc = cosmo.comoving_distance(z)
     """
+    
+    w0 = Parameter(-1.0, doc="Dark energy equation of state at z=0")
+    wa = Parameter(0.0, doc="Negative derivative of dark energy equation of state w.r.t. a")
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wa=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -2810,16 +2807,6 @@ class w0waCDM(FLRW):
                                            self._nmasslessnu,
                                            self._nu_y_list, self._w0,
                                            self._wa)
-
-    @property
-    def w0(self):
-        """ Dark energy equation of state at z=0"""
-        return self._w0
-
-    @property
-    def wa(self):
-        """ Negative derivative of dark energy equation of state w.r.t. a"""
-        return self._wa
 
     def w(self, z):
         """Returns dark energy equation of state at redshift ``z``.
@@ -2890,7 +2877,7 @@ class w0waCDM(FLRW):
                              _float_or_none(self._Ob0))
 
 
-class Flatw0waCDM(w0waCDM):
+class Flatw0waCDM(FlatFLRWMixin, w0waCDM):
     """FLRW cosmology with a CPL dark energy equation of state and no
     curvature.
 
@@ -2960,9 +2947,6 @@ class Flatw0waCDM(w0waCDM):
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=0.0, w0=w0, wa=wa, Tcmb0=Tcmb0,
                          Neff=Neff, m_nu=m_nu, Ob0=Ob0, name=name, meta=meta)
-        # Do some twiddling after the fact to get flatness
-        self._Ode0 = 1.0 - self._Om0 - self._Ogamma0 - self._Onu0
-        self._Ok0 = 0.0
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
@@ -3067,6 +3051,9 @@ class wpwaCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
+    wp = Parameter(-1.0, doc="Dark energy equation of state at the pivot redshift zp")
+    wa = Parameter(0.0, doc="Negative derivative of dark energy equation of state w.r.t. a")
+
     def __init__(self, H0, Om0, Ode0, wp=-1.0, wa=0.0, zp=0.0, Tcmb0=0.0*u.K,
                  Neff=3.04, m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=Ode0, Tcmb0=Tcmb0, Neff=Neff,
@@ -3094,16 +3081,6 @@ class wpwaCDM(FLRW):
                                            self._nmasslessnu,
                                            self._nu_y_list, self._wp,
                                            apiv, self._wa)
-
-    @property
-    def wp(self):
-        """ Dark energy equation of state at the pivot redshift zp"""
-        return self._wp
-
-    @property
-    def wa(self):
-        """ Negative derivative of dark energy equation of state w.r.t. a"""
-        return self._wa
 
     @property
     def zp(self):
@@ -3253,6 +3230,9 @@ class w0wzCDM(FLRW):
     >>> z = 0.5
     >>> dc = cosmo.comoving_distance(z)
     """
+    
+    w0 = Parameter(-1.0, doc="Dark energy equation of stateat z=0")
+    wz = Parameter(0.0, doc="Derivative of the dark energy equation of state w.r.t. z")
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wz=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -3279,16 +3259,6 @@ class w0wzCDM(FLRW):
                                            self._nmasslessnu,
                                            self._nu_y_list, self._w0,
                                            self._wz)
-
-    @property
-    def w0(self):
-        """ Dark energy equation of state at z=0"""
-        return self._w0
-
-    @property
-    def wz(self):
-        """ Derivative of the dark energy equation of state w.r.t. z"""
-        return self._wz
 
     def w(self, z):
         """Returns dark energy equation of state at redshift ``z``.
