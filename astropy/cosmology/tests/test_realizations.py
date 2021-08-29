@@ -51,3 +51,28 @@ class Test_default_cosmology(object):
         cosmo = getattr(realizations, name)
         value = default_cosmology.validate(cosmo)
         assert value is cosmo
+
+    def test_validation_error(self):
+        with pytest.raises(TypeError):
+            realizations.default_cosmology.validate(4)
+
+
+def test_equality():
+    """Test equality and equivalence."""
+    # Equality
+    assert Planck18 == Planck18
+    assert Planck13 != Planck18
+
+    # just wrong
+    assert Planck18 != 2
+    assert 2 != Planck18
+
+    # mismatched signatures, both directions.
+    newcosmo = core.w0waCDM(**Planck18._init_arguments, Ode0=0.6)
+    assert newcosmo != Planck18
+    assert Planck18 != newcosmo
+
+    # different arguments
+    newcosmo = Planck18.clone(name="modified")
+    assert Planck18 != newcosmo  # the name was changed!
+    assert newcosmo != Planck18  # double check directions.

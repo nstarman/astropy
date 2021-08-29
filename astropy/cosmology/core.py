@@ -185,6 +185,10 @@ class Cosmology(metaclass=ABCMeta):
                     if k != "meta"))
 
 
+# need to register Cosmology. Subclasses are registered in __init_subclass__.
+_COSMOLOGY_CLASSES["Cosmology"] = Cosmology
+
+
 # -----------------------------------------------------------------------------
 
 

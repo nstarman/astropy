@@ -48,69 +48,66 @@ def test_z_at_value_scalar():
             z_at_value(cosmo.angular_diameter_distance, 1500*u.Mpc, zmin=4.)
 
 
-@pytest.mark.skipif('not HAS_SCIPY')
-class Test_ZatValue:
+def test_broadcast_arguments():
+    """Test broadcast of arguments."""
+    # broadcasting main argument
+    assert allclose(
+        z_at_value(Planck13.age, [2, 7] * u.Gyr),
+        [3.1981206134773115, 0.7562044333305182], rtol=1e-6)
 
-    def setup_class(self):
-        self.cosmo = Planck13
+    # basic broadcast of secondary arguments
+    assert allclose(
+        z_at_value(Planck13.angular_diameter_distance, 1500 * u.Mpc,
+                   zmin=[0, 2.5], zmax=[2, 4]),
+        [0.681277696, 3.7914908], rtol=1e-6)
 
-    def test_broadcast_arguments(self):
-        """Test broadcast of arguments."""
-        # broadcasting main argument
-        assert allclose(
-            z_at_value(self.cosmo.age, [2, 7] * u.Gyr),
-            [3.1981206134773115, 0.7562044333305182], rtol=1e-6)
+    # more interesting broadcast
+    assert allclose(
+        z_at_value(Planck13.angular_diameter_distance, 1500 * u.Mpc,
+                   zmin=[[0, 2.5]], zmax=[2, 4]),
+        [[0.681277696, 3.7914908]], rtol=1e-6)
 
-        # basic broadcast of secondary arguments
-        assert allclose(
-            z_at_value(self.cosmo.angular_diameter_distance, 1500 * u.Mpc,
-                       zmin=[0, 2.5], zmax=[2, 4]),
-            [0.681277696, 3.7914908], rtol=1e-6)
 
-        # more interesting broadcast
-        assert allclose(
-            z_at_value(self.cosmo.angular_diameter_distance, 1500 * u.Mpc,
-                       zmin=[[0, 2.5]], zmax=[2, 4]),
-            [[0.681277696, 3.7914908]], rtol=1e-6)
+def test_broadcast_bracket():
+    """`bracket` has special requirements."""
+    # start with an easy one
+    assert allclose(
+        z_at_value(Planck13.age, 2 * u.Gyr, bracket=None),
+        3.1981206134773115, rtol=1e-6)
 
-    def test_broadcast_bracket(self):
-        """`bracket` has special requirements."""
-        # start with an easy one
-        assert allclose(
-            z_at_value(self.cosmo.age, 2 * u.Gyr, bracket=None),
-            3.1981206134773115, rtol=1e-6)
+    # now actually have a bracket
+    assert allclose(
+        z_at_value(Planck13.age, 2 * u.Gyr, bracket=[0, 4]),
+        3.1981206134773115, rtol=1e-6)
 
-        # now actually have a bracket
-        assert allclose(
-            z_at_value(self.cosmo.age, 2 * u.Gyr, bracket=[0, 4]),
-            3.1981206134773115, rtol=1e-6)
+    # now a bad length
+    with pytest.raises(ValueError, match="sequence"):
+        z_at_value(Planck13.age, 2 * u.Gyr, bracket=[0, 4, 4, 5])
 
-        # now a bad length
-        with pytest.raises(ValueError, match="sequence"):
-            z_at_value(self.cosmo.age, 2 * u.Gyr, bracket=[0, 4, 4, 5])
+    # now the wrong dtype : an ndarray, but not an object array
+    with pytest.raises(TypeError, match="dtype"):
+        z_at_value(Planck13.age, 2 * u.Gyr, bracket=np.array([0, 4]))
 
-        # now the wrong dtype : an ndarray, but not an object array
-        with pytest.raises(TypeError, match="dtype"):
-            z_at_value(self.cosmo.age, 2 * u.Gyr, bracket=np.array([0, 4]))
+    # now an object array of brackets
+    bracket=np.array([[0, 4], [0, 3, 4]], dtype=object)
+    assert allclose(
+        z_at_value(Planck13.age, 2 * u.Gyr, bracket=bracket),
+        [3.1981206134773115, 3.1981206134773115], rtol=1e-6)
 
-        # now an object array of brackets
-        bracket=np.array([[0, 4], [0, 3, 4]], dtype=object)
-        assert allclose(
-            z_at_value(self.cosmo.age, 2 * u.Gyr, bracket=bracket),
-            [3.1981206134773115, 3.1981206134773115], rtol=1e-6)
 
-    def test_bad_broadcast(self):
-        """Shapes mismatch as expected"""
-        with pytest.raises(ValueError, match="broadcast"):
-            z_at_value(self.cosmo.angular_diameter_distance, 1500 * u.Mpc,
-                       zmin=[0, 2.5, 0.1], zmax=[2, 4])
+def test_bad_broadcast():
+    """Shapes mismatch as expected"""
+    with pytest.raises(ValueError, match="broadcast"):
+        z_at_value(Planck13.angular_diameter_distance, 1500 * u.Mpc,
+                   zmin=[0, 2.5, 0.1], zmax=[2, 4])
 
-    def test_scalar_input_to_output(self):
-        """Test scalar input returns a scalar."""
-        assert isinstance(
-            z_at_value(self.cosmo.angular_diameter_distance, 1500 * u.Mpc,
-                       zmin=0, zmax=2),
-            np.float64)
+
+def test_scalar_input_to_output():
+    """Test scalar input returns a scalar."""
+    assert isinstance(
+        z_at_value(Planck13.angular_diameter_distance, 1500 * u.Mpc,
+                   zmin=0, zmax=2),
+        np.float64)
 
 
 @pytest.mark.skipif('not HAS_SCIPY')
