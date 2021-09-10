@@ -66,10 +66,11 @@ class Cosmology(metaclass=ABCMeta):
     read = UnifiedReadWriteMethod(CosmologyRead)
     write = UnifiedReadWriteMethod(CosmologyWrite)
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, register=True):
         super().__init_subclass__()
 
-        _COSMOLOGY_CLASSES[cls.__qualname__] = cls
+        if register:
+            _COSMOLOGY_CLASSES[cls.__qualname__] = cls
 
     def __new__(cls, *args, **kwargs):
         self = super().__new__(cls)
