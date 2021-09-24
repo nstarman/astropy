@@ -389,6 +389,26 @@ class Cosmology(metaclass=abc.ABCMeta):
                              for k in self.__parameters__))
         return params_eq
 
+    def is_equal(self, other, strict=False):
+        """Equality check, optionally including the metadata.
+
+        Parameters
+        ----------
+        other : `~astropy.cosmology.Cosmology` subclass instance
+            The object in which to compare.
+        strict : bool
+            If strict is `False`, this is identical to ``self == other``.
+            For strict = `True`, the metadata is also checked for equality.
+
+        Returns
+        -------
+        bool
+        """
+        eq = self == other
+        if strict:
+            eq &= hasattr(other, "meta") and self.meta == other.meta
+        return eq
+
     def __eq__(self, other):
         """Check equality between Cosmologies.
 

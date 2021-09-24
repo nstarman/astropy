@@ -122,8 +122,7 @@ class TestReadWriteCosmology:
         # Read back
         got = Cosmology.read(fname, format=format)
 
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
     @pytest.mark.parametrize("format", readwrite_formats)
     @pytest.mark.parametrize("instance", cosmo_instances)
@@ -138,18 +137,15 @@ class TestReadWriteCosmology:
 
         # read with the same class that wrote.
         got = cosmo.__class__.read(fname, format=format)
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
         # this should be equivalent to
         got = Cosmology.read(fname, format=format, cosmology=cosmo.__class__)
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
         # and also
         got = Cosmology.read(fname, format=format, cosmology=cosmo.__class__.__qualname__)
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
     @pytest.mark.parametrize("instance", cosmo_instances)
     def test_from_subclass_partial_info(self, tmpdir, instance):
@@ -234,8 +230,7 @@ class TestCosmologyToFromFormat:
         got2 = Cosmology.from_format(obj)
 
         assert got2 == got  # internal consistency
-        assert got == cosmo  # external consistency
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)  # external consistency
 
     @pytest.mark.parametrize("format_type", tofrom_formats)
     @pytest.mark.parametrize("instance", cosmo_instances)
@@ -256,18 +251,15 @@ class TestCosmologyToFromFormat:
         got2 = Cosmology.from_format(obj)  # and autodetect
 
         assert got2 == got  # internal consistency
-        assert got == cosmo  # external consistency
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)  # external consistency
 
         # this should be equivalent to
         got = Cosmology.from_format(obj, format=format, cosmology=cosmo.__class__)
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
         # and also
         got = Cosmology.from_format(obj, format=format, cosmology=cosmo.__class__.__qualname__)
-        assert got == cosmo
-        assert got.meta == cosmo.meta
+        assert got.is_equal(cosmo, True)
 
     @pytest.mark.parametrize("instance", cosmo_instances)
     def test_from_subclass_partial_info(self, instance):
