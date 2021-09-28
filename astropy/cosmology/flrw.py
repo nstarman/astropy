@@ -299,19 +299,15 @@ class FLRW(Cosmology):
     @lazyproperty
     def m_nu(self):
         """Mass of neutrino species."""
-        unit = self.__class__.m_nu.unit  # eV
         if self._Tnu0.value == 0:
             return None
-        if not self._massivenu:
-            # Only massless
-            return u.Quantity(np.zeros(self._nmasslessnu), unit)
-        if self._nmasslessnu == 0:
-            # Only massive
-            return u.Quantity(self._massivenu_mass, unit)
-        # A mix -- the most complicated case
-        numass = np.append(np.zeros(self._nmasslessnu),
-                           self._massivenu_mass.value)
-        return u.Quantity(numass, unit)
+        elif not self._massivenu: # Only massless
+            m = np.zeros(self._nmasslessnu)
+        elif self._nmasslessnu == 0:  # Only massive
+            m = self._massivenu_mass
+        else:  # A mix -- the most complicated case
+            m = np.append(np.zeros(self._nmasslessnu), self._massivenu_mass.value)
+        return u.Quantity(m, unit = self.__class__.m_nu.unit)
 
     @property
     def h(self):
@@ -465,9 +461,9 @@ class FLRW(Cosmology):
             The equivalent density parameter for curvature at each redshift.
             Returns `float` if the input is scalar.
         """
+        if self._Ok0 == 0.0:  # Common case worth checking
+            return 0.0 if isinstance(z, Number) else np.zeros(())  # scalar
         z = aszarr(z)
-        if self._Ok0 == 0:  # Common enough to be worth checking explicitly
-            return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
         return self._Ok0 * (z + 1.0) ** 2 * self.inv_efunc(z) ** 2
 
     def Ode(self, z):
@@ -485,9 +481,9 @@ class FLRW(Cosmology):
             density at each redshift.
             Returns `float` if the input is scalar.
         """
+        if self._Ode0 == 0:  # Common case worth checking
+            return 0.0 if isinstance(z, Number) else np.zeros(())  # scalar
         z = aszarr(z)
-        if self._Ode0 == 0:  # Common enough to be worth checking explicitly
-            return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
         return self._Ode0 * self.de_density_scale(z) * self.inv_efunc(z) ** 2
 
     def Ogamma(self, z):
@@ -526,9 +522,9 @@ class FLRW(Cosmology):
             kinetic energy.
             Returns `float` if the input is scalar.
         """
+        if self._Onu0 == 0:  # Common case worth checking
+            return 0.0 if isinstance(z, Number) else np.zeros(())  # scalar
         z = aszarr(z)
-        if self._Onu0 == 0:  # Common enough to be worth checking explicitly
-            return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
         return self.Ogamma(z) * self.nu_relative_density(z)
 
     def Tcmb(self, z):
@@ -614,7 +610,7 @@ class FLRW(Cosmology):
         # But check for common cases first
         z = aszarr(z)
         if not self._massivenu:
-            return prefac * self._Neff * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
+            return prefac * self._Neff * (1 if isinstance(z, Number) else np.ones(()))
 
         # These are purely fitting constants -- see the Komatsu paper
         p = 1.83
@@ -1590,8 +1586,7 @@ class LambdaCDM(FLRW):
         redshift z and :math:`\rho(z)` is the density at redshift z, both in
         units where c=1. Here this is :math:`w(z) = -1`.
         """
-        z = aszarr(z)
-        return -1.0 * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
+        return -1.0 if isinstance(z, Number) else -1 * np.ones(())  # scalar
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
@@ -1612,8 +1607,7 @@ class LambdaCDM(FLRW):
         The scaling factor, I, is defined by :math:`\rho(z) = \rho_0 I`,
         and in this case is given by :math:`I = 1`.
         """
-        z = aszarr(z)
-        return np.ones(z.shape) if hasattr(z, "shape") else 1.0
+        return 1.0 if isinstance(z, Number) else np.ones(())
 
     def _elliptic_comoving_distance_z1z2(self, z1, z2):
         r"""Comoving transverse distance in Mpc between two redshifts.
@@ -2231,8 +2225,7 @@ class wCDM(FLRW):
         redshift z and :math:`\rho(z)` is the density at redshift z, both in
         units where c=1. Here this is :math:`w(z) = w_0`.
         """
-        z = aszarr(z)
-        return self._w0 * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
+        return self._w0 * (1 if isinstance(z, Number) else np.ones(()))  # scalar
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
