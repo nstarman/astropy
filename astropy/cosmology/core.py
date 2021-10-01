@@ -13,6 +13,7 @@ from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
 from .connect import CosmologyFromFormat, CosmologyRead, CosmologyToFormat, CosmologyWrite
+from .units import CosmologyUnitEquivalencies
 
 # Originally authored by Andrew Becker (becker@astro.washington.edu),
 # and modified by Neil Crighton (neilcrighton@gmail.com), Roban Kramer
@@ -218,6 +219,9 @@ class Cosmology(metaclass=abc.ABCMeta):
     """
 
     meta = MetaData()
+
+    # unit equivalencies
+    equivalencies = CosmologyUnitEquivalencies()
 
     # Unified I/O object interchange methods
     from_format = UnifiedReadWriteMethod(CosmologyFromFormat)

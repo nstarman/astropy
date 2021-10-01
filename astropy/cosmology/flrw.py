@@ -113,6 +113,9 @@ class FLRW(Cosmology):
     documentation on :ref:`astropy-cosmology-fast-integrals`.
     """
 
+    equivalencies = cu.CosmologyUnitEquivalencies(cu.redshift_temperature, cu.with_H0)
+
+    # Parameters
     H0 = Parameter(doc="Hubble constant as an `~astropy.units.Quantity` at z=0.",
                    unit="km/(s Mpc)")
     Om0 = Parameter(doc="Omega matter; matter density/critical density at z=0.")

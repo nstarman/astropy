@@ -6,6 +6,7 @@
 # IMPORTS
 
 import contextlib
+from types import MappingProxyType
 
 import pytest
 
@@ -43,6 +44,8 @@ def test_has_expected_equivalencies():
     with pytest.warns(AstropyDeprecationWarning, match="`with_H0`"):
         assert u.equivalencies.with_H0 is cu.with_H0
 
+# ============================================================================
+# Units & Equivalencies
 
 def test_littleh():
     H0_70 = 70 * u.km / u.s / u.Mpc
@@ -218,6 +221,123 @@ def test_equivalency_context_manager():
     assert len(base_registry.equivalencies) == 1
     assert str(base_registry.equivalencies[0][0]) == "redshift"
 
+# ============================================================================
+# Descriptor
+
+class CosmologyUnitEquivalenciesTestMixin:
+    """
+    Test a `astropy.cosmology.units.CosmologyUnitEquivalencies` attached to a |Cosmology|
+
+    This class will not be directly called by :mod:`pytest` since its name does
+    not begin with ``Test``. To activate the contained tests this class must
+    be inherited in a subclass. Subclasses must define :func:`pytest.fixture`
+    ``cosmo`` that returns an instance of a |Cosmology| and ``cosmo_cls`` that
+    returns the |Cosmology| class.
+    See ``TestCosmology`` for an example.
+    """
+
+    @pytest.fixture
+    def equivalencies(self, cosmo):
+        """``cosmo``-specific equivalencies from descriptor."""
+        return cosmo.equivalencies
+
+    # ==============================================================
+
+    def test_equivalencies_available(self, equivalencies):
+        """Test ``CosmologyUnitEquivalencies.available``"""
+        # check type
+        assert isinstance(equivalencies.available, MappingProxyType)
+        # check contents
+        assert equivalencies.available == equivalencies._equivs
+        assert all(map(callable, equivalencies.available.values()))
+        #   this test relies on __getattr__, which is also tested
+        for n in equivalencies.available.keys():
+            equiv = getattr(equivalencies, n)
+            assert isinstance(equiv, u.Equivalency)
+
+    def test_equivalencies_dir(self, equivalencies):
+        """Test equivalency functions added to ``CosmologyUnitEquivalencies.__dir__``."""
+        d = dir(equivalencies)
+        assert all([(n in d) for n in equivalencies.available.keys()])
+
+
+    def test_equivalencies_instance_str(self, cosmo_cls):
+        """Test ``CosmologyUnitEquivalencies.__str__``"""
+        s = str(cosmo_cls.equivalencies)
+        # namelead
+        assert repr(cosmo_cls) in s
+        # available
+        assert all([(n in s) for n in equivalencies.available.keys()])
+        # attr dict
+        if cosmo_cls.equivalencies._equivs_attrs:  # only check if not empty
+            assert all([(v in s) for v in equivalencies._equivs_attrs.values()])
+
+    def test_equivalencies_instance_str(self, cosmo, equivalencies):
+        """Test ``CosmologyUnitEquivalencies.__str__``"""
+        s = str(equivalencies)
+        # namelead
+        assert (cosmo.name if cosmo.name is not None else "instance") in s
+        assert cosmo.__class__.__qualname__ in s
+        # available
+        assert all([(n in s) for n in equivalencies.available.keys()])
+        # attr dict
+        if equivalencies._equivs_attrs:  # only check if not empty
+            assert all([(v in s) for v in equivalencies._equivs_attrs.values()]) 
+
+    def test_equivalencies_descriptor(self, cosmo_cls, cosmo):
+        """Test accessing equivalencies as a descriptor."""
+        # get from class
+        equivalencies = cosmo_cls.equivalencies
+        assert equivalencies._parent_cls is cosmo_cls
+        assert equivalencies._parent_ref is None
+
+        # get from instance
+        equivalencies = cosmo.equivalencies 
+        assert equivalencies._parent_cls is cosmo_cls
+        assert equivalencies._parent_ref is not None
+        assert equivalencies._parent_ref() is cosmo
+
+    def test_equivalencies_parent(self, cosmo_cls, cosmo):
+        """Test ``CosmologyUnitEquivalencies`` parent."""
+        # on the class
+        assert cosmo_cls.equivalencies._parent is cosmo_cls
+
+        # on the instance
+        assert cosmo.equivalencies._parent is cosmo
+
+    def test_equivalencies_getattr(self, cosmo_cls, equivalencies):
+        """Test get equivalencies from ``CosmologyUnitEquivalencies``."""
+        # anything from class is forbidden
+        # get the first known equivalency
+        for attr in tuple(cosmo_cls.equivalencies.available.keys())[:1]:
+            with pytest.raises(AttributeError, match=f"equivalency {attr!r}"):
+                getattr(cosmo_cls.equivalencies, attr)
+
+        # but is permitted on the instance
+        # these equivalencies are instantiated
+        for attr in tuple(equivalencies.available.keys())[:1]:
+            equiv = getattr(equivalencies, attr)
+            assert isinstance(equiv, u.Equivalency)
+
+        # not in equivalency
+        with pytest.raises(AttributeError, match=f"equivalency 'not_here'"):
+            equivalencies.not_here
+
+    def test_equivalencies_redshift(self, cosmo_cls, cosmo, equivalencies):
+        """Test ``CosmologyUnitEquivalencies.redshift``."""
+        # errors from the class
+        with pytest.raises(AttributeError, match="equivalency 'redshift'"):
+            cosmo_cls.equivalencies.redshift
+
+        # works from the instance
+        equiv = equivalencies.redshift
+        assert isinstance(equiv, u.Equivalency)
+        assert equiv.name[0] == "with_redshift"
+        assert equiv.kwargs[0]["cosmology"] is cosmo
+        assert equiv.kwargs[0]["Tcmb"] == ("redshift_temperature" in equivalencies.available)
+
+
+# ============================================================================
 
 @pytest.mark.skipif(not HAS_SCIPY, reason = "Cosmology needs scipy")
 class Test_unsuitable_units:

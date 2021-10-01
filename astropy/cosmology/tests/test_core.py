@@ -18,6 +18,7 @@ from astropy.cosmology import Cosmology, core
 from astropy.cosmology.core import _COSMOLOGY_CLASSES, Parameter
 
 from .test_connect import ReadWriteTestMixin, ToFromFormatTestMixin
+from .test_units import CosmologyUnitEquivalenciesTestMixin
 
 ##############################################################################
 # TESTS
@@ -234,6 +235,7 @@ class ParameterTestMixin:
 
 
 class TestCosmology(ParameterTestMixin, ReadWriteTestMixin, ToFromFormatTestMixin,
+                    CosmologyUnitEquivalenciesTestMixin,
                     metaclass=abc.ABCMeta):
     """Test :class:`astropy.cosmology.Cosmology`."""
 
