@@ -535,6 +535,7 @@ listed below.
 
    Reading and Writing <io>
    For Developers <dev>
+   Testing Cosmologies and IO <tests>
 
 
 .. automodapi:: astropy.cosmology

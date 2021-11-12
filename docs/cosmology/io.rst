@@ -316,6 +316,8 @@ Now the registered functions can be used in
 
 .. EXAMPLE END
 
+For details how to test a custom format, see :ref:`astropy-cosmology-tests`.
+
 
 .. _custom_cosmology_readers_writers:
 
@@ -442,6 +444,8 @@ Now the registered functions can be used in
     ...     pass
 
 .. EXAMPLE END
+
+For details how to test a custom format, see :ref:`astropy-cosmology-tests`.
 
 
 Reference/API

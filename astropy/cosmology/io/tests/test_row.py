@@ -14,6 +14,8 @@ from astropy.cosmology.parameters import available
 
 from .base import IOTestMixinBase, IOFormatTestBase
 
+__all__ = ["ToFromRowTestMixin", "TestToFromRow"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 cosmo_instances.append("TestToFromRow.setup.<locals>.CosmologyWithKwargs")
 
@@ -104,7 +106,7 @@ class ToFromRowTestMixin(IOTestMixinBase):
         pass  # there are no partial info options
 
 
-class TestToFromTable(IOFormatTestBase, ToFromRowTestMixin):
+class TestToFromRow(IOFormatTestBase, ToFromRowTestMixin):
     """
     Directly test ``to/from_row``.
     These are not public API and are discouraged from use, in favor of

@@ -28,6 +28,20 @@ from astropy.utils.compat.optional_deps import HAS_SCIPY
 from .test_core import CosmologySubclassTest as CosmologyTest
 from .test_core import FlatCosmologyMixinTest, ParameterTestMixin
 
+__all__ = [
+    "TestFLRW",
+    "ParameterH0TestMixin", "ParameterOm0TestMixin", "ParameterOde0TestMixin",
+    "ParameterTcmb0TestMixin", "ParameterNeffTestMixin", "Parameterm_nuTestMixin",
+    "ParameterOb0TestMixin",
+    "FLRWSubclassTest",
+    "FlatFLRWMixinTest", "ParameterFlatOde0TestMixin",
+    "TestLambdaCDM", "TestFlatLambdaCDM",
+    "TestwCDM", "TestFlatwCDM", "Parameterw0TestMixin",
+    "Testw0waCDM", "TestFlatw0waCDM", "ParameterwaTestMixin",
+    "TestwpwaCDM", "ParameterwpTestMixin", "ParameterwaTestMixin",
+    "Testw0wzCDM", "ParameterwzTestMixin"
+]
+
 ##############################################################################
 # TESTS
 ##############################################################################
@@ -50,7 +64,7 @@ def test_optional_deps_functions():
 
 
 class ParameterH0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` H0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` H0 on a |Cosmology|.
 
     H0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -98,7 +112,7 @@ class ParameterH0TestMixin(ParameterTestMixin):
 
 
 class ParameterOm0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` Om0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Om0 on a |Cosmology|.
 
     Om0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -145,7 +159,7 @@ class ParameterOm0TestMixin(ParameterTestMixin):
 
 
 class ParameterOde0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` Ode0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Ode0 on a |Cosmology|.
 
     Ode0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -193,7 +207,7 @@ class ParameterOde0TestMixin(ParameterTestMixin):
 
 
 class ParameterTcmb0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` Tcmb0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Tcmb0 on a |Cosmology|.
 
     Tcmb0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -239,7 +253,7 @@ class ParameterTcmb0TestMixin(ParameterTestMixin):
 
 
 class ParameterNeffTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` Neff on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Neff on a |Cosmology|.
 
     Neff is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -284,7 +298,7 @@ class ParameterNeffTestMixin(ParameterTestMixin):
 
 
 class Parameterm_nuTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` m_nu on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` m_nu on a |Cosmology|.
 
     m_nu is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -354,7 +368,7 @@ class Parameterm_nuTestMixin(ParameterTestMixin):
 
 
 class ParameterOb0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` Ob0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Ob0 on a |Cosmology|.
 
     Ob0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -568,7 +582,7 @@ class FLRWSubclassTest(TestFLRW):
 # -----------------------------------------------------------------------------
 
 class ParameterFlatOde0TestMixin(ParameterOde0TestMixin):
-    """Tests for `astropy.cosmology.Parameter` Ode0 on a flat Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` Ode0 on a flat Cosmology.
 
     This will augment or override some tests in ``ParameterOde0TestMixin``.
 
@@ -712,7 +726,7 @@ class TestFlatLambdaCDM(FlatFLRWMixinTest, TestLambdaCDM):
 
 
 class Parameterw0TestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` w0 on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` w0 on a |Cosmology|.
 
     w0 is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -810,7 +824,7 @@ class TestFlatwCDM(FlatFLRWMixinTest, TestwCDM):
 
 
 class ParameterwaTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` wa on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` wa on a |Cosmology|.
 
     wa is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -909,7 +923,7 @@ class TestFlatw0waCDM(FlatFLRWMixinTest, Testw0waCDM):
 
 
 class ParameterwpTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` wp on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` wp on a |Cosmology|.
 
     wp is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -949,7 +963,7 @@ class ParameterwpTestMixin(ParameterTestMixin):
 
 
 class ParameterzpTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` zp on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` zp on a |Cosmology|.
 
     zp is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the
@@ -1028,7 +1042,7 @@ class TestwpwaCDM(FLRWSubclassTest,
 
 
 class ParameterwzTestMixin(ParameterTestMixin):
-    """Tests for `astropy.cosmology.Parameter` wz on a Cosmology.
+    """Tests for `~astropy.cosmology.Parameter` wz on a |Cosmology|.
 
     wz is a descriptor, which are tested by mixin, here with ``TestFLRW``.
     These tests expect dicts ``_cls_args`` and ``cls_kwargs`` which give the

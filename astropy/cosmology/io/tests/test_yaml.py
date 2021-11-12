@@ -19,6 +19,8 @@ from astropy.table import QTable, vstack
 
 from .base import IOTestMixinBase, IOFormatTestBase
 
+__all__ = ["ToFromYAMLTestMixin", "TestToFromYAML"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 # cosmo_instances.append("TestToFromYAML.setup.<locals>.CosmologyWithKwargs")
 

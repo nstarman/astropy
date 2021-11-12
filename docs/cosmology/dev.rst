@@ -66,6 +66,9 @@ building a performant cosmology class.
         ...  # [details discussed below]
 
 
+For details how to test a custom cosmology, see :ref:`astropy-cosmology-tests`.
+
+
 .. _astropy-cosmology-custom-parameters:
 
 Parameters

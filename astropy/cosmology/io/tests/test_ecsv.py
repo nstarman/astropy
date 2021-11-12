@@ -15,6 +15,8 @@ from astropy.cosmology.parameters import available
 
 from .base import IOTestMixinBase, IOFormatTestBase
 
+__all__ = ["ReadWriteECSVTestMixin", "TestReadWriteECSV"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 cosmo_instances.append("TestReadWriteECSV.setup.<locals>.CosmologyWithKwargs")
 

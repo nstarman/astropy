@@ -17,6 +17,8 @@ from astropy.table import QTable, vstack
 
 from .base import IOTestMixinBase, IOFormatTestBase
 
+__all__ = ["ToFromMappingTestMixin", "TestToFromMapping"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 cosmo_instances.append("TestToFromMapping.setup.<locals>.CosmologyWithKwargs")
 

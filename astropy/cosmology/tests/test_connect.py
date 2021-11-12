@@ -16,6 +16,9 @@ from astropy.table import QTable
 
 from .conftest import json_identify, read_json, write_json
 
+__all__ = ["ReadWriteTestMixin", "TestCosmologyReadWrite",
+           "ToFromFormatTestMixin", "TestCosmologyToFromFormat"]
+
 ###############################################################################
 # SETUP
 

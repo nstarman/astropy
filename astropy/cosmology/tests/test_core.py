@@ -27,6 +27,8 @@ from astropy.utils.metadata import MetaData
 from .test_connect import ReadWriteTestMixin, ToFromFormatTestMixin
 from .test_parameter import ParameterTestMixin
 
+__all__ = ["TestCosmology", "CosmologySubclassTest", "MetaTestMixin"]
+
 ##############################################################################
 # TESTS
 ##############################################################################

@@ -19,6 +19,8 @@ from astropy.cosmology import Cosmology
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
 from astropy.cosmology.parameter import Parameter, _validate_to_float, _validate_with_unit
 
+__all__ = ["ParameterTestMixin", "TestParameter"]
+
 ##############################################################################
 # TESTS
 ##############################################################################

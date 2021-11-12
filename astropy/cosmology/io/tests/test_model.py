@@ -22,6 +22,8 @@ from astropy.utils.compat.optional_deps import HAS_SCIPY
 
 from .base import IOTestMixinBase, IOFormatTestBase
 
+__all__ = ["ToFromModelTestMixin", "TestToFromModel"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 cosmo_instances.append("TestToFromTable.setup.<locals>.CosmologyWithKwargs")
 

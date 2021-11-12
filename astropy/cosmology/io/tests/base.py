@@ -9,6 +9,8 @@ from astropy.cosmology import Cosmology, Parameter, realizations
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
 from astropy.cosmology.parameters import available
 
+__all__ = ["IOTestMixinBase", "IOFormatTestBase"]
+
 cosmo_instances = [getattr(realizations, name) for name in available]
 
 
