@@ -668,6 +668,19 @@ class TestFLRW(CosmologyTest,
         with pytest.raises(exception):
             cosmo.inv_efunc(0.5)
 
+    # ===============================================================
+    # Usage Tests
+
+    def test_Otot0(self, cosmo):
+        """Test total ``Otot0``. This is not an attribute."""
+        assert allclose(cosmo.Om0 + cosmo.Ode0 + cosmo.Ogamma0 + cosmo.Onu0,
+                        1.0, rtol=1e-6)
+
+    def test_Otot(self, cosmo):
+        """Test total ``Otot()``. This is not a method."""
+        assert allclose(cosmo.Om(1) + cosmo.Ode(1) + cosmo.Ogamma(1) + cosmo.Onu(1),
+                        1.0, rtol=1e-6)
+
 
 class FLRWSubclassTest(TestFLRW):
     """
