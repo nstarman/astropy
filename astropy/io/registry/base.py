@@ -349,12 +349,13 @@ class _UnifiedIORegistryBase(metaclass=abc.ABCMeta):
         Returns the reader or writer with the highest priority. If it is a tie,
         error.
         """
-        if mode == "read":
-            format_dict = self._readers
-            mode_loader = "reader"
-        elif mode == "write":
-            format_dict = self._writers
-            mode_loader = "writer"
+        valid_modes = self._registries.keys() - {"identify"}
+        if mode in valid_modes:
+            format_dict = getattr(self, self._registries[mode]["attr"])
+            mode_loader = self._registries[mode]["attr"][1:-1]
+            # e.g. _readers to reader
+        else:
+            raise ValueError(f"mode must be one of {valid_modes}")
 
         best_formats = []
         current_priority = - np.inf
@@ -378,7 +379,7 @@ class _UnifiedIORegistryBase(metaclass=abc.ABCMeta):
             ))
         return best_formats[0]
 
-    def _update__doc__(self, data_class, readwrite):
+    def _update__doc__(self, data_class, mode):
         """
         Update the docstring to include all the available readers / writers for
         the ``data_class.read``/``data_class.write`` functions (respectively).
@@ -388,14 +389,14 @@ class _UnifiedIORegistryBase(metaclass=abc.ABCMeta):
         FORMATS_TEXT = 'The available built-in formats are:'
 
         # Get the existing read or write method and its docstring
-        class_readwrite_func = getattr(data_class, readwrite)
+        class_mode_func = getattr(data_class, mode)
 
-        if not isinstance(class_readwrite_func.__doc__, str):
+        if not isinstance(class_mode_func.__doc__, str):
             # No docstring--could just be test code, or possibly code compiled
             # without docstrings
             return
 
-        lines = class_readwrite_func.__doc__.splitlines()
+        lines = class_mode_func.__doc__.splitlines()
 
         # Find the location of the existing formats table if it exists
         sep_indices = [ii for ii, line in enumerate(lines) if FORMATS_TEXT in line]
@@ -410,7 +411,7 @@ class _UnifiedIORegistryBase(metaclass=abc.ABCMeta):
 
         # Get the available unified I/O formats for this class
         # Include only formats that have a reader, and drop the 'Data class' column
-        format_table = self.get_formats(data_class, readwrite.capitalize())
+        format_table = self.get_formats(data_class, mode.capitalize())
         format_table.remove_column('Data class')
 
         # Get the available formats as a table, then munge the output of pformat()
@@ -431,12 +432,12 @@ class _UnifiedIORegistryBase(metaclass=abc.ABCMeta):
         new_lines = [FORMATS_TEXT, ''] + new_lines
         lines.extend([left_indent + line for line in new_lines])
 
-        # Depending on Python version and whether class_readwrite_func is
+        # Depending on Python version and whether class_mode_func is
         # an instancemethod or classmethod, one of the following will work.
-        if isinstance(class_readwrite_func, UnifiedReadWrite):
-            class_readwrite_func.__class__.__doc__ = '\n'.join(lines)
+        if isinstance(class_mode_func, UnifiedReadWrite):
+            class_mode_func.__class__.__doc__ = '\n'.join(lines)
         else:
             try:
-                class_readwrite_func.__doc__ = '\n'.join(lines)
+                class_mode_func.__doc__ = '\n'.join(lines)
             except AttributeError:
-                class_readwrite_func.__func__.__doc__ = '\n'.join(lines)
+                class_mode_func.__func__.__doc__ = '\n'.join(lines)

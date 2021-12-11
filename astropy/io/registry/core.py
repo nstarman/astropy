@@ -65,9 +65,8 @@ class UnifiedInputRegistry(_UnifiedIORegistryBase):
     # Read methods
 
     def register_reader(self, data_format, data_class, function, force=False,
-                        priority=0):
-        """
-        Register a reader function.
+                        priority=0, attr_name="read"):
+        """Register a reader function.
 
         Parameters
         ----------
@@ -86,20 +85,20 @@ class UnifiedInputRegistry(_UnifiedIORegistryBase):
             trying to determine the best reader to use. Higher priorities are
             preferred over lower priorities, with the default priority being 0
             (negative numbers are allowed though).
+        attr_name : str, optional
+            The name of the attribute on the data class.
         """
         if not (data_format, data_class) in self._readers or force:
             self._readers[(data_format, data_class)] = function, priority
         else:
-            raise IORegistryError("Reader for format '{}' and class '{}' is "
-                              'already defined'
-                              ''.format(data_format, data_class.__name__))
+            raise IORegistryError("Reader for format '{}' and class '{}' is already defined"
+                                  "".format(data_format, data_class.__name__))
 
-        if data_class not in self._delayed_docs_classes:
-            self._update__doc__(data_class, 'read')
+        if hasattr(data_class, attr_name) and data_class not in self._delayed_docs_classes:
+            self._update__doc__(data_class, attr_name)
 
-    def unregister_reader(self, data_format, data_class):
-        """
-        Unregister a reader function
+    def unregister_reader(self, data_format, data_class, attr_name="read"):
+        """Unregister a reader function.
 
         Parameters
         ----------
@@ -107,16 +106,17 @@ class UnifiedInputRegistry(_UnifiedIORegistryBase):
             The data format identifier.
         data_class : class
             The class of the object that the reader produces.
+        attr_name : str, optional
+            The name of the attribute on the data class.
         """
-
         if (data_format, data_class) in self._readers:
             self._readers.pop((data_format, data_class))
         else:
             raise IORegistryError("No reader defined for format '{}' and class '{}'"
                                   ''.format(data_format, data_class.__name__))
 
-        if data_class not in self._delayed_docs_classes:
-            self._update__doc__(data_class, 'read')
+        if hasattr(data_class, attr_name) and data_class not in self._delayed_docs_classes:
+            self._update__doc__(data_class, attr_name)
 
     def get_reader(self, data_format, data_class):
         """Get reader for ``data_format``.
@@ -146,8 +146,7 @@ class UnifiedInputRegistry(_UnifiedIORegistryBase):
                     data_format, data_class.__name__, format_table_str))
 
     def read(self, cls, *args, format=None, cache=False, **kwargs):
-        """
-        Read in data.
+        """Read in data.
 
         Parameters
         ----------
@@ -226,14 +225,14 @@ class UnifiedOutputRegistry(_UnifiedIORegistryBase):
         super().__init__()
         self._writers = OrderedDict()
         self._registries["write"] = dict(attr="_writers", column="Write")
-        self._registries_order = ("write", "identify", )
+        self._registries_order = ("write", "identify")
 
     # =========================================================================
     # Write Methods
 
-    def register_writer(self, data_format, data_class, function, force=False, priority=0):
-        """
-        Register a table writer function.
+    def register_writer(self, data_format, data_class, function, force=False,
+                        priority=0, attr_name="write"):
+        """Register a table writer function.
 
         Parameters
         ----------
@@ -252,20 +251,20 @@ class UnifiedOutputRegistry(_UnifiedIORegistryBase):
             to determine the best writer to use. Higher priorities are preferred
             over lower priorities, with the default priority being 0 (negative
             numbers are allowed though).
+        attr_name : str, optional
+            The name of the attribute on the data class.
         """
         if not (data_format, data_class) in self._writers or force:
             self._writers[(data_format, data_class)] = function, priority
         else:
-            raise IORegistryError("Writer for format '{}' and class '{}' is "
-                                  'already defined'
-                                  ''.format(data_format, data_class.__name__))
+            raise IORegistryError("Writer for format '{}' and class '{}' is already defined"
+                                  "".format(data_format, data_class.__name__))
 
-        if data_class not in self._delayed_docs_classes:
-            self._update__doc__(data_class, 'write')
+        if hasattr(data_class, attr_name) and data_class not in self._delayed_docs_classes:
+            self._update__doc__(data_class, attr_name)
 
-    def unregister_writer(self, data_format, data_class):
-        """
-        Unregister a writer function
+    def unregister_writer(self, data_format, data_class, attr_name="write"):
+        """Unregister a writer function.
 
         Parameters
         ----------
@@ -273,16 +272,17 @@ class UnifiedOutputRegistry(_UnifiedIORegistryBase):
             The data format identifier.
         data_class : class
             The class of the object that can be written.
+        attr_name : str, optional
+            The name of the attribute on the data class.
         """
-
         if (data_format, data_class) in self._writers:
             self._writers.pop((data_format, data_class))
         else:
             raise IORegistryError("No writer defined for format '{}' and class '{}'"
                                   ''.format(data_format, data_class.__name__))
 
-        if data_class not in self._delayed_docs_classes:
-            self._update__doc__(data_class, 'write')
+        if hasattr(data_class, attr_name) and data_class not in self._delayed_docs_classes:
+            self._update__doc__(data_class, attr_name)
 
     def get_writer(self, data_format, data_class):
         """Get writer for ``data_format``.
@@ -312,8 +312,7 @@ class UnifiedOutputRegistry(_UnifiedIORegistryBase):
                     data_format, data_class.__name__, format_table_str))
 
     def write(self, data, *args, format=None, **kwargs):
-        """
-        Write out data.
+        """Write out data.
 
         Parameters
         ----------
@@ -332,7 +331,6 @@ class UnifiedOutputRegistry(_UnifiedIORegistryBase):
 
             .. versionadded:: 4.3
         """
-
         if format is None:
             path = None
             fileobj = None
@@ -367,8 +365,7 @@ class UnifiedIORegistry(UnifiedInputRegistry, UnifiedOutputRegistry):
         self._registries_order = ("read", "write", "identify")
 
     def get_formats(self, data_class=None, readwrite=None):
-        """
-        Get the list of registered I/O formats as a `~astropy.table.Table`.
+        """Get the list of registered I/O formats as a `~astropy.table.Table`.
 
         Parameters
         ----------
