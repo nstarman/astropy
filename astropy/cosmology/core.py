@@ -3,12 +3,16 @@
 import abc
 import functools
 import inspect
-from types import FunctionType, MappingProxyType
+import os
+import sys
+from io import StringIO
+from types import MappingProxyType
 
 import numpy as np
 
 import astropy.units as u
 from astropy.io.registry import UnifiedReadWriteMethod
+from astropy.utils.data_info import DataInfo
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
@@ -32,6 +36,85 @@ _COSMOLOGY_CLASSES = dict()
 
 class CosmologyError(Exception):
     pass
+
+
+class CosmologyInfo(DataInfo):
+    # Purposefully not a MixinInfo b/c it doesn't yet work as a column.
+    # Table doesn't work properly with pseudo-scalars and Cosmology is not yet
+    # shaped.
+
+    _stats = []  # no stats
+    attrs_from_parent = set()
+    attr_names = {"name", "meta"}
+    _attr_defaults = {'dtype': np.dtype('O')}
+    _attrs_no_copy = set()
+    _info_summary_attrs = ()
+
+    def _represent_as_dict(self):
+        """
+        Return the cosmology class, inputs, and metadata as a dict.
+        See registered ``to_format`` "mapping" for details.
+        """
+        return self._parent.to_format("mapping")
+
+    def _construct_from_dict(self, m, *, move_to_meta=False):
+        """
+        Load `~astropy.cosmology.Cosmology` from mapping object.
+        See registered ``from_format`` "mapping" for details.
+        """
+        return self._parent_cls.from_format(m, format="mapping", move_to_meta=move_to_meta)
+
+    def __repr__(self):
+        if self._parent is None:
+            return super().__repr__()
+        out = StringIO()
+        self.__call__("parameters", out=out)
+        return out.getvalue()
+
+    # -------------------------------------------
+
+    def __call__(self, *options, out=None):
+        """Get info on a cosmology class or instance.
+
+        Parameters
+        ----------
+        *options : {'parameters', }
+            - 'parameters' : immutable dict of parameter name and value.
+                             If called from a class the value is the Parameter
+                             object itself.
+
+        Returns
+        -------
+        `~types.MappingProxyType` or None
+            MappingProxyType if ``out`` is None and option is "parameters"
+        """
+        out = out if out != "" else sys.stdout
+        info = {}
+        name = getattr(getattr(self._parent, "info", None), "name", None)
+        if name is not None:
+            info['name'] = name
+
+        if len(options) == 0:
+            raise ValueError("Must specify at least one `options`.")
+
+        # Immutable dict of parameter name and value.
+        # If called from a class the value is the Parameter object itself.
+        if "parameters" in options:  # works on both class and instance
+            c = c if (c := self._parent) is not None else self._parent_cls
+            ps = MappingProxyType({n: getattr(c, n) for n in c.__parameters__})
+            info["parameters"] = ps
+        else:
+            raise ValueError("'option' must be one of: {'parameters',}")
+
+        if out is None:
+            k = set(info.keys()) - {"name"}  # pop from info if only key
+            return info if len(k) > 1 else info[k.pop()]
+
+        nitem = len(info.keys())
+        for i, (key, val) in enumerate(info.items()):
+            if val == '':  # skip empty items
+                continue
+            out.write(f'{key} = {val}' + (os.linesep if i < nitem - 1 else ""))
 
 
 class Cosmology(metaclass=abc.ABCMeta):
@@ -58,6 +141,7 @@ class Cosmology(metaclass=abc.ABCMeta):
     documentation on :ref:`astropy-cosmology-fast-integrals`.
     """
 
+    info = CosmologyInfo(bound=True)
     meta = MetaData()
 
     # Unified I/O object interchange methods

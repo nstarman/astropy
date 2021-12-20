@@ -8,6 +8,7 @@
 # STDLIB
 import abc
 import inspect
+from io import StringIO, TextIOWrapper
 from types import MappingProxyType
 
 # THIRD PARTY
@@ -49,7 +50,112 @@ class MetaTestMixin:
         cosmo.meta[key] = cosmo.meta.pop(key)  # will error if immutable
 
 
-class TestCosmology(ParameterTestMixin, MetaTestMixin,
+class CosmologyInfoTestMixin:
+    """Test `astropy.cosmology.core.CosmologyInfo`."""
+
+    @pytest.fixture(params=[None, "", sys.stdout, StringIO])
+    def out(self, request):
+        out = request.param
+        if out is StringIO:
+            out = out()
+        return out
+
+    @pytest.fixture
+    def info(self, cosmo):
+        return cosmo.info
+
+    # ==============================================================
+
+    def test_info_represent_as_dict(self, cosmo, info):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo._represent_as_dict`."""
+        m = info._represent_as_dict()
+        assert m == cosmo.to_format("mapping")
+
+    def test_info_construct_from_dict(self, cosmo_cls, cosmo):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo._construct_from_dict`."""
+        # default
+        m = cosmo.info._represent_as_dict()
+        c = cosmo_cls.info._construct_from_dict(m, move_to_meta=False)
+
+        assert c == cosmo_cls.from_format(m, format="mapping", move_to_meta=False)
+
+        # move_to_meta = True
+        m["abc"] = "cba"
+        c = cosmo_cls.info._construct_from_dict(m, move_to_meta=True)
+
+        assert c == cosmo_cls.from_format(m, format="mapping", move_to_meta=True)
+        assert c.meta["abc"] == "cba"
+
+    # -------------------------------------------
+
+    def test_info_repr_instance(self, info):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__repr__`."""
+        r = repr(info)
+        assert r == ("parameters = "
+                     "{'H0': <Quantity 67.66 km / (Mpc s)>, 'Om0': 0.30966, "
+                     "'Tcmb0': <Quantity 2.7255 K>, 'Neff': 3.046, "
+                     "'m_nu': <Quantity [0.  , 0.  , 0.06] eV>, 'Ob0': 0.04897}")
+
+    def test_info_repr_class(self, cosmo_cls):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__repr__`."""
+        assert f"<astropy.cosmology.core.CosmologyInfo object" in repr(cosmo_cls.info)
+
+    # -------------------------------------------
+
+    def test_info_call_class_parameter(self, cosmo_cls, out, capsys):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__call__`."""
+        info = cosmo_cls.info("parameters", out=out)
+
+        if out is None:  # default
+            assert isinstance(info, MappingProxyType)
+            assert set(info.keys()) == set(cosmo_cls.__parameters__)
+            assert all((isinstance(v, Parameter) for v in info.values()))
+        else:  # various output options
+            if out == "":
+                r = capsys.readouterr().out
+            elif isinstance(out, StringIO):
+                r = out.getvalue()
+            elif isinstance(out, TextIOWrapper):
+                return  # TODO! figure out how to get output
+            else:
+                assert False, "SHOULD NEVER REACH THIS"
+
+            for p in cosmo_cls.__parameters__:
+                assert f"'{p}': <Parameter {p!r}" in r
+
+    def test_info_call_instance_parameter(self, cosmo, out, capsys):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__call__`."""
+        info = cosmo.info("parameters", out=out)
+
+        if out is None:  # default
+            assert isinstance(info, MappingProxyType)
+            assert set(info.keys()) == set(cosmo.__parameters__)
+
+        else:  # various output options
+            if out == "":
+                r = capsys.readouterr().out
+            elif isinstance(out, StringIO):
+                r = out.getvalue()
+            elif isinstance(out, TextIOWrapper):
+                return  # TODO! figure out how to get output
+            else:
+                assert False, "SHOULD NEVER REACH THIS"
+
+            for p in cosmo.__parameters__:
+                assert f"'{p}': " in r
+
+    def test_info_call_class_notoption(self, cosmo_cls, out):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__call__`."""
+        with pytest.raises(ValueError, match="'option' must be"):
+            cosmo_cls.info("not an option", out=out)
+
+    def test_info_call_instance_notoption(self, info, out):
+        """Test :meth:`astropy.cosmology.core.CosmologyInfo.__call__`."""
+        with pytest.raises(ValueError, match="'option' must be"):
+            info("not an option", out=out)
+
+
+class TestCosmology(ParameterTestMixin, MetaTestMixin, CosmologyInfoTestMixin,
                     ReadWriteTestMixin, ToFromFormatTestMixin,
                     metaclass=abc.ABCMeta):
     """Test :class:`astropy.cosmology.Cosmology`.
