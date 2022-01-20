@@ -149,7 +149,7 @@ def aszarr(z):
     return Quantity(z, cu.redshift).value
 
 
-def broadcast_zs_and_params(*zs, **params):
+def broadcast_args_params(*zs, **params):
     """Broadcast redshift and parameters.
 
     Parameters
@@ -176,21 +176,31 @@ def broadcast_zs_and_params(*zs, **params):
     # param shaper
     pshaper = (* (None, ) * len(zs[0].shape), ...)
 
-    return (z[zshaper] for z in zs), {k: p[pshaper] for k, p in params.items()}
+    return (z[zshaper] for z in zs), (p[pshaper] for k, p in params.values())
 
 
 def broadcast_if_nonscalar(arr, shape, subok=True):
-    """
+    """Broadcast array to shape, if the shape is not an empty tuple.
 
     Parameters
     ----------
     arr : array-like
+        The array to maybe broadcast.
     shape : tuple[int]
+        The shape to which to broadcast the array. Only applied if not empty.
     subok : bool
+        If True, then sub-classes will be passed-through (default), otherwise
+        the returned array will be forced to be a base-class array.
 
     Returns
     -------
     array-like
+        ``arr`` if ``shape`` is an empty tuple, else broadcasted to ``shape``.
+
+    See Also
+    --------
+    ``numpy.broadcast_to``
+        If has a shape.
     """
     if not shape:
         return arr.item() if hasattr(arr, "item") else arr

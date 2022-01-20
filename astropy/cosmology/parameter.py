@@ -74,6 +74,9 @@ class Parameter:
             pass
         elif fvalidate in self._registry_validators:
             fvalidate = self._registry_validators[fvalidate]
+        elif (isinstance(fvalidate, tuple)
+              and all(fv in self._registry_validators for fv in fvalidate)):
+            fvalidate = CompositeValidator(*(self._registry_validators[fv] for fv in fvalidate))
         elif isinstance(fvalidate, str):
             raise ValueError("`fvalidate`, if str, must be in "
                              f"{self._registry_validators.keys()}")
@@ -318,12 +321,19 @@ class Parameter:
 
 
 class CompoundValidator:
-    """Compound Validator
+    """Composite validator to call a series of setter functions.
     
     Parameters
     ----------
     *fvalidates : callable[[`~astropy.cosmology.Cosmology`, `~astropy.cosmology.Parameter`, Any], Any]
-    
+        Ordered validator functions.
+        Each validator function should have signature
+        ``def validator(cosmology, parameter, value):``
+        Where cosmology is a `~astropy.cosmology.Cosmology` instance,
+        parameter is a `~astropy.cosmology.Parameter` instance,
+        and the value is anything for the validator to process.
+        See the call signature for details.
+
     Returns
     -------
     Any
@@ -337,12 +347,17 @@ class CompoundValidator:
         Parameters
         ----------
         cosmology : `~astropy.cosmology.Cosmology`
+            The |Cosmology| on which to validate the processed ``value``.
         param : `~astropy.cosmology.Parameter`
+            The Parameter with all the information needed to validate the
+            processed ``value``.
         value : Any
+            Value for the |Cosmology| Parameter.
 
         Returns
         -------
         Any
+            Processed value from passing ``value`` through all the validators.
         """
         for fvalidate in self._fvalidates:
             value = fvalidate(cosmology, param, value)

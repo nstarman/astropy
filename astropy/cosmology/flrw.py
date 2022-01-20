@@ -19,7 +19,7 @@ from . import units as cu
 from .core import Cosmology, FlatCosmologyMixin, Parameter
 from .parameter import _validate_non_negative, _validate_with_unit
 from .utils import aszarr, vectorize_redshift_method
-from .utils import broadcast_zs_and_params, broadcast_if_nonscalar
+from .utils import broadcast_args_params, broadcast_if_nonscalar
 
 # isort: split
 if HAS_SCIPY:
@@ -150,7 +150,8 @@ class FLRW(Cosmology):
         nneutrinos = np.floor(self._Neff).astype(int)
         if any(map(np.shape, (self.H0, self.Om0, self.Ode0, self.Tcmb0, self.Ob0))):
             self._H0, self._Om0, self._Ode0, self._Tcmb0, _Ob0 = \
-                np.broadcast_arrays(self.H0, self.Om0, self.Ode0, self.Tcmb0, self.Ob0, subok=True)
+                np.broadcast_arrays(self.H0, self.Om0, self.Ode0, self.Tcmb0, self.Ob0,
+                                    subok=True)
             if not isinstance(name, (str, type(None))):  # broadcast name, if non-'scalar'
                 self._name = np.broadcast_to(self._name, self._H0.shape)
         else:
@@ -251,7 +252,7 @@ class FLRW(Cosmology):
             return value
 
         value = _validate_non_negative(self, param, value)
-        if value > self.Om0:
+        if np.any(value > self.Om0):
             raise ValueError("baryonic density can not be larger than total matter density.")
         return value
 
@@ -264,7 +265,8 @@ class FLRW(Cosmology):
         Neutrino masses cannot be negative.
         """
         # Check if there are any neutrinos
-        if (nneutrinos := floor(self._Neff)) == 0 or self._Tcmb0.value == 0:
+        nneutrinos = floor(self._Neff)
+        if np.any(nneutrinos == 0) or np.any(self._Tcmb0.value == 0):  # TODO! not None for all
             return None  # None, regardless of input
 
         # Validate / set units
@@ -419,7 +421,7 @@ class FLRW(Cosmology):
         This does not include neutrinos, even if non-relativistic at the
         redshift of interest; see `Onu`.
         """
-        z = aszarr(z)
+        (z,), (Om0,) = broadcast_args_params(aszarr(z), Om0=self._Om0)
         return self._Om0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
 
     def Ob(self, z):
@@ -444,9 +446,8 @@ class FLRW(Cosmology):
         """
         if self._Ob0 is None:
             raise ValueError("baryon density not set for this cosmology")
-
-        z = aszarr(z)
-        return self._Ob0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
+        (z,), (Ob0,) = broadcast_args_params(aszarr(z), Ob0=self._Ob0)
+        return Ob0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
 
     def Odm(self, z):
         """Return the density parameter for dark matter at redshift ``z``.
@@ -476,8 +477,8 @@ class FLRW(Cosmology):
         if self._Odm0 is None:
             raise ValueError("Baryonic density not set for this cosmology, "
                              "unclear meaning of dark matter density")
-        z = aszarr(z)
-        return self._Odm0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
+        (z,), (Odm0,) = broadcast_args_params(aszarr(z), Odm0=self._Odm0)
+        return Odm0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
 
     def Ok(self, z):
         """
@@ -494,10 +495,10 @@ class FLRW(Cosmology):
             The equivalent density parameter for curvature at each redshift.
             Returns `float` if the input is scalar.
         """
-        z = aszarr(z)
-        if np.all(self._Ok0 == 0):  # Common enough to check  # TODO! not 'all'
+        (z,), (Ok0,) = broadcast_args_params(aszarr(z), Ok0=self._Ok0)
+        if np.all(Ok0 == 0):  # Common enough to check
             return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
-        return self._Ok0 * (z + 1.0) ** 2 * self.inv_efunc(z) ** 2
+        return Ok0 * (z + 1.0) ** 2 * self.inv_efunc(z) ** 2
 
     def Ode(self, z):
         """Return the density parameter for dark energy at redshift ``z``.
@@ -514,10 +515,10 @@ class FLRW(Cosmology):
             density at each redshift.
             Returns `float` if the input is scalar.
         """
-        z = aszarr(z)
-        if np.all(self._Ode0 == 0):  # Common enough to check  # TODO! not 'all'
+        (z,), (Ode0,) = broadcast_args_params(aszarr(z), Ode0=self._Ode0)
+        if np.all(self._Ode0 == 0):  # Common enough to check
             return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
-        return self._Ode0 * self.de_density_scale(z) * self.inv_efunc(z) ** 2
+        return Ode0 * self.de_density_scale(z) * self.inv_efunc(z) ** 2
 
     def Ogamma(self, z):
         """Return the density parameter for photons at redshift ``z``.
@@ -534,8 +535,8 @@ class FLRW(Cosmology):
             each redshift.
             Returns `float` if the input is scalar.
         """
-        z = aszarr(z)
-        return self._Ogamma0 * (z + 1.0) ** 4 * self.inv_efunc(z) ** 2
+        (z,), (Ogamma0,) = broadcast_args_params(aszarr(z), Ogamma0=self._Ogamma0)
+        return Ogamma0 * (z + 1.0) ** 4 * self.inv_efunc(z) ** 2
 
     def Onu(self, z):
         r"""Return the density parameter for neutrinos at redshift ``z``.
@@ -555,8 +556,8 @@ class FLRW(Cosmology):
             kinetic energy.
             Returns `float` if the input is scalar.
         """
-        z = aszarr(z)
-        if np.all(self._Onu0 == 0):  # Common enough to check  # TODO! not 'all'
+        (z,), (Onu0,) = broadcast_args_params(aszarr(z), Onu0=self._Onu0)
+        if np.all(Onu0 == 0):  # Common enough to check
             return np.zeros(z.shape) if hasattr(z, "shape") else 0.0
         return self.Ogamma(z) * self.nu_relative_density(z)
 
@@ -573,7 +574,8 @@ class FLRW(Cosmology):
         Tcmb : `~astropy.units.Quantity` ['temperature']
             The temperature of the CMB in K.
         """
-        return self._Tcmb0 * (aszarr(z) + 1.0)
+        (z,), (Tcmb0,) = broadcast_args_params(aszarr(z), Tcmb0=self._Tcmb0)
+        return Tcmb0 * (z + 1.0)
 
     def Tnu(self, z):
         """Return the neutrino temperature at redshift ``z``.
@@ -588,7 +590,8 @@ class FLRW(Cosmology):
         Tnu : `~astropy.units.Quantity` ['temperature']
             The temperature of the cosmic neutrino background in K.
         """
-        return self._Tnu0 * (aszarr(z) + 1.0)
+        (z,), (Tnu0,) = broadcast_args_params(aszarr(z), Tnu0=self._Tnu0)
+        return Tnu0 * (z + 1.0)
 
     def nu_relative_density(self, z):
         r"""Neutrino density function relative to the energy density in photons.
@@ -641,7 +644,7 @@ class FLRW(Cosmology):
 
         # The massive and massless contribution must be handled separately
         # But check for common cases first
-        z = aszarr(z)
+        (z,), (Neff,) = broadcast_args_params(aszarr(z), Neff=self._Neff)
         if not self._massivenu:
             return prefac * self._Neff * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
 
@@ -650,7 +653,7 @@ class FLRW(Cosmology):
         invp = 0.54644808743  # 1.0 / p
         k = 0.3173
 
-        curr_nu_y = self._nu_y / (1. + np.expand_dims(z, axis=-1))
+        curr_nu_y = self._nu_y / (1.0 + np.expand_dims(z, axis=-1))
         rel_mass_per = (1.0 + (k * curr_nu_y) ** p) ** invp
         rel_mass = rel_mass_per.sum(-1) + self._nmasslessnu
 
@@ -742,12 +745,15 @@ class FLRW(Cosmology):
         It is not necessary to override this method, but if de_density_scale
         takes a particularly simple form, it may be advantageous to.
         """
+        (z,), (Om0, Ogamma0, Onu0, Ode0, Ok0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ogamma0=self._Ogamma0,
+                                  Onu0=self._Onu0, Ode0=self._Ode0, Ok0=self._Ok0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
 
-        return np.sqrt(zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) +
-                       self._Ode0 * self.de_density_scale(z))
+        return np.sqrt(zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) +
+                       Ode0 * self.de_density_scale(z))
 
     def inv_efunc(self, z):
         """Inverse of ``efunc``.
@@ -763,13 +769,16 @@ class FLRW(Cosmology):
             The redshift scaling of the inverse Hubble constant.
             Returns `float` if the input is scalar.
         """
+        (z,), (Om0, Ogamma0, Onu0, Ode0, Ok0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ogamma0=self._Ogamma0,
+                                  Onu0=self._Onu0, Ode0=self._Ode0, Ok0=self._Ok0)
         # Avoid the function overhead by repeating code
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
         zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
 
-        return (zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) +
-                self._Ode0 * self.de_density_scale(z))**(-0.5)
+        return (zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) +
+                Ode0 * self.de_density_scale(z))**(-0.5)
 
     def _lookback_time_integrand_scalar(self, z, *args):
         """Integrand of the lookback time (equation 30 of [1]_).
@@ -872,7 +881,8 @@ class FLRW(Cosmology):
         H : `~astropy.units.Quantity` ['frequency']
             Hubble parameter at each input redshift.
         """
-        return self._H0 * self.efunc(z)
+        (z,), (H0,) = broadcast_args_params(aszarr(z), H0=self._H0)
+        return H0 * self.efunc(z)
 
     def scale_factor(self, z):
         """Scale factor at redshift ``z``.
@@ -930,7 +940,8 @@ class FLRW(Cosmology):
         t : `~astropy.units.Quantity` ['time']
             Lookback time in Gyr to each input redshift.
         """
-        return self._hubble_time * self._integral_lookback_time(z)
+        (z,), (tH,) = broadcast_args_params(aszarr(z), tH=self._hubble_time)
+        return tH * self._integral_lookback_time(z)
 
     @vectorize_redshift_method(args="_inv_efunc_scalar_args")
     def _integral_lookback_time(self, z, /, *args):
@@ -1008,7 +1019,8 @@ class FLRW(Cosmology):
         t : `~astropy.units.Quantity` ['time']
             The age of the universe in Gyr at each input redshift.
         """
-        return self._hubble_time * self._integral_age(z)
+        (z,), (tH,) = broadcast_args_params(aszarr(z), tH=self._hubble_time)
+        return tH * self._integral_age(z)
 
     @vectorize_redshift_method(args="_inv_efunc_scalar_args")
     def _integral_age(self, z, /, *args):
@@ -1049,7 +1061,8 @@ class FLRW(Cosmology):
         rho : `~astropy.units.Quantity`
             Critical density in g/cm^3 at each input redshift.
         """
-        return self._critical_density0 * (self.efunc(z)) ** 2
+        (z,), (rho0,) = broadcast_args_params(z, rho0=self._critical_density0)
+        return rho0 * (self.efunc(z)) ** 2
 
     def comoving_distance(self, z):
         """Comoving line-of-sight distance in Mpc at a given redshift.
@@ -1113,7 +1126,6 @@ class FLRW(Cosmology):
             Returns `float` if input scalar, `~numpy.ndarray` otherwise.
         """
         return quad(self._inv_efunc_scalar, z1, z2, args=args)[0]
-        # will be same shape as z1, z2
 
     def _integral_comoving_distance_z1z2(self, z1, z2):
         """
@@ -1132,7 +1144,8 @@ class FLRW(Cosmology):
         d : `~astropy.units.Quantity` ['length']
             Comoving distance in Mpc between each input redshift.
         """
-        return self._hubble_distance * self._integral_comoving_distance_z1z2_scalar(z1, z2)
+        (z1,z2), (dH,) = broadcast_args_params(z1, z2, dH=self._hubble_distance)
+        return dH * self._integral_comoving_distance_z1z2_scalar(z1, z2)
 
     def comoving_transverse_distance(self, z):
         r"""Comoving transverse distance in Mpc at a given redshift.
@@ -1180,13 +1193,13 @@ class FLRW(Cosmology):
         -----
         This quantity is also called the 'proper motion distance' in some texts.
         """
-        Ok0 = self._Ok0
+        (z1,z2), (Ok0,dh) = broadcast_args_params(z1, z2, Ok0=self._Ok0, dh=self._hubble_distance)
         dc = self._comoving_distance_z1z2(z1, z2)
-        if np.all(Ok0 == 0):  # FIXME! shouldn't be all
+        # FIXME! should be applied element-wise
+        if np.all(Ok0 == 0):
             return dc
         sqrtOk0 = np.sqrt(abs(Ok0))
-        dh = self._hubble_distance
-        if np.all(Ok0 > 0):  # FIXME! shouldn't be all
+        if np.all(Ok0 > 0):
             return dh / sqrtOk0 * np.sinh(sqrtOk0 * dc.value / dh.value)
         else:
             return dh / sqrtOk0 * np.sin(sqrtOk0 * dc.value / dh.value)
@@ -1324,7 +1337,7 @@ class FLRW(Cosmology):
         # Abs is necessary because in certain obscure closed cosmologies
         #  the distance modulus can be negative -- which is okay because
         #  it enters as the square.
-        val = 5. * np.log10(abs(self.luminosity_distance(z).value)) + 25.0
+        val = 5.0 * np.log10(abs(self.luminosity_distance(z).value)) + 25.0
         return u.Quantity(val, u.mag)
 
     def comoving_volume(self, z):
@@ -1344,20 +1357,21 @@ class FLRW(Cosmology):
         V : `~astropy.units.Quantity`
             Comoving volume in :math:`Mpc^3` at each input redshift.
         """
-        Ok0 = self._Ok0
-        if Ok0 == 0:
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Ok0 == 0):
             return 4.0 / 3.0 * pi * self.comoving_distance(z) ** 3
 
-        dh = self._hubble_distance.value  # .value for speed
+        (z,), (Ok0, dh) = broadcast_zs_and_params(aszarr(z), Ok0=self._Ok0,
+                                                  dh=self._hubble_distance.value)
         dm = self.comoving_transverse_distance(z).value
         term1 = 4.0 * pi * dh ** 3 / (2.0 * Ok0) * u.Mpc ** 3
         term2 = dm / dh * np.sqrt(1 + Ok0 * (dm / dh) ** 2)
         term3 = np.sqrt(abs(Ok0)) * dm / dh
 
-        if Ok0 > 0:
-            return term1 * (term2 - 1. / np.sqrt(abs(Ok0)) * np.arcsinh(term3))
+        if np.all(Ok0 > 0):
+            return term1 * (term2 - 1.0 / np.sqrt(abs(Ok0)) * np.arcsinh(term3))
         else:
-            return term1 * (term2 - 1. / np.sqrt(abs(Ok0)) * np.arcsin(term3))
+            return term1 * (term2 - 1.0 / np.sqrt(abs(Ok0)) * np.arcsin(term3))
 
     def differential_comoving_volume(self, z):
         """Differential comoving volume at redshift z.
@@ -1379,8 +1393,9 @@ class FLRW(Cosmology):
             Differential comoving volume per redshift per steradian at each
             input redshift.
         """
+        (z,), (dH,) = broadcast_args_params(z, dH=self._hubble_distance)
         dm = self.comoving_transverse_distance(z)
-        return self._hubble_distance * (dm ** 2.0) / (self.efunc(z) << u.steradian)
+        return dH * (dm ** 2.0) / (self.efunc(z) << u.steradian)
 
     def kpc_comoving_per_arcmin(self, z):
         """
@@ -1604,7 +1619,8 @@ class LambdaCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.lcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0, "Ok0": self._Ok0}
             if np.all(self._Ok0 == 0):  # TODO! shouldn't be all
@@ -1631,11 +1647,12 @@ class LambdaCDM(FLRW):
         # The dS case is required because the hypergeometric case
         #    for Omega_M=0 would lead to an infinity in its argument.
         # The EdS case is three times faster than the hypergeometric.
-        if np.all(self._Om0 == 0):   # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Om0 == 0):
             self._comoving_distance_z1z2 = self._dS_comoving_distance_z1z2
             self._age = self._dS_age
             self._lookback_time = self._dS_lookback_time
-        elif np.all(self._Om0 == 1):   # TODO! shouldn't be all
+        elif np.all(self._Om0 == 1):
             self._comoving_distance_z1z2 = self._EdS_comoving_distance_z1z2
             self._age = self._EdS_age
             self._lookback_time = self._EdS_lookback_time
@@ -1717,52 +1734,50 @@ class LambdaCDM(FLRW):
         .. [1] Kantowski, R., Kao, J., & Thomas, R. (2000). Distance-Redshift
                in Inhomogeneous FLRW. arXiv e-prints, astro-ph/0002334.
         """
-        try:
-            z1, z2 = np.broadcast_arrays(z1, z2)
-        except ValueError as e:
-            raise ValueError("z1 and z2 have different shapes") from e
+        (z1, z2), (Om0, Ode0, Ok0, dH) = \
+                broadcast_args_params(z1, z2, Om0=self._Om0, Ode0=self._Ode0,
+                                      Ok0=self._Ok0, dH=self._hubble_distance)
 
         # The analytic solution is not valid for any of Om0, Ode0, Ok0 == 0.
         # Use the explicit integral solution for these cases.
-        if np.any(self._Om0 == 0) or np.any(self._Ode0 == 0) or np.any(self._Ok0 == 0):
+        if np.any(Om0 == 0) or np.any(Ode0 == 0) or np.any(Ok0 == 0):
             return self._integral_comoving_distance_z1z2(z1, z2)
 
-        b = -(27. / 2) * self._Om0**2 * self._Ode0 / self._Ok0**3
+        b = -(27. / 2) * Om0**2 * Ode0 / Ok0**3
         kappa = b / abs(b)
         if (b < 0) or (2 < b):
             def phi_z(Om0, Ok0, kappa, y1, A, z):
                 return np.arccos(((z + 1.0) * Om0 / abs(Ok0) + kappa * y1 - A) /
                                  ((z + 1.0) * Om0 / abs(Ok0) + kappa * y1 + A))
 
-            v_k = pow(kappa * (b - 1) + sqrt(b * (b - 2)), 1. / 3)
+            v_k = pow(kappa * (b - 1) + sqrt(b * (b - 2)), 1.0 / 3)
             y1 = (-1 + kappa * (v_k + 1 / v_k)) / 3
             A = sqrt(y1 * (3 * y1 + 2))
             g = 1 / sqrt(A)
             k2 = (2 * A + kappa * (1 + 3 * y1)) / (4 * A)
 
-            phi_z1 = phi_z(self._Om0, self._Ok0, kappa, y1, A, z1)
-            phi_z2 = phi_z(self._Om0, self._Ok0, kappa, y1, A, z2)
+            phi_z1 = phi_z(Om0, Ok0, kappa, y1, A, z1)
+            phi_z2 = phi_z(Om0, Ok0, kappa, y1, A, z2)
         # Get lower-right 0<b<2 solution in Om0, Ode0 plane.
         # Fot the upper-left 0<b<2 solution the Big Bang didn't happen.
-        elif (0 < b) and (b < 2) and self._Om0 > self._Ode0:
+        elif (0 < b) and (b < 2) and Om0 > Ode0:
             def phi_z(Om0, Ok0, y1, y2, z):
                 return np.arcsin(np.sqrt((y1 - y2) /
                                          ((z + 1.0) * Om0 / abs(Ok0) + y1)))
 
             yb = cos(acos(1 - b) / 3)
             yc = sqrt(3) * sin(acos(1 - b) / 3)
-            y1 = (1. / 3) * (-1 + yb + yc)
-            y2 = (1. / 3) * (-1 - 2 * yb)
-            y3 = (1. / 3) * (-1 + yb - yc)
+            y1 = (1.0 / 3) * (-1 + yb + yc)
+            y2 = (1.0 / 3) * (-1 - 2 * yb)
+            y3 = (1.0 / 3) * (-1 + yb - yc)
             g = 2 / sqrt(y1 - y2)
             k2 = (y1 - y3) / (y1 - y2)
-            phi_z1 = phi_z(self._Om0, self._Ok0, y1, y2, z1)
-            phi_z2 = phi_z(self._Om0, self._Ok0, y1, y2, z2)
+            phi_z1 = phi_z(Om0, Ok0, y1, y2, z1)
+            phi_z2 = phi_z(Om0, Ok0, y1, y2, z2)
         else:
             return self._integral_comoving_distance_z1z2(z1, z2)
 
-        prefactor = self._hubble_distance / sqrt(abs(self._Ok0))
-        return prefactor * g * (ellipkinc(phi_z1, k2) - ellipkinc(phi_z2, k2))
+        return dH / sqrt(abs(Ok0)) * g * (ellipkinc(phi_z1, k2) - ellipkinc(phi_z2, k2))
 
     def _dS_comoving_distance_z1z2(self, z1, z2):
         r"""
@@ -1785,12 +1800,8 @@ class LambdaCDM(FLRW):
         d : `~astropy.units.Quantity` ['length']
             Comoving distance in Mpc between each input redshift.
         """
-        try:
-            z1, z2 = np.broadcast_arrays(z1, z2)
-        except ValueError as e:
-            raise ValueError("z1 and z2 have different shapes") from e
-
-        return self._hubble_distance * (z2 - z1)
+        (z1, z2), (dH,) = broadcast_args_params(z1, z2, dH=self._hubble_distance)
+        return dH * (z2 - z1)
 
     def _EdS_comoving_distance_z1z2(self, z1, z2):
         r"""
@@ -1814,13 +1825,8 @@ class LambdaCDM(FLRW):
         d : `~astropy.units.Quantity` ['length']
             Comoving distance in Mpc between each input redshift.
         """
-        try:
-            z1, z2 = np.broadcast_arrays(z1, z2)
-        except ValueError as e:
-            raise ValueError("z1 and z2 have different shapes") from e
-
-        prefactor = 2 * self._hubble_distance
-        return prefactor * ((z1 + 1.0)**(-1./2) - (z2 + 1.0)**(-1./2))
+        (z1, z2), (dH,) = broadcast_args_params(z1, z2, dH=self._hubble_distance)
+        return 2 * dH * ((z1 + 1.0)**(-1./2) - (z2 + 1.0)**(-1./2))
 
     def _hypergeometric_comoving_distance_z1z2(self, z1, z2):
         r"""
@@ -1849,14 +1855,8 @@ class LambdaCDM(FLRW):
                expressions and numerical evaluation of the luminosity distance
                in a flat cosmology. MNRAS, 468(1), 927-930.
         """
-        try:
-            z1, z2 = np.broadcast_arrays(z1, z2)
-        except ValueError as e:
-            raise ValueError("z1 and z2 have different shapes") from e
-
-        # TODO! the parameters should be pre-broadcast
-        (z1, z2), p = broadcast_zs_and_params(z1, z2, Om0=self._Om0, dH=self._hubble_distance)
-        Om0, dH = p.values()
+        (z1, z2), (Om0, dH) = broadcast_args_params(z1, z2,
+                                                    Om0=self._Om0, dH=self._hubble_distance)
 
         s = ((1 - Om0) / Om0) ** (1.0 / 3)
         prefactor = dH / np.sqrt(s * Om0)  # use np.sqrt here to handle negative s (Om0>1).
@@ -1901,7 +1901,8 @@ class LambdaCDM(FLRW):
             The age of the universe in Gyr at each input redshift.
         """
         t = (inf if isinstance(z, Number) else np.full_like(z, inf, dtype=float))
-        return self._hubble_time * t
+        (t,), (tH,) = broadcast_args_params(t, tH=self._hubble_time)
+        return tH * t
 
     def _EdS_age(self, z):
         r"""Age of the universe in Gyr at redshift ``z``.
@@ -1924,7 +1925,8 @@ class LambdaCDM(FLRW):
         .. [1] Thomas, R., & Kantowski, R. (2000). Age-redshift relation for
                standard cosmology. PRD, 62(10), 103507.
         """
-        return (2./3) * self._hubble_time * (aszarr(z) + 1.0) ** (-1.5)
+        (z,), (tH,) = broadcast_args_params(aszarr(z), tH=self._hubble_time)
+        return (2./3) * tH * (z + 1.0) ** (-1.5)
 
     def _flat_age(self, z):
         r"""Age of the universe in Gyr at redshift ``z``.
@@ -1949,8 +1951,9 @@ class LambdaCDM(FLRW):
         """
         # Use np.sqrt, np.arcsinh instead of math.sqrt, math.asinh
         # to handle properly the complex numbers for 1 - Om0 < 0
-        prefactor = (2./3) * self._hubble_time / np.emath.sqrt(1 - self._Om0)
-        arg = np.arcsinh(np.emath.sqrt((1 / self._Om0 - 1 + 0j) / (aszarr(z) + 1.0)**3))
+        (z,), (Om0, tH) = broadcast_args_params(aszarr(z), Om0=self._Om0, tH=self._hubble_time)
+        prefactor = (2./3) * tH / np.emath.sqrt(1 - Om0)
+        arg = np.arcsinh(np.emath.sqrt((1 / Om0 - 1 + 0j) / (z + 1.0)**3))
         return (prefactor * arg).real
 
     def _EdS_lookback_time(self, z):
@@ -2000,7 +2003,8 @@ class LambdaCDM(FLRW):
         t : `~astropy.units.Quantity` ['time']
             Lookback time in Gyr to each input redshift.
         """
-        return self._hubble_time * np.log(aszarr(z) + 1.0)
+        (z,), (tH,) = broadcast_args_params(aszarr(z), tH=self._hubble_time)
+        return tH * np.log(z + 1.0)
 
     def _flat_lookback_time(self, z):
         r"""Lookback time in Gyr to redshift ``z``.
@@ -2039,13 +2043,18 @@ class LambdaCDM(FLRW):
             Returns `float` if the input is scalar.
             Defined such that :math:`H(z) = H_0 E(z)`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, Ok0, tH) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0,
+                                  Ok0=self._Ok0, tH=self._hubble_time)
+
         # We override this because it takes a particularly simple
         # form for a cosmological constant
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
 
-        return np.sqrt(zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) + self._Ode0)
+        return np.sqrt(zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) + Ode0)
 
     def inv_efunc(self, z):
         r"""Function used to calculate :math:`\frac{1}{H_z}`.
@@ -2062,11 +2071,15 @@ class LambdaCDM(FLRW):
             Returns `float` if the input is scalar.
             Defined such that :math:`H_z = H_0 / E`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, Ok0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0, Ok0=self._Ok0)
+
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0
 
-        return (zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) + self._Ode0)**(-0.5)
+        return (zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) + Ode0)**(-0.5)
 
 
 class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
@@ -2129,7 +2142,8 @@ class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.flcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0}
             # Repeat the optimization reassignments here because the init
@@ -2164,13 +2178,17 @@ class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
             Returns `float` if the input is scalar.
             Defined such that :math:`H(z) = H_0 E(z)`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0)
+
         # We override this because it takes a particularly simple
         # form for a cosmological constant
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0
 
-        return np.sqrt(zp1 ** 3 * (Or * zp1 + self._Om0) + self._Ode0)
+        return np.sqrt(zp1 ** 3 * (Or * zp1 + Om0) + Ode0)
 
     def inv_efunc(self, z):
         r"""Function used to calculate :math:`\frac{1}{H_z}`.
@@ -2187,10 +2205,13 @@ class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
             Returns `float` if the input is scalar.
             Defined such that :math:`H_z = H_0 / E`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
-        return (zp1 ** 3 * (Or * zp1 + self._Om0) + self._Ode0)**(-0.5)
+        zp1 = z + 1.0
+        return (zp1 ** 3 * (Or * zp1 + Om0) + Ode0)**(-0.5)
 
 
 class wCDM(FLRW):
@@ -2267,7 +2288,8 @@ class wCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.wcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0,
                                            "Ok0": self._Ok0, "w0": self._w0}
@@ -2308,8 +2330,8 @@ class wCDM(FLRW):
         redshift z and :math:`\rho(z)` is the density at redshift z, both in
         units where c=1. Here this is :math:`w(z) = w_0`.
         """
-        z = aszarr(z)
-        return self._w0 * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
+        (z,), (w0,) = broadcast_args_params(aszarr(z), w0=self._w0)
+        return w0 * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
@@ -2331,7 +2353,8 @@ class wCDM(FLRW):
         and in this case is given by
         :math:`I = \left(1 + z\right)^{3\left(1 + w_0\right)}`
         """
-        return (aszarr(z) + 1.0) ** (3.0 * (1. + self._w0))
+        (z,), (w0,) = broadcast_args_params(aszarr(z), w0=self._w0)
+        return (z + 1.0) ** (3.0 * (1.0 + w0))
 
     def efunc(self, z):
         """Function used to calculate H(z), the Hubble parameter.
@@ -2348,12 +2371,16 @@ class wCDM(FLRW):
             Returns `float` if the input is scalar.
             Defined such that :math:`H(z) = H_0 E(z)`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, Ok0, w0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0,
+                                  Ok0=self._Ok0, w0=self._w0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0
 
-        return np.sqrt(zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) +
-                       self._Ode0 * zp1 ** (3. * (1. + self._w0)))
+        return np.sqrt(zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) +
+                       Ode0 * zp1 ** (3.0 * (1.0 + w0)))
 
     def inv_efunc(self, z):
         r"""Function used to calculate :math:`\frac{1}{H_z}`.
@@ -2370,12 +2397,16 @@ class wCDM(FLRW):
             Returns `float` if the input is scalar.
             Defined such that :math:`H_z = H_0 / E`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, Ok0, w0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0,
+                                  Ok0=self._Ok0, w0=self._w0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0
 
-        return (zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) +
-                self._Ode0 * zp1 ** (3. * (1. + self._w0)))**(-0.5)
+        return (zp1 ** 2 * ((Or * zp1 + Om0) * zp1 + Ok0) +
+                Ode0 * zp1 ** (3.0 * (1.0 + w0)))**(-0.5)
 
 
 class FlatwCDM(FlatFLRWMixin, wCDM):
@@ -2445,7 +2476,8 @@ class FlatwCDM(FlatFLRWMixin, wCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.fwcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0, "w0": self._w0}
         elif not self._massivenu:
@@ -2477,12 +2509,15 @@ class FlatwCDM(FlatFLRWMixin, wCDM):
             Returns `float` if the input is scalar.
             Defined such that :math:`H(z) = H_0 E(z)`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, w0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0, w0=self._w0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = aszarr(z) + 1.0
 
-        return np.sqrt(zp1 ** 3 * (Or * zp1 + self._Om0) +
-                       self._Ode0 * zp1 ** (3. * (1 + self._w0)))
+        return np.sqrt(zp1 ** 3 * (Or * zp1 + Om0) +
+                       Ode0 * zp1 ** (3.0 * (1 + w0)))
 
     def inv_efunc(self, z):
         r"""Function used to calculate :math:`\frac{1}{H_z}`.
@@ -2499,12 +2534,15 @@ class FlatwCDM(FlatFLRWMixin, wCDM):
             Returns `float` if the input is scalar.
             Defined such that :math:`H(z) = H_0 E(z)`.
         """
+        (z,), (Om0, Ode0, Ogamma0, Onu0, w0) = \
+            broadcast_args_params(aszarr(z), Om0=self._Om0, Ode0=self._Ode0,
+                                  Ogamma0=self._Ogamma0, Onu0=self._Onu0, w0=self._w0)
         Or = self._Ogamma0 + (self._Onu0 if not self._massivenu
                               else self._Ogamma0 * self.nu_relative_density(z))
-        zp1 = aszarr(z) + 1.0  # (converts z [unit] -> z [dimensionless])
+        zp1 = z + 1.0
 
-        return (zp1 ** 3 * (Or * zp1 + self._Om0) +
-                self._Ode0 * zp1 ** (3. * (1. + self._w0)))**(-0.5)
+        return (zp1 ** 3 * (Or * zp1 + Om0) +
+                Ode0 * zp1 ** (3.0 * (1.0 + w0)))**(-0.5)
 
 
 class w0waCDM(FLRW):
@@ -2595,7 +2633,8 @@ class w0waCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.w0wacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0,
                                            "Ok0": self._Ok0, "w0": self._w0, "wa": self._wa}
@@ -2637,8 +2676,8 @@ class w0waCDM(FLRW):
         units where c=1. Here this is
         :math:`w(z) = w_0 + w_a (1 - a) = w_0 + w_a \frac{z}{1+z}`.
         """
-        z = aszarr(z)
-        return self._w0 + self._wa * z / (z + 1.0)
+        (z,), (w0, wa) = broadcast_args_params(aszarr(z), w0=self._w0, wa=self._wa)
+        return w0 + wa * z / (z + 1.0)
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
@@ -2664,9 +2703,9 @@ class w0waCDM(FLRW):
            I = \left(1 + z\right)^{3 \left(1 + w_0 + w_a\right)}
                      \exp \left(-3 w_a \frac{z}{1+z}\right)
         """
-        z = aszarr(z)
+        (z,), (w0, wa) = broadcast_args_params(aszarr(z), w0=self._w0, wa=self._wa)
         zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
-        return zp1 ** (3 * (1 + self._w0 + self._wa)) * np.exp(-3 * self._wa * z / zp1)
+        return zp1 ** (3 * (1 + w0 + wa)) * np.exp(-3 * wa * z / zp1)
 
 
 class Flatw0waCDM(FlatFLRWMixin, w0waCDM):
@@ -2748,7 +2787,8 @@ class Flatw0waCDM(FlatFLRWMixin, w0waCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.fw0wacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0,
                                            "w0": self._w0, "wa": self._wa}
@@ -2870,7 +2910,8 @@ class wpwaCDM(FLRW):
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
         apiv = 1.0 / (1.0 + self._zp.value)
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.wpwacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0, "Ok0": self._Ok0,
                                            "wp": self._wp, "apiv": apiv, "wa": self._wa}
@@ -2912,8 +2953,10 @@ class wpwaCDM(FLRW):
         units where c=1. Here this is :math:`w(z) = w_p + w_a (a_p - a)` where
         :math:`a = 1/1+z` and :math:`a_p = 1 / 1 + z_p`.
         """
-        apiv = 1.0 / (1.0 + self._zp.value)
-        return self._wp + self._wa * (apiv - 1.0 / (aszarr(z) + 1.0))
+        (z,), (wp, wa, zp) = broadcast_args_params(
+            aszarr(z), wp=self._wp, wa=self._wa, zp=self._zp.value)
+        apiv = 1.0 / (1.0 + zp)
+        return wp + wa * (apiv - 1.0 / (z + 1.0))
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
@@ -2941,11 +2984,11 @@ class wpwaCDM(FLRW):
            I = \left(1 + z\right)^{3 \left(1 + w_p + a_p w_a\right)}
                      \exp \left(-3 w_a \frac{z}{1+z}\right)
         """
-        z = aszarr(z)
+        (z,), (wp, wa, zp) = broadcast_args_params(
+            aszarr(z), wp=self._wp, wa=self._wa, zp=self._zp.value)
         zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
-        apiv = 1. / (1. + self._zp.value)
-        return zp1 ** (3. * (1. + self._wp + apiv * self._wa)) * \
-            np.exp(-3. * self._wa * z / zp1)
+        apiv = 1.0 / (1.0 + zp)
+        return zp1 ** (3.0 * (1.0 + wp + apiv * wa)) * np.exp(-3.0 * self._wa * z / zp1)
 
 
 class w0wzCDM(FLRW):
@@ -3030,7 +3073,8 @@ class w0wzCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if np.all(self._Tcmb0.value == 0):  # TODO! shouldn't be all
+        # FIXME! shouldn't be 'all'. apply element-wise
+        if np.all(self._Tcmb0.value == 0):
             self._inv_efunc_scalar = scalar_inv_efuncs.w0wzcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = {"Om0": self._Om0, "Ode0": self._Ode0, "Ok0": self._Ok0,
                                            "w0": self._w0, "wz": self._wz}
@@ -3071,7 +3115,8 @@ class w0wzCDM(FLRW):
         redshift z and :math:`\rho(z)` is the density at redshift z, both in
         units where c=1. Here this is given by :math:`w(z) = w_0 + w_z z`.
         """
-        return self._w0 + self._wz * aszarr(z)
+        (z,), (w0, wz) = broadcast_args_params(aszarr(z), w0=self._w0, wz=self._wz)
+        return w0 + wz * z
 
     def de_density_scale(self, z):
         r"""Evaluates the redshift dependence of the dark energy density.
@@ -3097,6 +3142,5 @@ class w0wzCDM(FLRW):
            I = \left(1 + z\right)^{3 \left(1 + w_0 - w_z\right)}
                      \exp \left(-3 w_z z\right)
         """
-        z = aszarr(z)
-        zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
-        return zp1 ** (3. * (1. + self._w0 - self._wz)) * np.exp(-3. * self._wz * z)
+        (z,), (w0, wz) = broadcast_args_params(aszarr(z), w0=self._w0, wz=self._wz)
+        return (z + 1.0) ** (3.0 * (1.0 + w0 - wz)) * np.exp(-3.0 * wz * z)
