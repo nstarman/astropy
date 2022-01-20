@@ -126,18 +126,46 @@ class Cosmology(metaclass=abc.ABCMeta):
         ps = {}
         for i, n in enumerate(self.__parameters__):
             p = getattr(self, n)
-        
+
             if isinstance(p, (Number, type(None))):  # should not be rebroadcast
                 continue
             ps[n] = p
-        
+
         # broadcast & update shape
         nps = np.broadcast_arrays(*ps.values(), subok=True)
         self._params_shape = nps[0].shape
-        
+
         # re-assign parameter
         for i, k in enumerate(ps.keys()):
             setattr(self, "_" + k, nps[i])
+
+        # -----------
+        # create central parameters file
+        # TODO! a way that doesn't copy each time
+        dtype = []
+        units = []
+        for n in self.__parameters__:
+            p = getattr(self.__class__, n)
+            v = getattr(self, n)
+            unit = p.unit or u.one
+            if hasattr(v, "dtype") and v.dtype.names:  # structured
+                dt = (n, [(_n, _dt, self._params_shape) for _n, _dt, *_
+                          in v.dtype.descr])
+                unit = (unit, ) * len(v.dtype.descr)
+            else:
+                dt = (n, p.dtype, self._params_shape)
+            dtype.append(dt)
+            units.append(unit)
+
+        # parameters = np.empty((), dtype=dtype)
+        # for n in self.__parameters__:
+        #     parameters[n] = getattr(self, n)  # TODO! m_nu shape
+        # self._parameters = u.Quantity(parameters, u.StructuredUnit(tuple(units)))
+        # self._parameters.flags.writeable = False
+
+        # # set the private attributes as views from the structured array
+        # for n in self.__parameters__:
+        #     setattr(self, "_" + n, self._parameters[n].view())
 
     # ---------------------------------------------------------------
 

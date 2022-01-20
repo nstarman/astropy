@@ -644,7 +644,7 @@ class FLRW(Cosmology):
 
         # The massive and massless contribution must be handled separately
         # But check for common cases first
-        (z,), (Neff,) = broadcast_args_params(aszarr(z), Neff=self._Neff)
+        # (z,), (Neff,) = broadcast_args_params(aszarr(z), Neff=self._Neff)  # TODO!
         if not self._massivenu:
             return prefac * self._Neff * (np.ones(z.shape) if hasattr(z, "shape") else 1.0)
 
@@ -1144,8 +1144,8 @@ class FLRW(Cosmology):
         d : `~astropy.units.Quantity` ['length']
             Comoving distance in Mpc between each input redshift.
         """
-        (z1,z2), (dH,) = broadcast_args_params(z1, z2, dH=self._hubble_distance)
-        return dH * self._integral_comoving_distance_z1z2_scalar(z1, z2)
+        # (z1, z2), (dH,) = broadcast_args_params(z1, z2, dH=self._hubble_distance)
+        return self._hubble_distance * self._integral_comoving_distance_z1z2_scalar(z1, z2)
 
     def comoving_transverse_distance(self, z):
         r"""Comoving transverse distance in Mpc at a given redshift.
@@ -1514,6 +1514,8 @@ class FlatFLRWMixin(FlatCosmologyMixin):
         """
         return 1.0 if isinstance(z, (Number, np.generic)) else np.ones_like(z, subok=False)
 
+        self._rebroadcast_parameters()
+
     def __equiv__(self, other):
         """flat-FLRW equivalence. Use ``.is_equivalent()`` for actual check!
 
@@ -1616,6 +1618,8 @@ class LambdaCDM(FLRW):
                  Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=Ode0, Tcmb0=Tcmb0, Neff=Neff,
                          m_nu=m_nu, Ob0=Ob0, name=name, meta=meta)
+
+        self._rebroadcast_parameters()
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
@@ -2139,6 +2143,8 @@ class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
                  Ob0=None, *, name=None, meta=None):
         super().__init__(H0=H0, Om0=Om0, Ode0=0.0, Tcmb0=Tcmb0, Neff=Neff,
                          m_nu=m_nu, Ob0=Ob0, name=name, meta=meta)
+
+        self._rebroadcast_parameters()
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.

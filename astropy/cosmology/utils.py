@@ -174,7 +174,7 @@ def broadcast_args_params(*zs, **params):
     zshaper = (..., *(None, ) * len(params[k0].shape))
 
     # param shaper
-    pshaper = (* (None, ) * len(zs[0].shape), ...)
+    pshaper = (*(None, ) * len(zs[0].shape), ...)
 
     return (z[zshaper] for z in zs), (p[pshaper] for k, p in params.values())
 

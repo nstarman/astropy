@@ -106,6 +106,11 @@ class Parameter:
         return self._equivalencies
 
     @property
+    def dtype(self):
+        """Datatype."""
+        return self._dtype
+
+    @property
     def format_spec(self):
         """String format specification."""
         return self._fmt
