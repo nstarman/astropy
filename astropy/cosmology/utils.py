@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import functools
+import itertools
 from math import inf
 from numbers import Number
 
@@ -17,7 +18,7 @@ __all__ = []  # nothing is publicly scoped
 __doctest_skip__ = ["inf_like", "vectorize_if_needed"]
 
 
-def vectorize_redshift_method(func=None, nin=1):
+def vectorize_redshift_method(func=None, nin=1, args=None):
     """Vectorize a method of redshift(s).
 
     Parameters
@@ -25,8 +26,10 @@ def vectorize_redshift_method(func=None, nin=1):
     func : callable or None
         method to wrap. If `None` returns a :func:`functools.partial`
         with ``nin`` loaded.
-    nin : int
+    nin : int (optional, keyword-only)
         Number of positional redshift arguments.
+    args : str or None (optional, keyword-only)
+        Argument for attribute on cosmology.
 
     Returns
     -------
@@ -36,7 +39,7 @@ def vectorize_redshift_method(func=None, nin=1):
     """
     # allow for pie-syntax & setting nin
     if func is None:
-        return functools.partial(vectorize_redshift_method, nin=nin)
+        return functools.partial(vectorize_redshift_method, nin=nin, args=args)
 
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -48,13 +51,18 @@ def vectorize_redshift_method(func=None, nin=1):
         # TODO! quantity-aware vectorization can simplify this.
         zs = [z if not isinstance(z, Quantity) else z.to_value(cu.redshift)
               for z in args[:nin]]
+
+        ps = getattr(self, wrapper._args) if wrapper._args is not None else ()
+        ps = ps.values() if isinstance(ps, dict) else ps
+
         # scalar inputs
-        if all(isinstance(z, (Number, np.generic)) for z in zs):
-            return func(self, *zs, *args[nin:], **kwargs)
+        if all(isinstance(v, (Number, np.generic, list)) for v in itertools.chain(zs, ps)):
+            return wrapper.__wrapped__(self, *zs, *ps, *args[nin:], **kwargs)
         # non-scalar. use vectorized func
-        return wrapper.__vectorized__(self, *zs, *args[nin:], **kwargs)
+        return wrapper.__vectorized__(self, *zs, *ps, *args[nin:], **kwargs)
 
     wrapper.__vectorized__ = np.vectorize(func)  # attach vectorized function
+    wrapper._args = args
     # TODO! use frompyfunc when can solve return type errors
 
     return wrapper
@@ -139,3 +147,52 @@ def aszarr(z):
         return z
     # not one of the preferred types: Number / array ducktype
     return Quantity(z, cu.redshift).value
+
+
+def broadcast_zs_and_params(*zs, **params):
+    """Broadcast redshift and parameters.
+
+    Parameters
+    ----------
+    *zs : Number or ndarray
+    **params : Number or ndarray
+
+    Returns
+    -------
+    zs : generator
+    params : generator
+    """
+    # first broadcast redshift arrays
+    try:
+        zs = np.broadcast_arrays(*zs)
+    except ValueError as e:
+        szs = " and ".join([f"z{i}" for i in range(len(zs))])
+        raise ValueError(szs + " have different shapes") from e
+
+    # z shaper
+    k0 = tuple(params.keys())[0]
+    zshaper = (..., *(None, ) * len(params[k0].shape))
+
+    # param shaper
+    pshaper = (* (None, ) * len(zs[0].shape), ...)
+
+    return (z[zshaper] for z in zs), {k: p[pshaper] for k, p in params.items()}
+
+
+def broadcast_if_nonscalar(arr, shape, subok=True):
+    """
+
+    Parameters
+    ----------
+    arr : array-like
+    shape : tuple[int]
+    subok : bool
+
+    Returns
+    -------
+    array-like
+    """
+    if not shape:
+        return arr.item() if hasattr(arr, "item") else arr
+    return np.broadcast_to(arr, shape, subok=subok)
+

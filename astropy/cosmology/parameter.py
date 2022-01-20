@@ -1,5 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+# STDLIB
+from numbers import Number
+
+# THIRD PARTY
+import numpy as np
+
+# LOCAL
 import astropy.units as u
 from astropy.utils.decorators import classproperty
 
@@ -48,7 +55,6 @@ class Parameter:
 
     def __init__(self, *, derived=False, unit=None, equivalencies=[],
                  fvalidate="default", fmt="", doc=None):
-
         # attribute name on container cosmology class.
         # really set in __set_name__, but if Parameter is not init'ed as a
         # descriptor this ensures that the attributes exist.
@@ -311,6 +317,38 @@ class Parameter:
 # Built-in validators
 
 
+class CompoundValidator:
+    """Compound Validator
+    
+    Parameters
+    ----------
+    *fvalidates : callable[[`~astropy.cosmology.Cosmology`, `~astropy.cosmology.Parameter`, Any], Any]
+    
+    Returns
+    -------
+    Any
+    """
+    
+    def __init__(self, *fvalidates):
+        self._fvalidates = fvalidates
+
+    def __call__(self, cosmology, param, value):
+        """
+        Parameters
+        ----------
+        cosmology : `~astropy.cosmology.Cosmology`
+        param : `~astropy.cosmology.Parameter`
+        value : Any
+
+        Returns
+        -------
+        Any
+        """
+        for fvalidate in self._fvalidates:
+            value = fvalidate(cosmology, param, value)
+        return value
+
+
 @Parameter.register_validator("default")
 def _validate_with_unit(cosmology, param, value):
     """
@@ -320,6 +358,9 @@ def _validate_with_unit(cosmology, param, value):
     if param.unit is not None:
         with u.add_enabled_equivalencies(param.equivalencies):
             value = u.Quantity(value, param.unit)
+
+    if not isinstance(value, (Number, np.generic)):
+        value = np.asanyarray(value)
     return value
 
 
@@ -327,7 +368,7 @@ def _validate_with_unit(cosmology, param, value):
 def _validate_to_float(cosmology, param, value):
     """Parameter value validator with units, and converted to float."""
     value = _validate_with_unit(cosmology, param, value)
-    return float(value)
+    return value.view(float)
 
 
 @Parameter.register_validator("scalar")
@@ -343,6 +384,6 @@ def _validate_to_scalar(cosmology, param, value):
 def _validate_non_negative(cosmology, param, value):
     """Parameter value validator where value is a positive float."""
     value = _validate_to_float(cosmology, param, value)
-    if value < 0.0:
+    if np.any(value < 0.0):
         raise ValueError(f"{param.name} cannot be negative.")
     return value

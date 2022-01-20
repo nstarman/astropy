@@ -3,7 +3,7 @@
 import abc
 import functools
 import inspect
-from types import FunctionType, MappingProxyType
+from numbers import Number
 
 import numpy as np
 
@@ -114,11 +114,39 @@ class Cosmology(metaclass=abc.ABCMeta):
         sig = sig.replace(parameters=list(sig.parameters.values())[1:])
         return sig
 
+    def _rebroadcast_parameters(self):
+        """Rebroadcast Parameters.
+        
+        .. todo::
+        
+            Also rebroadcast derived attributes.
+        
+        """
+        # get parameters that should be rebroadcast
+        ps = {}
+        for i, n in enumerate(self.__parameters__):
+            p = getattr(self, n)
+        
+            if isinstance(p, (Number, type(None))):  # should not be rebroadcast
+                continue
+            ps[n] = p
+        
+        # broadcast & update shape
+        nps = np.broadcast_arrays(*ps.values(), subok=True)
+        self._params_shape = nps[0].shape
+        
+        # re-assign parameter
+        for i, k in enumerate(ps.keys()):
+            setattr(self, "_" + k, nps[i])
+
     # ---------------------------------------------------------------
 
     def __init__(self, name=None, meta=None):
         self._name = name
         self.meta.update(meta or {})
+
+        # Defaults for values set later
+        self._params_shape = ()
 
     @property
     def name(self):
@@ -334,6 +362,27 @@ class Cosmology(metaclass=abc.ABCMeta):
         return equivalent and name_eq
 
     # ---------------------------------------------------------------
+
+    def __getitem__(self, index):
+        """Get subarray of Cosmology.
+
+        .. todo::
+
+            figure out how to return actual views, not copies
+        """
+        ps = {}
+        for k in self.__parameters__:
+            v = getattr(self, k)
+            # apply index to arrays, skipping scalars
+            if v is None or np.isscalar(v) or getattr(v, "isscalar", False):
+                ps[k] = v
+            else:
+                ps[k] = v[index]
+
+        ps["name"] = self.name if isinstance(self.name, (str, type(None))) else self.name[index]
+        ps["meta"] = self.meta
+        ba = self._init_signature.bind(**ps)
+        return self.__class__(*ba.args, **ba.kwargs)
 
     def __repr__(self):
         ps = {k: getattr(self, k) for k in self.__parameters__}  # values
