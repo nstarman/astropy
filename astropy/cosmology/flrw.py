@@ -241,7 +241,7 @@ class FLRW(Cosmology):
         Neutrino masses cannot be negative.
         """
         # Check if there are any neutrinos
-        if (nneutrinos := floor(self._Neff)) == 0 or self._Tcmb0.value == 0:
+        if (nneutrinos := floor(self._Neff)) == 0 or self._Tcmb0_val == 0:
             return None  # None, regardless of input
 
         # Validate / set units
@@ -1558,7 +1558,7 @@ class LambdaCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.lcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0, self._Ok0)
             if self._Ok0 == 0:
@@ -2077,7 +2077,7 @@ class FlatLambdaCDM(FlatFLRWMixin, LambdaCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.flcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0)
             # Repeat the optimization reassignments here because the init
@@ -2212,7 +2212,7 @@ class wCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.wcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0, self._Ok0,
                                            self._w0)
@@ -2386,7 +2386,7 @@ class FlatwCDM(FlatFLRWMixin, wCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.fwcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0,
                                            self._w0)
@@ -2535,7 +2535,7 @@ class w0waCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.w0wacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0, self._Ok0,
                                            self._w0, self._wa)
@@ -2685,7 +2685,7 @@ class Flatw0waCDM(FlatFLRWMixin, w0waCDM):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.fw0wacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0,
                                            self._w0, self._wa)
@@ -2804,8 +2804,8 @@ class wpwaCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        apiv = 1.0 / (1.0 + self._zp.value)
-        if self._Tcmb0.value == 0:
+        apiv = 1.0 / (1.0 + self._zp_val)
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.wpwacdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0, self._Ok0,
                                            self._wp, apiv, self._wa)
@@ -2844,7 +2844,7 @@ class wpwaCDM(FLRW):
         units where c=1. Here this is :math:`w(z) = w_p + w_a (a_p - a)` where
         :math:`a = 1/1+z` and :math:`a_p = 1 / 1 + z_p`.
         """
-        apiv = 1.0 / (1.0 + self._zp.value)
+        apiv = 1.0 / (1.0 + self._zp_val)
         return self._wp + self._wa * (apiv - 1.0 / (aszarr(z) + 1.0))
 
     def de_density_scale(self, z):
@@ -2875,7 +2875,7 @@ class wpwaCDM(FLRW):
         """
         z = aszarr(z)
         zp1 = z + 1.0  # (converts z [unit] -> z [dimensionless])
-        apiv = 1. / (1. + self._zp.value)
+        apiv = 1. / (1. + self._zp_val)
         return zp1 ** (3. * (1. + self._wp + apiv * self._wa)) * \
             np.exp(-3. * self._wa * z / zp1)
 
@@ -2961,7 +2961,7 @@ class w0wzCDM(FLRW):
 
         # Please see :ref:`astropy-cosmology-fast-integrals` for discussion
         # about what is being done here.
-        if self._Tcmb0.value == 0:
+        if self._Tcmb0_val == 0:
             self._inv_efunc_scalar = scalar_inv_efuncs.w0wzcdm_inv_efunc_norel
             self._inv_efunc_scalar_args = (self._Om0, self._Ode0, self._Ok0,
                                            self._w0, self._wz)

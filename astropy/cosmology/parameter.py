@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import numpy as np
+
 import astropy.units as u
 from astropy.utils.decorators import classproperty
 
@@ -121,9 +123,17 @@ class Parameter:
         if hasattr(cosmology, self._attr_name_private):
             raise AttributeError("can't set attribute")
 
-        # validate value, generally setting units if present
+        # Validate value, generally setting units if present
         value = self.validate(cosmology, value)
+
+        # Set value on cosmology
         setattr(cosmology, self._attr_name_private, value)
+
+        # Also store a view of the value, without units
+        if isinstance(value, u.Quantity):
+            view = value.view(np.ndarray)
+            view.flags.writeable = False  # read-only
+            setattr(cosmology, self._attr_name_private + "_val", view)
 
     # -------------------------------------------
     # validate value
