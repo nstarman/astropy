@@ -491,9 +491,17 @@ class TestFLRW(CosmologyTest,
         """TODO!"""
         cosmo, results = super().generate_test_results(zs)
 
-        # w
-        for i, z in enumerate(zs):
-            results["w"][i] = cosmo.w(z)
+        def evaluate(label, method, zs, fallback=NotImplementedError):
+            for i, z in enumerate(zs):
+                try:
+                    v = method(z)
+                except NotImplementedError:
+                    v = fallback
+                results[label][i] = v
+
+        # Evaluating methods
+        evaluate("w", cosmo.w, zs)
+        evaluate("Otot", cosmo.Otot, zs)
 
         return cosmo, results
 
