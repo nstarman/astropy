@@ -15,6 +15,7 @@ from types import MappingProxyType
 import pytest
 
 import numpy as np
+import numpy.lib.recfunctions as rfn
 
 # LOCAL
 import astropy.cosmology.units as cu
@@ -325,7 +326,13 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         # the name & all parameters are columns
         for n in ("name", *cosmo.__parameters__):
             assert n in tbl.colnames
-            assert np.all(tbl[n] == getattr(cosmo, n))
+
+            # to compare values first need to unstructure
+            v = getattr(cosmo, n)
+            if isinstance(getattr(v, "unit", None), u.StructuredUnit):
+                v = rfn.structured_to_unstructured(v)
+            assert np.all(tbl[n] == v)
+
         # check if Cosmology is in metadata or a column
         if in_meta:
             assert tbl.meta["cosmology"] == cosmo.__class__.__qualname__
