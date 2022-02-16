@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import numpy as np
+# import numpy.lib.recfunctions as rfn
 
 from astropy.cosmology.parameter import Parameter
 from astropy.cosmology.utils import is_structured
@@ -26,8 +27,8 @@ def convert_parameter_to_column(parameter, value, meta=None):
     shape = (1,) + np.shape(value)  # minimum of 1d
 
     data = np.reshape(value, shape)
-    if data.dtype.names is not None:  # structured
-        data = rfn.structured_to_unstructured(data)
+    # if is_structured(data):
+    #     data = rfn.structured_to_unstructured(data)
 
     col = Column(data=np.reshape(value, shape),
                  name=parameter.name,
@@ -55,8 +56,8 @@ def convert_parameter_to_model_parameter(parameter, value, meta=None):
     -------
     `astropy.modeling.Parameter`
     """
-    if is_structured(value):
-        value = rfn.structured_to_unstructured(value)
+    # if is_structured(value):
+    #     value = rfn.structured_to_unstructured(value)
 
     # Get from meta information relavant to Model
     extra = {k: v for k, v in (meta or {}).items()
