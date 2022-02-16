@@ -3,6 +3,7 @@
 import numpy as np
 
 from astropy.cosmology.parameter import Parameter
+from astropy.cosmology.utils import is_structured
 from astropy.table import Column
 from astropy.modeling import Parameter as ModelParameter
 
@@ -54,9 +55,8 @@ def convert_parameter_to_model_parameter(parameter, value, meta=None):
     -------
     `astropy.modeling.Parameter`
     """
-    # if value.dtype.names is not None:
-    #     value = rfn.structured_to_unstructured(value)
-    # unit = getattr(value, "unit", None)
+    if is_structured(value):
+        value = rfn.structured_to_unstructured(value)
 
     # Get from meta information relavant to Model
     extra = {k: v for k, v in (meta or {}).items()

@@ -18,7 +18,7 @@ from . import scalar_inv_efuncs
 from . import units as cu
 from .core import Cosmology, FlatCosmologyMixin, Parameter
 from .parameter import _validate_non_negative, _validate_with_unit
-from .utils import aszarr, vectorize_redshift_method
+from .utils import aszarr, is_structured, vectorize_redshift_method
 
 # isort: split
 if HAS_SCIPY:
@@ -249,7 +249,7 @@ class FLRW(Cosmology):
         # Validate / set units
         value = _validate_with_unit(self, param, value)
 
-        if value.dtype.names is not None:  # unstructure
+        if is_structured(value):  # unstructure
             value = rfn.structured_to_unstructured(value)
 
         # Check values and data shapes

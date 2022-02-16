@@ -16,6 +16,7 @@ import numpy.lib.recfunctions as rfn
 
 from astropy.cosmology.core import _COSMOLOGY_CLASSES, Cosmology
 from astropy.cosmology.connect import convert_registry
+from astropy.cosmology.utils import is_structured
 
 __all__ = []  # nothing is publicly scoped
 
@@ -224,7 +225,7 @@ def to_mapping(cosmology, *args, cls=dict, cosmology_as_str=False,
     for k, v in cosmology._init_arguments.items():
         if k in ("meta", "name"):  # done separately for nice ordering
             continue
-        if unstructure and hasattr(v, "dtype") and v.dtype.names is not None:
+        if unstructure and is_structured(v):
             v = rfn.structured_to_unstructured(v)
         m[k] = v
     # Lastly, add the metadata, if haven't already (above)

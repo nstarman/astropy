@@ -139,3 +139,19 @@ def aszarr(z):
         return z
     # not one of the preferred types: Number / array ducktype
     return Quantity(z, cu.redshift).value
+
+
+# TODO! move this func elsewhere
+def is_structured(a, /):
+    """Check whether an object is a structured array.
+
+    Checks an object's ``dtype`` (if it has). This allows for duck
+    types to NumPy structured arrays.
+
+    Returns
+    -------
+    bool
+    """
+    if hasattr(a, "dtype") and hasattr(a.dtype, "names") and (a.dtype.names is not None):
+        return True
+    return False
