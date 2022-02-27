@@ -118,15 +118,17 @@ class FLRW(Cosmology):
     H0 = Parameter(doc="Hubble constant as an `~astropy.units.Quantity` at z=0.",
                    unit="km/(s Mpc)", fvalidate="scalar")
     Om0 = Parameter(doc="Omega matter; matter density/critical density at z=0.",
-                    fvalidate="non-negative")
+                    fvalidate=("scalar", "non-negative"))
     Ode0 = Parameter(doc="Omega dark energy; dark energy density/critical density at z=0.",
                      fvalidate="float")
     Tcmb0 = Parameter(doc="Temperature of the CMB as `~astropy.units.Quantity` at z=0.",
                       unit="Kelvin", fvalidate="scalar")
-    Neff = Parameter(doc="Number of effective neutrino species.", fvalidate="non-negative")
+    Neff = Parameter(doc="Number of effective neutrino species.",
+                     fvalidate=("scalar", "non-negative"))
     m_nu = Parameter(doc="Mass of neutrino species.",
                      unit="eV", equivalencies=u.mass_energy())
-    Ob0 = Parameter(doc="Omega baryon; baryonic matter density/critical density at z=0.")
+    Ob0 = Parameter(doc="Omega baryon; baryonic matter density/critical density at z=0.",
+                    fvalidate="scalar")
 
     def __init__(self, H0, Om0, Ode0, Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV,
                  Ob0=None, *, name=None, meta=None):
@@ -2202,7 +2204,7 @@ class wCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
-    w0 = Parameter(doc="Dark energy equation of state.", fvalidate="float")
+    w0 = Parameter(doc="Dark energy equation of state.", fvalidate=("scalar", "float"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -2522,9 +2524,9 @@ class w0waCDM(FLRW):
            Universe. Phys. Rev. Lett., 90, 091301.
     """
 
-    w0 = Parameter(doc="Dark energy equation of state at z=0.", fvalidate="float")
+    w0 = Parameter(doc="Dark energy equation of state at z=0.", fvalidate=("scalar", "float"))
     wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.",
-                   fvalidate="float")
+                   fvalidate=("scalar", "float"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wa=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -2788,10 +2790,12 @@ class wpwaCDM(FLRW):
            of Merit Science Working Group. arXiv e-prints, arXiv:0901.0721.
     """
 
-    wp = Parameter(doc="Dark energy equation of state at the pivot redshift zp.", fvalidate="float")
+    wp = Parameter(doc="Dark energy equation of state at the pivot redshift zp.", 
+                   fvalidate=("scalar", "float"))
     wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.",
-                   fvalidate="float")
-    zp = Parameter(doc="The pivot redshift, where w(z) = wp.", unit=cu.redshift)
+                   fvalidate=("scalar", "float"))
+    zp = Parameter(doc="The pivot redshift, where w(z) = wp.", unit=cu.redshift,
+                   fvalidate="scalar")
 
     def __init__(self, H0, Om0, Ode0, wp=-1.0, wa=0.0, zp=0.0 * cu.redshift,
                  Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV, Ob0=None, *,
@@ -2949,8 +2953,10 @@ class w0wzCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
-    w0 = Parameter(doc="Dark energy equation of state at z=0.", fvalidate="float")
-    wz = Parameter(doc="Derivative of the dark energy equation of state w.r.t. z.", fvalidate="float")
+    w0 = Parameter(doc="Dark energy equation of state at z=0.",
+                   fvalidate=("scalar", "float"))
+    wz = Parameter(doc="Derivative of the dark energy equation of state w.r.t. z.",             
+                   fvalidate=("scalar", "float"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wz=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):

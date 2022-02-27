@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import numpy as np
+
 import astropy.units as u
 from astropy.utils.decorators import classproperty
 
@@ -48,7 +50,6 @@ class Parameter:
 
     def __init__(self, *, derived=False, unit=None, equivalencies=[],
                  fvalidate="default", fmt="", doc=None):
-
         # attribute name on container cosmology class.
         # really set in __set_name__, but if Parameter is not init'ed as a
         # descriptor this ensures that the attributes exist.
@@ -64,22 +65,29 @@ class Parameter:
 
         # Parse registered `fvalidate`
         self._fvalidate_in = fvalidate  # Always store input fvalidate.
-        if callable(fvalidate):
-            pass
-        elif fvalidate in self._registry_validators:
-            fvalidate = self._registry_validators[fvalidate]
-        elif isinstance(fvalidate, str):
-            raise ValueError("`fvalidate`, if str, must be in "
-                             f"{self._registry_validators.keys()}")
-        else:
-            raise TypeError("`fvalidate` must be a function or "
-                            f"{self._registry_validators.keys()}")
-        self._fvalidate = fvalidate
+        self._fvalidate = type(self)._check_arg_fvalidate(fvalidate)
 
     def __set_name__(self, cosmo_cls, name):
         # attribute name on container cosmology class
         self._attr_name = name
         self._attr_name_private = "_" + name
+
+    @classmethod
+    def _check_arg_fvalidate(cls, fvalidate):
+        if callable(fvalidate):
+            pass
+        elif fvalidate in cls._registry_validators:
+            fvalidate = cls._registry_validators[fvalidate]
+        elif isinstance(fvalidate, tuple):
+            fvalidate = _CompositeValidator((cls._check_arg_fvalidate(fv) for fv in fvalidate))
+        elif isinstance(fvalidate, str):
+            raise ValueError("`fvalidate`, if a str, must be in "
+                             f"{cls._registry_validators.keys()}")
+        else:
+            raise TypeError("`fvalidate` must be a function or one of "
+                            f"{cls._registry_validators.keys()}, "
+                            "(or tuple thereof)")
+        return fvalidate
 
     @property
     def name(self):
@@ -133,7 +141,7 @@ class Parameter:
         """Function to validate a potential value of this Parameter.."""
         return self._fvalidate
 
-    def validator(self, fvalidate):
+    def validator(self, fvalidate=None, *, composite=False):
         """Make new Parameter with custom ``fvalidate``.
 
         Note: ``Parameter.fvalidator`` must be the top-most descriptor decorator.
@@ -141,13 +149,20 @@ class Parameter:
         Parameters
         ----------
         fvalidate : callable[[type, type, Any], Any]
+        composite : bool, optional keyword-only
+            
 
         Returns
         -------
         `~astropy.cosmology.Parameter`
             Copy of this Parameter but with custom ``fvalidate``.
         """
-        return self.clone(fvalidate=fvalidate)
+        def make_validator(fvalidate):
+            if composite:
+                fvalidate = (self.fvalidate, fvalidate)
+            return self.clone(fvalidate=fvalidate)
+
+        return make_validator if fvalidate is None else make_validator(fvalidate)
 
     def validate(self, cosmology, value):
         """Run the validator on this Parameter.
@@ -311,6 +326,51 @@ class Parameter:
 # Built-in validators
 
 
+class _CompositeValidator(tuple):
+    """Composite validator to call a series of setter functions.
+
+    Parameters
+    ----------
+    *fvalidates : callable[[`~astropy.cosmology.Cosmology`, `~astropy.cosmology.Parameter`, Any], Any]
+        Ordered validator functions.
+        Each validator function should have signature
+        ``def validator(cosmology, parameter, value):``
+        Where cosmology is a `~astropy.cosmology.Cosmology` instance,
+        parameter is a `~astropy.cosmology.Parameter` instance,
+        and the value is anything for the validator to process.
+        See the call signature for details.
+
+    Returns
+    -------
+    Any
+    """
+
+    def __new__(cls, fvalidates, /):  # no null option
+        return super().__new__(cls, fvalidates)
+
+    def __call__(self, cosmology, param, value):
+        """Apply multiple validators sequentially.
+
+        Parameters
+        ----------
+        cosmology : `~astropy.cosmology.Cosmology`
+            The |Cosmology| on which to validate the processed ``value``.
+        param : `~astropy.cosmology.Parameter`
+            The Parameter with all the information needed to validate the
+            processed ``value``.
+        value : Any
+            Value for the |Cosmology| Parameter.
+
+        Returns
+        -------
+        Any
+            Processed value from passing ``value`` through all the validators.
+        """
+        for fv in self:
+            value = fv(cosmology, param, value)
+        return value
+
+
 @Parameter.register_validator("default")
 def _validate_with_unit(cosmology, param, value):
     """
@@ -332,9 +392,9 @@ def _validate_to_float(cosmology, param, value):
 
 @Parameter.register_validator("scalar")
 def _validate_to_scalar(cosmology, param, value):
-    """"""
+    """Parameter value validator where value is a scalar."""
     value = _validate_with_unit(cosmology, param, value)
-    if not value.isscalar:
+    if np.ndim(value) != 0:
         raise ValueError(f"{param.name} is a non-scalar quantity")
     return value
 

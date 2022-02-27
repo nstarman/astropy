@@ -8,6 +8,7 @@
 # STDLIB
 import ast
 import inspect
+import re
 import sys
 
 # THIRD PARTY
@@ -17,9 +18,9 @@ import numpy as np
 
 # LOCAL
 import astropy.units as u
-from astropy.cosmology import Cosmology
+from astropy.cosmology import Cosmology, Planck18, FlatLambdaCDM
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
-from astropy.cosmology.parameter import Parameter, _validate_to_float, _validate_with_unit
+from astropy.cosmology.parameter import _CompositeValidator, Parameter, _validate_to_float, _validate_with_unit
 
 ##############################################################################
 # TESTS
@@ -105,6 +106,10 @@ class ParameterTestMixin:
         """Test :attr:`astropy.cosmology.Parameter.fvalidate`."""
         assert hasattr(all_parameter, "fvalidate")
         assert callable(all_parameter.fvalidate)
+
+        # extra tests for composite validators
+        if isinstance(all_parameter._fvalidate_in, tuple):
+            assert isinstance(all_parameter.fvalidate, _CompositeValidator)
 
     def test_Parameter_name(self, all_parameter):
         """Test :attr:`astropy.cosmology.Parameter.name`."""
@@ -288,6 +293,11 @@ class TestParameter(ParameterTestMixin):
         """Get Parameter 'param' from cosmology class."""
         return cosmo_cls.param
 
+    @pytest.fixture(scope="class")
+    def has_custom_fvalidate(self, param):
+        """Whether param has a custom validator."""
+        return param.fvalidate in param._registry_validators.values()
+
     # ==============================================================
 
     def test_Parameter_instance_attributes(self, param):
@@ -360,24 +370,37 @@ class TestParameter(ParameterTestMixin):
 
     def test_Parameter_validator(self, param):
         """Test :meth:`astropy.cosmology.Parameter.validator`."""
+        # Direct creation
         for k in Parameter._registry_validators:
             newparam = param.validator(k)
             assert newparam.fvalidate == newparam._registry_validators[k]
 
+        # Delayed creation, e.g. for decorators
+        for k in Parameter._registry_validators:
+            validator = param.validator()
+            newparam = validator(k)
+            assert newparam.fvalidate == newparam._registry_validators[k]
+
+        # Composite validator (can also be a delayed creation)
+        for k in Parameter._registry_validators:
+            newparam = param.validator(fvalidate=k, composite=True)
+            assert newparam.fvalidate[0] == param.fvalidate
+            assert newparam.fvalidate[-1] == newparam._registry_validators[k]
+
         # error for non-registered str
-        with pytest.raises(ValueError, match="`fvalidate`, if str"):
+        with pytest.raises(ValueError, match=re.escape("`fvalidate`, if a str")):
             Parameter(fvalidate="NOT REGISTERED")
 
         # error if wrong type
         with pytest.raises(TypeError, match="`fvalidate` must be a function or"):
             Parameter(fvalidate=object())
 
-    def test_Parameter_validate(self, cosmo, param):
+    def test_Parameter_validate(self, cosmo, param, has_custom_fvalidate):
         """Test :meth:`astropy.cosmology.Parameter.validate`."""
         value = param.validate(cosmo, 1000 * u.m)
 
         # whether has custom validator
-        if param.fvalidate is param._registry_validators["default"]:
+        if has_custom_fvalidate:
             assert value.unit == u.m
             assert value.value == 1000
         else:
@@ -447,7 +470,7 @@ class TestParameter(ParameterTestMixin):
 
     # -------------------------------------------
 
-    def test_Parameter_repr(self, cosmo_cls, param):
+    def test_Parameter_repr(self, cosmo_cls, param, has_custom_fvalidate):
         """Test Parameter repr."""
         r = repr(param)
 
@@ -457,7 +480,7 @@ class TestParameter(ParameterTestMixin):
             assert subs in r, subs
 
         # `fvalidate` is a little tricker b/c one of them is custom!
-        if param.fvalidate in param._registry_validators.values():  # not custom
+        if has_custom_fvalidate:
             assert "fvalidate='default'" in r
         else:
             assert "fvalidate=<" in r  # Some function, don't care about details.
@@ -498,3 +521,100 @@ class TestParameter(ParameterTestMixin):
         # unregister
         _COSMOLOGY_CLASSES.pop(Example.__qualname__)
         assert Example.__qualname__ not in _COSMOLOGY_CLASSES
+
+
+# ========================================================================
+
+
+class Test_CompositeValidator:
+    """Test `astropy.cosmology.parameter._CompositeValidator`.
+
+    A few direct tests. Further tests are included in `TestParameter`.
+    """
+
+    @pytest.fixture(scope="class")
+    def cosmo_cls(self):
+        """Cosmology instance"""
+        return FlatLambdaCDM
+
+    @pytest.fixture(scope="class")
+    def cosmo(self):
+        """Cosmology instance"""
+        return Planck18  # Nothing special about this parameter
+
+    @pytest.fixture(scope="class")
+    def param(self, cosmo_cls):
+        """Get Parameter 'param' from cosmology class."""
+        return cosmo_cls.Neff  # Nothing special about this parameter
+
+    # ==============================================================
+
+    def test_registered(self, cosmo, param):
+        """Test _CompositeValidator from keys of of pre-registered functions."""
+        fv1 = "scalar"
+        fv2 = "non-negative"
+
+        # single validator
+        validator1 = _CompositeValidator((fv1, ))
+        assert validator1(cosmo, param, 0) == 0.0
+        with pytest.raises(ValueError, match="non-scalar"):
+            validator1(cosmo, param, [0, 1])
+
+        validator2 = _CompositeValidator((fv2, ))
+        assert validator2(cosmo, param, 0) == 0.0
+        assert validator2(cosmo, param, 1) == 1.0
+        with pytest.raises(ValueError, match="negative"):
+            validator2(cosmo, param, -1)
+
+        # composite validator
+        validator12 = _CompositeValidator((fv1, fv2))
+        assert validator12(cosmo, param, 0) == 0.0
+        with pytest.raises(ValueError, match="non-scalar"):
+            validator1(cosmo, param, [0, 1])
+        with pytest.raises(ValueError, match="negative"):
+            validator2(cosmo, param, -1)
+
+    def _check_working_examples(self, cosmo, param, fv1, fv2):
+        # single validator
+        validator1 = _CompositeValidator((fv1,))
+        assert validator1(cosmo, param, 0) == 0.0
+        with pytest.raises(ValueError):
+            validator1(cosmo, param, -1)
+        
+        validator2 = _CompositeValidator((fv2,))
+        assert validator2(cosmo, param, -1) == -1
+        with pytest.raises(ValueError):
+            validator2(cosmo, param, 2)
+        
+        # composite validator
+        validator12 = _CompositeValidator((fv1, fv2))
+        assert validator12(cosmo, param, 0) == 0.0
+        with pytest.raises(ValueError):
+            validator12(cosmo, param, -1)
+        with pytest.raises(ValueError):
+            validator12(cosmo, param, 2)
+
+    def test_callables(self, cosmo, param):
+        """Test CompositeValidator of functions."""
+        def fv1(cosmology, parameter, value):
+            if value < 0:
+                raise ValueError
+            return value
+
+        def fv2(cosmology, parameter, value):
+            if value >= 2:
+                raise ValueError
+            return value
+
+        self._check_working_examples(cosmo, param, fv1, fv2)
+
+    def test_mixed_inputs(self, cosmo, param):
+        """Test _CompositeValidator from functions and registered keys mix."""
+        fv1 = "non-negative"
+
+        def fv2(cosmology, parameter, value):
+            if value >= 2:
+                raise ValueError
+            return value
+
+        self._check_working_examples(cosmo, param, fv1, fv2)
