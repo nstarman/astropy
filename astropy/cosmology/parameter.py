@@ -398,6 +398,14 @@ def _validate_is_scalar(cosmology, param, value):
     return value
 
 
+@Parameter.register_validator("numeric")
+def _validate_is_numeric(cosmology, param, value):
+    """Parameter value validator where value is a number."""
+    if not np.issubdtype(np.min_scalar_type(value), np.number):
+        raise ValueError(f"{param.name} is not numeric.")
+    return value
+
+
 @Parameter.register_validator("non-negative")
 def _validate_non_negative(cosmology, param, value):
     """Parameter value validator where value is a positive number."""
