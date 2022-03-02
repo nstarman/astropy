@@ -401,8 +401,7 @@ def _validate_to_scalar(cosmology, param, value):
 
 @Parameter.register_validator("non-negative")
 def _validate_non_negative(cosmology, param, value):
-    """Parameter value validator where value is a positive float."""
-    value = _validate_to_float(cosmology, param, value)
-    if value < 0.0:
+    """Parameter value validator where value is a positive number."""
+    if np.any(value < 0.0):
         raise ValueError(f"{param.name} cannot be negative.")
     return value
