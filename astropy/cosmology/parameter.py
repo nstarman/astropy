@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+from inspect import _empty
+
 import numpy as np
 
 import astropy.units as u
@@ -141,16 +143,19 @@ class Parameter:
         """Function to validate a potential value of this Parameter.."""
         return self._fvalidate
 
-    def validator(self, fvalidate=None, *, composite=False):
+    def validator(self, fvalidate=_empty, *, composite=None, index="last"):
         """Make new Parameter with custom ``fvalidate``.
 
         Note: ``Parameter.fvalidator`` must be the top-most descriptor decorator.
 
         Parameters
         ----------
-        fvalidate : callable[[type, type, Any], Any]
+        fvalidate : str or callable[[type, type, Any], Any] or None, optional
         composite : bool, optional keyword-only
-            
+            Whether `fvalidate` should be part of an existing sequence.
+        index : int or {"last"}, optional keyword-only
+            If ``composite` is `True`, when to evaluate `fvalidate` in sequence
+            of other validation functions.
 
         Returns
         -------
@@ -158,11 +163,21 @@ class Parameter:
             Copy of this Parameter but with custom ``fvalidate``.
         """
         def make_validator(fvalidate):
-            if composite:
-                fvalidate = (self.fvalidate, fvalidate)
+            LTS5 = (composite is None and self.fvalidate != _validate_with_unit)
+            # In LTS v5.0 the default validator is not `None`, so we need a special
+            # condition and value for `composite` to work around this.
+            # next LTS release `composite` will only be a bool, default True
+
+            # Make composite, if not null fvalidate
+            if (composite and self.fvalidate != _null_validate) or LTS5:
+                fv = list(sfv if isinstance((sfv := self.fvalidate), tuple) else (sfv, ))
+                i = len(fv) if index == "last" else index  # when to evaluate
+                fv.insert(i, fvalidate)
+                fvalidate = tuple(fv)  # back to tuple so becomes composite
+
             return self.clone(fvalidate=fvalidate)
 
-        return make_validator if fvalidate is None else make_validator(fvalidate)
+        return make_validator if fvalidate is _empty else make_validator(fvalidate)
 
     def validate(self, cosmology, value):
         """Run the validator on this Parameter.
@@ -367,7 +382,13 @@ class _CompositeValidator(tuple):
             Processed value from passing ``value`` through all the validators.
         """
         for fv in self:
-            value = fv(cosmology, param, value)
+            try:
+                value = fv(cosmology, param, value)
+            except StopIteration as e:  # `value` is unchanged from input
+                # Allow the StopIteration to set the value
+                if e.value is not None:
+                    value = v if (v := e.value) is not _empty else None
+                break
         return value
 
 
