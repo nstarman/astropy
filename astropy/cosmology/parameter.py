@@ -384,8 +384,19 @@ def _validate_with_unit(cosmology, param, value):
     Adds/converts units if Parameter has a unit.
     """
     if param.unit is not None:
-        with u.add_enabled_equivalencies(param.equivalencies):
-            value = u.Quantity(value, param.unit)
+        value = _validate_to_quantity(cosmology, param, value)
+    return value
+
+
+@Parameter.register_validator("quantity")
+def _validate_to_quantity(cosmology, param, value):
+    """Adds/converts units if Parameter has a unit.
+    """
+    # Quantity with right units (can be None) and dtype
+    with u.add_enabled_equivalencies(param.equivalencies):
+        # TODO! collapse to just Quantity when it allows for dtype inference
+        value = np.array(value, copy=False, subok=True)
+        value = u.Quantity(value, unit=param.unit, dtype=value.dtype, copy=False)
     return value
 
 
