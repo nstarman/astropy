@@ -391,11 +391,10 @@ def _validate_to_float(cosmology, param, value):
 
 
 @Parameter.register_validator("scalar")
-def _validate_to_scalar(cosmology, param, value):
+def _validate_is_scalar(cosmology, param, value):
     """Parameter value validator where value is a scalar."""
-    value = _validate_with_unit(cosmology, param, value)
     if np.ndim(value) != 0:
-        raise ValueError(f"{param.name} is a non-scalar quantity")
+        raise ValueError(f"{param.name} is not a scalar.")
     return value
 
 
