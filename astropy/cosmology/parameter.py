@@ -400,6 +400,14 @@ def _validate_to_quantity(cosmology, param, value):
     return value
 
 
+@Parameter.register_validator("unitless")
+def _validate_to_unitless(cosmology, param, value):
+    """Decomposes to unitless value, if value has a unit."""
+    if hasattr(value, "unit"):
+        value = value.to_value(u.dimensionless_unscaled)
+    return value
+
+
 @Parameter.register_validator("float")
 def _validate_to_float(cosmology, param, value):
     """Parameter value validator with units, and converted to float."""
