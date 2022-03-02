@@ -2,6 +2,7 @@
 
 import warnings
 from abc import abstractmethod
+from inspect import _empty
 from math import acos, cos, exp, floor, inf, log, pi, sin, sqrt
 from numbers import Number
 
@@ -16,7 +17,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 from . import scalar_inv_efuncs
 from . import units as cu
 from .core import Cosmology, FlatCosmologyMixin, Parameter
-from .parameter import _validate_non_negative, _validate_with_unit
+from .parameter import _validate_to_quantity
 from .utils import aszarr, vectorize_redshift_method
 
 # isort: split
@@ -116,19 +117,20 @@ class FLRW(Cosmology):
     """
 
     H0 = Parameter(doc="Hubble constant as an `~astropy.units.Quantity` at z=0.",
-                   unit="km/(s Mpc)", fvalidate="scalar")
+                   unit="km/(s Mpc)", fvalidate=("scalar", "numeric", "quantity"))
     Om0 = Parameter(doc="Omega matter; matter density/critical density at z=0.",
-                    fvalidate=("scalar", "non-negative"))
+                    fvalidate=("scalar", "numeric", "non-negative", "unitless"))
     Ode0 = Parameter(doc="Omega dark energy; dark energy density/critical density at z=0.",
-                     fvalidate="float")
+                     fvalidate=("scalar", "numeric", "unitless"))
     Tcmb0 = Parameter(doc="Temperature of the CMB as `~astropy.units.Quantity` at z=0.",
-                      unit="Kelvin", fvalidate="scalar")
+                      unit="Kelvin", fvalidate=("scalar", "numeric", "quantity"))
     Neff = Parameter(doc="Number of effective neutrino species.",
-                     fvalidate=("scalar", "non-negative"))
+                     fvalidate=("scalar", "numeric", "non-negative", "unitless"))
     m_nu = Parameter(doc="Mass of neutrino species.",
-                     unit="eV", equivalencies=u.mass_energy())
+                     unit="eV", equivalencies=u.mass_energy(),
+                     fvalidate=("numeric", "quantity", "non-negative"))
     Ob0 = Parameter(doc="Omega baryon; baryonic matter density/critical density at z=0.",
-                    fvalidate="scalar")
+                    fvalidate=("scalar", "numeric", "non-negative", "unitless"))
 
     def __init__(self, H0, Om0, Ode0, Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV,
                  Ob0=None, *, name=None, meta=None):
@@ -223,43 +225,46 @@ class FLRW(Cosmology):
     # ---------------------------------------------------------------
     # Parameter details
 
-    @Ob0.validator
+    @Ob0.validator(composite=True, index=0)
     def Ob0(self, param, value):
-        """Validate baryon density to None or positive float > matter density."""
+        """Validate baryon density to None or ..."""
         if value is None:
-            return value
+            raise StopIteration
+        return value
 
-        value = _validate_non_negative(self, param, value)
+    @Ob0.validator(composite=True)
+    def Ob0(self, param, value):
+        """Validate baryon density > matter density."""
         if value > self.Om0:
             raise ValueError("baryonic density can not be larger than total matter density.")
         return value
 
-    @m_nu.validator
+    @m_nu.validator(composite=True, index=0)
     def m_nu(self, param, value):
-        """Validate neutrino masses to right value, units, and shape.
-
+        """
+        Validate neutrino masses to right value, units, and shape.
         There are no neutrinos if floor(Neff) or Tcmb0 are 0.
+        """
+        # Check if there are any neutrinos
+        if floor(self._Neff) == 0 or self._Tcmb0.value == 0:
+            raise StopIteration(_empty)  # -> None, regardless of input
+        return value
+
+    @m_nu.validator(composite=True)
+    def m_nu(self, param, value):
+        """
+        Validate neutrino masses to right value, units, and shape.
         The number of neutrinos must match floor(Neff).
         Neutrino masses cannot be negative.
         """
-        # Check if there are any neutrinos
-        if (nneutrinos := floor(self._Neff)) == 0 or self._Tcmb0.value == 0:
-            return None  # None, regardless of input
-
-        # Validate / set units
-        value = _validate_with_unit(self, param, value)
-
+        nneutrinos = floor(self._Neff)
         # Check values and data shapes
         if value.shape not in ((), (nneutrinos,)):
             raise ValueError("unexpected number of neutrino masses — "
                              f"expected {nneutrinos}, got {len(value)}.")
-        elif np.any(value.value < 0):
-            raise ValueError("invalid (negative) neutrino mass encountered.")
-
         # scalar -> array
         if value.isscalar:
             value = np.full_like(value, value, shape=nneutrinos)
-
         return value
 
     # ---------------------------------------------------------------
@@ -2204,7 +2209,8 @@ class wCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
-    w0 = Parameter(doc="Dark energy equation of state.", fvalidate=("scalar", "float"))
+    w0 = Parameter(doc="Dark energy equation of state.",
+                   fvalidate=("scalar", "numeric", "unitless"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -2524,9 +2530,10 @@ class w0waCDM(FLRW):
            Universe. Phys. Rev. Lett., 90, 091301.
     """
 
-    w0 = Parameter(doc="Dark energy equation of state at z=0.", fvalidate=("scalar", "float"))
+    w0 = Parameter(doc="Dark energy equation of state at z=0.",
+                   fvalidate=("scalar", "numeric", "unitless"))
     wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.",
-                   fvalidate=("scalar", "float"))
+                   fvalidate=("scalar", "numeric", "unitless"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wa=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
@@ -2791,11 +2798,11 @@ class wpwaCDM(FLRW):
     """
 
     wp = Parameter(doc="Dark energy equation of state at the pivot redshift zp.", 
-                   fvalidate=("scalar", "float"))
+                   fvalidate=("scalar", "numeric", "unitless"))
     wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.",
-                   fvalidate=("scalar", "float"))
+                   fvalidate=("scalar", "numeric", "unitless"))
     zp = Parameter(doc="The pivot redshift, where w(z) = wp.", unit=cu.redshift,
-                   fvalidate="scalar")
+                   fvalidate=("scalar", "numeric", "quantity"))
 
     def __init__(self, H0, Om0, Ode0, wp=-1.0, wa=0.0, zp=0.0 * cu.redshift,
                  Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV, Ob0=None, *,
@@ -2954,9 +2961,9 @@ class w0wzCDM(FLRW):
     """
 
     w0 = Parameter(doc="Dark energy equation of state at z=0.",
-                   fvalidate=("scalar", "float"))
+                   fvalidate=("scalar", "numeric", "unitless"))
     wz = Parameter(doc="Derivative of the dark energy equation of state w.r.t. z.",             
-                   fvalidate=("scalar", "float"))
+                   fvalidate=("scalar", "numeric", "unitless"))
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wz=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):
