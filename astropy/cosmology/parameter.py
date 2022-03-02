@@ -49,14 +49,14 @@ class Parameter:
     _registry_validators = {}
 
     def __init__(self, *, derived=False, unit=None, equivalencies=[],
-                 fvalidate="default", fmt="", doc=None):
+                 fvalidate="default", fmt=None, doc=None):
         # attribute name on container cosmology class.
         # really set in __set_name__, but if Parameter is not init'ed as a
         # descriptor this ensures that the attributes exist.
         self._attr_name = self._attr_name_private = None
 
         self._derived = derived
-        self._fmt = str(fmt)  # @property is `format_spec`
+        self._fmt = str(fmt) if fmt is not None else None  # @property is `format_spec`
         self.__doc__ = doc
 
         # units stuff

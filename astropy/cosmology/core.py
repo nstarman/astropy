@@ -343,8 +343,10 @@ class Cosmology(metaclass=abc.ABCMeta):
         if self.name is not None:
             namelead += f"name=\"{self.name}\", "
         # nicely formatted parameters
-        fmtps = (k + '=' + format(v, cps[k].format_spec if v is not None else '')
-                 for k, v in ps.items())
+        fmtps = (
+            k + '=' + (str(v) if (fmt := cps[k].format_spec) is None
+                       else format(v, fmt if v is not None else ''))
+            for k, v in ps.items())
 
         return namelead + ", ".join(fmtps) + ")"
 
