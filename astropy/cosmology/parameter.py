@@ -371,6 +371,12 @@ class _CompositeValidator(tuple):
         return value
 
 
+@Parameter.register_validator(None)
+def _null_validate(cosmology, param, value):
+    """Pass value through without validating."""
+    return value
+
+
 @Parameter.register_validator("default")
 def _validate_with_unit(cosmology, param, value):
     """
