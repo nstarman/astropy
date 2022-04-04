@@ -1,8 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import copy
+from typing import Optional
+
+import numpy as np
 
 import astropy.units as u
+from astropy.utils.decorators import classproperty, deprecated
 
 __all__ = ["Parameter"]
 
@@ -22,10 +26,15 @@ class Parameter:
         ``FlatFLRWMixin``, which removes :math:`\Omega_{de,0}`` as an
         independent parameter (:math:`\Omega_{de,0} \equiv 1 - \Omega_{tot}`).
     unit : unit-like or None (optional, keyword-only)
-        The `~astropy.units.Unit` for the Parameter. If None (default) no
-        unit as assumed.
+        The `~astropy.units.Unit` for the Parameter.
+        If `None` (default) the units will be converted to
+        ``astropy.units.dimensionless_unscaled`` and then removed (unless a
+        custom validator is used that does not implement this behavior).
     equivalencies : `~astropy.units.Equivalency` or sequence thereof
         Unit equivalencies for this Parameter.
+    dtype : `numpy.dtype` or None, optional keyword-only
+        The dtype of the Parameter. If not `None`, the parameter's value is
+        checked to be compatible with the ``dtype`` using ``numpy.issubdtype``.
     fvalidate : callable[[object, object, Any], Any] or str (optional, keyword-only)
         Function to validate the Parameter value from instances of the
         cosmology class. If "default", uses default validator to assign units
@@ -47,8 +56,9 @@ class Parameter:
 
     _registry_validators = {}
 
-    def __init__(self, *, derived=False, unit=None, equivalencies=[],
-                 fvalidate="default", fmt="", doc=None):
+    def __init__(self, *, derived=False, dtype: Optional[np.dtype]=np.floating,
+                 unit=None, equivalencies=[], fvalidate="default", fmt="",
+                 doc=None):
 
         # attribute name on container cosmology class.
         # really set in __set_name__, but if Parameter is not init'ed as a
@@ -59,7 +69,8 @@ class Parameter:
         self._fmt = str(fmt)  # @property is `format_spec`
         self.__doc__ = doc
 
-        # units stuff
+        # units & dtype stuff
+        self._dtype = dtype
         self._unit = u.Unit(unit) if unit is not None else None
         self._equivalencies = equivalencies
 
@@ -86,6 +97,11 @@ class Parameter:
     def name(self):
         """Parameter name."""
         return self._attr_name
+
+    @property
+    def dtype(self):
+        """Parameter dtype."""
+        return self._dtype
 
     @property
     def unit(self):
@@ -123,8 +139,27 @@ class Parameter:
         if hasattr(cosmology, self._attr_name_private):
             raise AttributeError(f"can't set attribute {self._attr_name} again")
 
-        # Validate value, generally setting units if present
-        value = self.validate(cosmology, copy.deepcopy(value))
+        # Start by copying, decoupling Cosmology parameters from the arguments,
+        # helping to ensure mutability.
+        value = copy.deepcopy(value)
+
+        # Now the dtype is checked, changing to a right view if it's wrong.
+        # dtype can be None to allow non-numeric Parameters.
+        if self.dtype is not None:
+            # Ensure the value has a dtype attribute.
+            # TODO! Quantity doesn't work with `like`
+            kw = dict(copy=False, subok=True)
+            if (hasattr(value, "__array_function__") and not isinstance(value, u.Quantity)):
+                kw["like"] = value
+            value = np.array(value, **kw)
+
+            # Make sure the value has the correct dtype.
+            if not np.issubdtype(value.dtype, self.dtype):
+                value = value.view(dtype=self.dtype)
+
+        # Validate value, generally setting units if present.
+        # Validation should not return a new copy, only operate on a view.
+        value = self.validate(cosmology, value)
 
         # Make the value read-only, if ndarray-like
         if hasattr(value, "setflags"):
@@ -325,13 +360,19 @@ def _validate_with_unit(cosmology, param, value):
     Default Parameter value validator.
     Adds/converts units if Parameter has a unit.
     """
-    if param.unit is not None:
-        with u.add_enabled_equivalencies(param.equivalencies):
-            value = u.Quantity(value, param.unit)
+    # Quantity with right units (can be None) and dtype
+    with u.add_enabled_equivalencies(param.equivalencies):
+        value = u.Quantity(value, unit=param.unit, dtype=param.dtype, copy=False)
+
+    # If there shouldn't be units, decompose to unitless value
+    if param.unit is None:
+        value = value.to_value(u.one)
+
     return value
 
 
 @Parameter.register_validator("float")
+@deprecated("v5.1", alternative="use ``dtype=float`` in Parameter()")
 def _validate_to_float(cosmology, param, value):
     """Parameter value validator with units, and converted to float."""
     value = _validate_with_unit(cosmology, param, value)
@@ -339,18 +380,21 @@ def _validate_to_float(cosmology, param, value):
 
 
 @Parameter.register_validator("scalar")
-def _validate_to_scalar(cosmology, param, value):
-    """"""
+def _validate_is_scalar(cosmology, param, value):
+    """Parameter value validator where value is a scalar."""
     value = _validate_with_unit(cosmology, param, value)
-    if not value.isscalar:
-        raise ValueError(f"{param.name} is a non-scalar quantity")
-    return value
+
+    # Check it's a scalar (Quantity or other)
+    if (hasattr(value, "isscalar") and value.isscalar) or np.isscalar(value):
+        return value
+    else:
+        raise ValueError(f"{param.name}={value} is a non-scalar quantity")
 
 
 @Parameter.register_validator("non-negative")
 def _validate_non_negative(cosmology, param, value):
-    """Parameter value validator where value is a positive float."""
-    value = _validate_to_float(cosmology, param, value)
+    """Parameter value validator where value is a positive number."""
+    value = _validate_with_unit(cosmology, param, value)
     if value < 0.0:
-        raise ValueError(f"{param.name} cannot be negative.")
+        raise ValueError(f"{param.name}={value} cannot be negative.")
     return value

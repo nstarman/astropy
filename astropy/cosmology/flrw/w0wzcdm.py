@@ -83,9 +83,8 @@ class w0wzCDM(FLRW):
     >>> dc = cosmo.comoving_distance(z)
     """
 
-    w0 = Parameter(doc="Dark energy equation of state at z=0.", fvalidate="float")
-    wz = Parameter(doc="Derivative of the dark energy equation of state w.r.t. z.",
-                   fvalidate="float")
+    w0 = Parameter(doc="Dark energy equation of state at z=0.")
+    wz = Parameter(doc="Derivative of the dark energy equation of state w.r.t. z.")
 
     def __init__(self, H0, Om0, Ode0, w0=-1.0, wz=0.0, Tcmb0=0.0*u.K, Neff=3.04,
                  m_nu=0.0*u.eV, Ob0=None, *, name=None, meta=None):

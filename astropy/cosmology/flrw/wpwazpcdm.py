@@ -100,9 +100,8 @@ class wpwaCDM(FLRW):
            of Merit Science Working Group. arXiv e-prints, arXiv:0901.0721.
     """
 
-    wp = Parameter(doc="Dark energy equation of state at the pivot redshift zp.", fvalidate="float")
-    wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.",
-                   fvalidate="float")
+    wp = Parameter(doc="Dark energy equation of state at the pivot redshift zp.")
+    wa = Parameter(doc="Negative derivative of dark energy equation of state w.r.t. a.")
     zp = Parameter(doc="The pivot redshift, where w(z) = wp.", unit=cu.redshift)
 
     def __init__(self, H0, Om0, Ode0, wp=-1.0, wa=0.0, zp=0.0 * cu.redshift,
