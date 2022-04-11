@@ -14,7 +14,8 @@ import pytest
 import astropy.units as u
 from astropy.cosmology import FlatwCDM, wCDM
 from astropy.cosmology.parameter import Parameter
-from astropy.cosmology.tests.test_core import ParameterTestMixin, valid_zs
+from astropy.cosmology.tests.helper import valid_zs
+from astropy.cosmology.tests.test_core import ParameterTestMixin
 
 from .test_base import FlatFLRWMixinTest, FLRWSubclassTest
 

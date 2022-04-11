@@ -5,8 +5,6 @@
 ##############################################################################
 # IMPORTS
 
-# STDLIB
-
 # THIRD PARTY
 import pytest
 
@@ -15,9 +13,16 @@ import astropy.units as u
 from astropy.cosmology import Flatw0waCDM, w0waCDM
 from astropy.cosmology.parameter import Parameter
 from astropy.cosmology.tests.test_core import ParameterTestMixin
+from astropy.cosmology.tests.helper import load_test_results
 
 from .test_base import FlatFLRWMixinTest, FLRWSubclassTest
 from .test_w0cdm import Parameterw0TestMixin
+
+##############################################################################
+# PARAMETERS
+
+results_Testw0waCDM = load_test_results("Testw0waCDM")
+
 
 ##############################################################################
 # TESTS
@@ -88,14 +93,13 @@ class Testw0waCDM(FLRWSubclassTest, Parameterw0TestMixin, ParameterwaTestMixin):
             else:
                 assert u.allclose(v, getattr(cosmo, n), atol=1e-4 * getattr(v, "unit", 1))
 
-    # @pytest.mark.parametrize("z", valid_zs)  # TODO! recompute comparisons below
-    def test_w(self, cosmo):
+    @pytest.mark.parametrize("z, expected",
+                             zip(results_Testw0waCDM["zs"].values(),
+                                 results_Testw0waCDM["w"].values()))
+    def test_w(self, cosmo, z, expected):
         """Test :meth:`astropy.cosmology.w0waCDM.w`."""
         # super().test_w(cosmo, z)
-
-        assert u.allclose(cosmo.w(1.0), -1.25)
-        assert u.allclose(cosmo.w([0.0, 0.5, 1.0, 1.5, 2.3]),
-                          [-1, -1.16666667, -1.25, -1.3, -1.34848485])
+        assert u.allclose(cosmo.w(z), expected)
 
     def test_repr(self, cosmo_cls, cosmo):
         """Test method ``.__repr__()``."""

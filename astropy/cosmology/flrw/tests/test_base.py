@@ -20,10 +20,9 @@ from astropy.cosmology import FLRW, FlatLambdaCDM, LambdaCDM, Planck18
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
 from astropy.cosmology.flrw.base import _a_B_c2, _critdens_const, _H0units_to_invs, quad
 from astropy.cosmology.parameter import Parameter
-from astropy.cosmology.tests.helper import get_redshift_methods
+from astropy.cosmology.tests.helper import get_redshift_methods, invalid_zs, valid_zs
 from astropy.cosmology.tests.test_core import CosmologySubclassTest as CosmologyTest
-from astropy.cosmology.tests.test_core import (FlatCosmologyMixinTest, ParameterTestMixin,
-                                               invalid_zs, valid_zs)
+from astropy.cosmology.tests.test_core import FlatCosmologyMixinTest, ParameterTestMixin
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 
 ##############################################################################
@@ -491,7 +490,7 @@ class TestFLRW(CosmologyTest,
         """TODO!"""
         cosmo, results = super().generate_test_results(zs)
 
-        def evaluate(label, method, zs, fallback=NotImplementedError):
+        def evaluate(label, method, zs, fallback="NotImplementedError"):
             for i, z in enumerate(zs):
                 try:
                     v = method(z)
@@ -501,7 +500,7 @@ class TestFLRW(CosmologyTest,
 
         # Evaluating methods
         evaluate("w", cosmo.w, zs)
-        evaluate("Otot", cosmo.Otot, zs)
+        # evaluate("Otot", cosmo.Otot, zs)  # always 1
 
         return cosmo, results
 

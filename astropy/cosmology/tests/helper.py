@@ -9,15 +9,50 @@ from the installed astropy.  It makes use of the `pytest`_ testing framework.
 # IMPORTS
 
 # STDLIB
+from importlib.resources import path
 import inspect
+import pathlib
 
 # THIRD PARTY
+import numpy as np
 import pytest
 
 # LOCAL
+import astropy.cosmology.units as cu
+import astropy.units as u
 from astropy.cosmology import core
+from astropy.io.misc.yaml import dump, load
+from astropy.utils.introspection import find_current_module
+
+# from astropy.table import Column
 
 __all__ = ["get_redshift_methods", "clean_registry"]
+
+###############################################################################
+# PARAMETERS
+
+scalar_zs = [
+    0, 1, 1100,  # interesting times
+    # FIXME! np.inf breaks some funcs. 0 * inf is an error
+    np.float64(3300),  # different type
+    2 * cu.redshift, 3 * u.one  # compatible units
+]
+_zarr = np.linspace(0, 1e5, num=20)
+array_zs = [
+    _zarr,  # numpy
+    _zarr.tolist(),  # pure python
+    # Column(_zarr),  # table-like  # TODO!
+    _zarr * cu.redshift  # Quantity
+]
+valid_zs = scalar_zs + array_zs
+
+invalid_zs = [
+    (None, TypeError),  # wrong type
+    # Wrong units (the TypeError is for the cython, which can differ)
+    (4 * u.MeV, (u.UnitConversionError, TypeError)),  # scalar
+    ([0, 1] * u.m, (u.UnitConversionError, TypeError)),  # array
+]
+
 
 ###############################################################################
 # FUNCTIONS
@@ -78,19 +113,31 @@ def get_redshift_methods(cosmology, include_private=True, include_z2=True):
     return methods
 
 
-def generate_all_test_results():
+# ============================================================================
+# Test Generation
 
-    from astropy.cosmology.tests.test_core import valid_zs  # TODO! move these
+
+def generate_all_tests_results_files():
+
+    # collect all the tests
+    from astropy.cosmology.flrw.tests import (test_base, test_lambdacdm,  # noqa: F401, F403
+                                              test_w0cdm, test_w0wacdm, test_w0wzcdm,
+                                              test_wpwazpcdm)
     from astropy.cosmology.tests.test_core import TestCosmology
-    from astropy.cosmology.tests import test_flrw  # noqa: F403
-
-    results = dict()
 
     def _recursively_generate_test_result(test_class):
         # generate results for this class
         if not getattr(test_class, "__abstractmethods__", ()):
-            name = test_class.__qualname__
-            results[name] = test_class.generate_test_results(valid_zs)
+            print(test_class)
+
+            _, results = test_class.generate_test_results(valid_zs)
+
+            DATA_DIR = pathlib.Path(inspect.getfile(test_class)).parent / "data"
+            DATA_DIR.mkdir(exist_ok=True)
+            path = DATA_DIR / f"data_{test_class.__name__}.yml"
+
+            with open(path, "w") as f:
+                dump(dict(results), f)
 
         # recurse through all subclasses
         for cls in test_class.__subclasses__():
@@ -98,7 +145,17 @@ def generate_all_test_results():
 
     _recursively_generate_test_result(TestCosmology)
 
-    return results
+
+def load_test_results(test_class_name):
+    module = find_current_module(depth=2)
+    DATA_DIR = pathlib.Path(module.__file__).parent / "data"
+    path = DATA_DIR / f"data_{test_class_name}.yml"
+
+    with open(path, "r") as f:
+        with u.add_enabled_units(cu):
+            result = load(f)
+
+    return result
 
 
 ###############################################################################

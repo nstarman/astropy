@@ -32,29 +32,6 @@ from .test_parameter import ParameterTestMixin
 # SETUP / TEARDOWN
 
 
-scalar_zs = [
-    0, 1, 1100,  # interesting times
-    # FIXME! np.inf breaks some funcs. 0 * inf is an error
-    np.float64(3300),  # different type
-    2 * cu.redshift, 3 * u.one  # compatible units
-]
-_zarr = np.linspace(0, 1e5, num=20)
-array_zs = [
-    _zarr,  # numpy
-    _zarr.tolist(),  # pure python
-    Column(_zarr),  # table-like
-    _zarr * cu.redshift  # Quantity
-]
-valid_zs = scalar_zs + array_zs
-
-invalid_zs = [
-    (None, TypeError),  # wrong type
-    # Wrong units (the TypeError is for the cython, which can differ)
-    (4 * u.MeV, (u.UnitConversionError, TypeError)),  # scalar
-    ([0, 1] * u.m, (u.UnitConversionError, TypeError)),  # array
-]
-
-
 class SubCosmology(Cosmology):
     """Defined here to be serializable."""
 
@@ -158,7 +135,7 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         results = defaultdict(dict)
 
         # zs
-        results["zs"] = zs
+        results["zs"] = {i: z for i, z in enumerate(zs)}
 
         return cosmo, results
 

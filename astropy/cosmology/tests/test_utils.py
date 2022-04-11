@@ -5,10 +5,11 @@ from math import inf
 import numpy as np
 import pytest
 
+from astropy.cosmology.tests.helper import invalid_zs
 from astropy.cosmology.utils import aszarr, inf_like, vectorize_if_needed, vectorize_redshift_method
 from astropy.utils.exceptions import AstropyDeprecationWarning
 
-from .test_core import _zarr, invalid_zs, valid_zs
+from .data import test_results
 
 
 def test_vectorize_redshift_method():
@@ -79,9 +80,9 @@ def test_inf_like(arr, expected):
 
 class Test_aszarr:
 
-    @pytest.mark.parametrize("z, expect", list(zip(valid_zs, [
-        0, 1, 1100, np.float64(3300), 2.0, 3.0, _zarr, _zarr, _zarr, _zarr
-    ])))
+    @pytest.mark.parametrize("z, expect",
+                             list(zip(test_results["Test_aszarr"]["zs"].values(),
+                                      test_results["Test_aszarr"]["valid"].values())))
     def test_valid(self, z, expect):
         """Test :func:`astropy.cosmology.utils.aszarr`."""
         got = aszarr(z)

@@ -5,8 +5,6 @@
 ##############################################################################
 # IMPORTS
 
-# STDLIB
-
 # THIRD PARTY
 import pytest
 
@@ -14,11 +12,16 @@ import pytest
 import astropy.units as u
 from astropy.cosmology import FlatLambdaCDM, LambdaCDM
 from astropy.cosmology.flrw.lambdacdm import ellipkinc, hyp2f1
-from astropy.cosmology.tests.helper import get_redshift_methods
-from astropy.cosmology.tests.test_core import invalid_zs, valid_zs
+from astropy.cosmology.tests.helper import get_redshift_methods, invalid_zs, valid_zs, load_test_results
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 
 from .test_base import FlatFLRWMixinTest, FLRWSubclassTest
+
+##############################################################################
+# PARAMETERS
+
+results_TestLambdaCDM = load_test_results("TestLambdaCDM")
+
 
 ##############################################################################
 # TESTS
