@@ -78,6 +78,29 @@ def get_redshift_methods(cosmology, include_private=True, include_z2=True):
     return methods
 
 
+def generate_all_test_results():
+
+    from astropy.cosmology.tests.test_core import valid_zs  # TODO! move these
+    from astropy.cosmology.tests.test_core import TestCosmology
+    from astropy.cosmology.tests import test_flrw  # noqa: F403
+
+    results = dict()
+
+    def _recursively_generate_test_result(test_class):
+        # generate results for this class
+        if not getattr(test_class, "__abstractmethods__", ()):
+            name = test_class.__qualname__
+            results[name] = test_class.generate_test_results(valid_zs)
+
+        # recurse through all subclasses
+        for cls in test_class.__subclasses__():
+            _recursively_generate_test_result(cls)
+
+    _recursively_generate_test_result(TestCosmology)
+
+    return results
+
+
 ###############################################################################
 # FIXTURES
 
