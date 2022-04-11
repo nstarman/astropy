@@ -9,6 +9,7 @@
 import abc
 import inspect
 import pickle
+from collections import defaultdict
 
 # THIRD PARTY
 import numpy as np
@@ -142,6 +143,24 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         ba = self.cls._init_signature.bind(*self.cls_args, **self.cls_kwargs)
         ba.apply_defaults()
         return cosmo_cls(*ba.args, **ba.kwargs)
+
+    # ===============================================================
+    # Test Result Generation
+
+    @classmethod
+    def generate_test_results(cls, zs):
+        """TODO!"""
+        # get cosmology instance from test
+        cls.setup_class(cls)
+        inst = cls()
+        cosmo = inst.cosmo.__wrapped__(inst, inst.cosmo_cls.__wrapped__(inst))
+
+        results = defaultdict(dict)
+
+        # zs
+        results["zs"] = zs
+
+        return cosmo, results
 
     # ===============================================================
     # Method & Attribute Tests

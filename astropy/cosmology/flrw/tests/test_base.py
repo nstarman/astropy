@@ -484,6 +484,20 @@ class TestFLRW(CosmologyTest,
         return LambdaCDM(70, 0.4, 0.8)
 
     # ===============================================================
+    # Test Result Generation
+
+    @classmethod
+    def generate_test_results(cls, zs):
+        """TODO!"""
+        cosmo, results = super().generate_test_results(zs)
+
+        # w
+        for i, z in enumerate(zs):
+            results["w"][i] = cosmo.w(z)
+
+        return cosmo, results
+
+    # ===============================================================
     # Method & Attribute Tests
 
     def test_init(self, cosmo_cls):
