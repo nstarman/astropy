@@ -17,7 +17,6 @@ import astropy.units as u
 from astropy.cosmology import Cosmology
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
 from astropy.cosmology.parameter import Parameter, _validate_to_float, _validate_with_unit
-from astropy.utils.exceptions import AstropyDeprecationWarning
 
 ##############################################################################
 # TESTS
@@ -68,27 +67,19 @@ class ParameterTestMixin:
         assert parameter.fvalidate is _validate_with_unit
         assert parameter.unit is None
         assert parameter.equivalencies == []
+        assert parameter.format_spec == ""
         assert parameter.derived is False
         assert parameter.name is None
 
         # setting all kwargs
-        parameter = Parameter(fvalidate="float", doc="DOCSTRING", unit="km",
-                              equivalencies=[u.mass_energy()], derived=True)
+        parameter = Parameter(fvalidate="float", doc="DOCSTRING",
+                              unit="km", equivalencies=[u.mass_energy()],
+                              fmt=".4f", derived=True)
         assert parameter.fvalidate is _validate_to_float
         assert parameter.unit is u.km
         assert parameter.equivalencies == [u.mass_energy()]
+        assert parameter.format_spec == ".4f"
         assert parameter.derived is True
-
-    def test_Parameter_init_deprecated_fmt(self):
-        """Test that passing the argument ``fmt`` is deprecated."""
-        with pytest.warns(AstropyDeprecationWarning):
-            parameter = Parameter(fmt=".4f")
-
-        assert parameter._format_spec == ".4f"
-
-        # Test that it appears in initializing arguments
-        init_args = parameter._get_init_arguments()
-        assert init_args["fmt"] == ".4f"
 
     def test_Parameter_instance_attributes(self, all_parameter):
         """Test :class:`astropy.cosmology.Parameter` attributes from init."""
@@ -100,8 +91,8 @@ class ParameterTestMixin:
         # Parameter
         assert hasattr(all_parameter, "_unit")
         assert hasattr(all_parameter, "_equivalencies")
+        assert hasattr(all_parameter, "_fmt")
         assert hasattr(all_parameter, "_derived")
-        assert hasattr(all_parameter, "_format_spec")
 
         # __set_name__
         assert hasattr(all_parameter, "_attr_name")
@@ -132,11 +123,9 @@ class ParameterTestMixin:
 
     def test_Parameter_format_spec(self, all_parameter):
         """Test :attr:`astropy.cosmology.Parameter.format_spec`."""
-        with pytest.warns(AstropyDeprecationWarning):
-            fmt = all_parameter.format_spec
-
-        assert isinstance(fmt, str)
-        assert fmt is all_parameter._format_spec
+        assert hasattr(all_parameter, "format_spec")
+        assert isinstance(all_parameter.format_spec, str)
+        assert all_parameter.format_spec is all_parameter._fmt
 
     def test_Parameter_derived(self, cosmo_cls, all_parameter):
         """Test :attr:`astropy.cosmology.Parameter.derived`."""
@@ -204,8 +193,7 @@ class ParameterTestMixin:
         class ExampleBase(cosmo_cls):
             param = Parameter()
 
-        class Example(ExampleBase):
-            pass
+        class Example(ExampleBase): pass
 
         assert Example.param is ExampleBase.param
         assert Example.__parameters__ == ExampleBase.__parameters__
@@ -235,9 +223,8 @@ class ParameterTestMixin:
             def __init__(self, param, *, name=None, meta=None):
                 self.param = param
 
-            @property
-            def is_flat(self):
-                return super().is_flat()
+            def is_close_to_flat(self, tolerance=...):
+                return super().is_close_to_flat(tolerance=tolerance)
 
         assert Example(1).param == 1 * u.eV
         assert Example(1 * u.eV).param == 1 * u.eV
@@ -262,9 +249,8 @@ class TestParameter(ParameterTestMixin):
             def __init__(self, param=15):
                 self.param = param
 
-            @property
-            def is_flat(self):
-                return super().is_flat()
+            def is_close_to_flat(self, tolerance=...):
+                return super().is_close_to_flat(tolerance=tolerance)
 
         # with validator
         class Example2(Example1):
@@ -309,8 +295,8 @@ class TestParameter(ParameterTestMixin):
         # custom from init
         assert param._unit == u.m
         assert param._equivalencies == u.mass_energy()
-        assert param._format_spec == ""
-        assert param._derived == np.False_
+        assert param._fmt == ""
+        assert param._derived == False
 
         # custom from set_name
         assert param._attr_name == "param"
@@ -345,8 +331,7 @@ class TestParameter(ParameterTestMixin):
         """Test :attr:`astropy.cosmology.Parameter.format_spec`."""
         super().test_Parameter_format_spec(param)
 
-        with pytest.warns(AstropyDeprecationWarning):
-            assert param.format_spec == ""
+        assert param.format_spec == ""
 
     def test_Parameter_derived(self, cosmo_cls, param):
         """Test :attr:`astropy.cosmology.Parameter.derived`."""
@@ -401,18 +386,15 @@ class TestParameter(ParameterTestMixin):
             param.__class__.register_validator("default", None)
 
         # validator not None
-        def notnonefunc(x):
-            return x
-
         try:
-            validator = param.__class__.register_validator("newvalidator", notnonefunc)
-            assert validator is notnonefunc
+            func = lambda x: x
+            validator = param.__class__.register_validator("newvalidator", func)
+            assert validator is func
         finally:
             param.__class__._registry_validators.pop("newvalidator", None)
 
         # used as decorator
         try:
-
             @param.__class__.register_validator("newvalidator")
             def func(cosmology, param, value):
                 return value
@@ -466,7 +448,7 @@ class TestParameter(ParameterTestMixin):
 
         assert "Parameter(" in r
         for subs in ("derived=False", 'unit=Unit("m")', 'equivalencies=[(Unit("kg"), Unit("J")',
-                     "doc='Description of example parameter.'"):
+                     "fmt=''", "doc='Description of example parameter.'"):
             assert subs in r, subs
 
         # `fvalidate` is a little tricker b/c one of them is custom!
@@ -496,8 +478,7 @@ class TestParameter(ParameterTestMixin):
 
             param = Parameter(doc="example parameter")
 
-        class Example(ExampleBase):
-            pass
+        class Example(ExampleBase): pass
 
         assert Example.param is ExampleBase.param
 
@@ -505,8 +486,7 @@ class TestParameter(ParameterTestMixin):
         """Cosmology reinitializes all descriptors when a subclass is defined."""
 
         # define subclass to show param is same
-        class Example(cosmo_cls):
-            pass
+        class Example(cosmo_cls): pass
 
         assert Example.param is cosmo_cls.param
 

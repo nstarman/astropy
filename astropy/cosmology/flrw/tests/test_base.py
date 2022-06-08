@@ -17,10 +17,10 @@ import astropy.constants as const
 # LOCAL
 import astropy.units as u
 from astropy.cosmology import FLRW, FlatLambdaCDM, LambdaCDM, Planck18
+from astropy.cosmology.conftest import get_redshift_methods
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
-from astropy.cosmology.flrw.base import _a_B_c2, _critdens_const, _H0units_to_invs, quad
+from astropy.cosmology.flrw.base import H0units_to_invs, a_B_c2, critdens_const, quad
 from astropy.cosmology.parameter import Parameter
-from astropy.cosmology.tests.helper import get_redshift_methods
 from astropy.cosmology.tests.test_core import CosmologySubclassTest as CosmologyTest
 from astropy.cosmology.tests.test_core import (
     FlatCosmologyMixinTest, ParameterTestMixin, invalid_zs, valid_zs)
@@ -288,6 +288,7 @@ class Parameterm_nuTestMixin(ParameterTestMixin):
         assert "Mass of neutrino species" in cosmo_cls.m_nu.__doc__
         assert cosmo_cls.m_nu.unit == u.eV
         assert cosmo_cls.m_nu.equivalencies == u.mass_energy()
+        assert cosmo_cls.m_nu.format_spec == ""
 
         # on the instance
         # assert cosmo.m_nu is cosmo._m_nu
@@ -509,6 +510,44 @@ class TestFLRW(CosmologyTest,
             assert u.allclose(cosmo.Onu(1.5), [0, 0, 0, 0])
             assert u.allclose(cosmo.Onu([0, 1, 2, 3]), [0, 0, 0, 0])
 
+    def test_is_close_to_flat(self, cosmo_cls, cosmo):
+        """
+        Test method ``is_close_to_flat``.
+        Overridden in FlatCosmologyMixinTest.
+        """
+        # Exact equality
+        isflat = cosmo.is_close_to_flat(tolerance=None)
+        assert isinstance(isflat, bool)
+        assert isflat is bool((cosmo.Ok0 == 0.0) and (cosmo.Otot0 == 1.0))
+
+        # For the following tests we need a close-to-flat cosmology
+        if isflat:
+            flatcosmo = cosmo
+        else:
+            ba = self.cls._init_signature.bind(*self.cls_args, **self.cls_kwargs)
+            ba.apply_defaults()
+
+            ba.arguments["Ode0"] = 1.0 - (cosmo.Om0 + cosmo.Ogamma0 + cosmo.Onu0 + 0.0)
+            flatcosmo = cosmo_cls(*ba.args, **ba.kwargs)
+
+            assert flatcosmo.is_close_to_flat(1e-17)
+
+        # To within parameter variance
+        newcosmo = flatcosmo.clone(Om0=cosmo.Om0 + 1e-30)
+        assert newcosmo.is_close_to_flat(tolerance=...)
+
+        # Not close for dtype
+        newcosmo = flatcosmo.clone(Ode0=cosmo.Ode0 + 1e-12)
+        assert not newcosmo.is_close_to_flat(tolerance=...)
+
+        # To within specified variance
+        assert newcosmo.is_close_to_flat(tolerance=1e-3)
+        # Note the bad tolerance, b/c Ok0 is VERY sensitive
+
+        # The variance can also be a dictionary
+        assert not newcosmo.is_close_to_flat(tolerance=dict(Ode0=1e-3))
+        assert newcosmo.is_close_to_flat(tolerance=dict(Ok0=1e-3))
+
     # ---------------------------------------------------------------
     # Properties
 
@@ -609,7 +648,7 @@ class TestFLRW(CosmologyTest,
         assert cosmo.critical_density0 is cosmo._critical_density0
         assert cosmo.critical_density0.unit == u.g / u.cm ** 3
 
-        cd0value = _critdens_const * (cosmo.H0.value * _H0units_to_invs) ** 2
+        cd0value = critdens_const * (cosmo.H0.value * H0units_to_invs) ** 2
         assert cosmo.critical_density0.value == cd0value
 
     def test_Ogamma0(self, cosmo_cls, cosmo):
@@ -621,7 +660,7 @@ class TestFLRW(CosmologyTest,
         # on the instance
         assert cosmo.Ogamma0 is cosmo._Ogamma0
         # Ogamma cor \propto T^4/rhocrit
-        expect = _a_B_c2 * cosmo.Tcmb0.value ** 4 / cosmo.critical_density0.value
+        expect = a_B_c2 * cosmo.Tcmb0.value ** 4 / cosmo.critical_density0.value
         assert np.allclose(cosmo.Ogamma0, expect)
         # check absolute equality to 0 if Tcmb0 is 0
         if cosmo.Tcmb0 == 0:
@@ -692,10 +731,10 @@ class TestFLRW(CosmologyTest,
         # don't change any values
         kwargs = cosmo._init_arguments.copy()
         kwargs.pop("name", None)  # make sure not setting name
-        kwargs.pop("meta", None)  # make sure not setting name
         c = cosmo.clone(**kwargs)
         assert c.__class__ == cosmo.__class__
-        assert c == cosmo
+        assert c.name == cosmo.name + " (modified)"
+        assert c.is_equivalent(cosmo)
 
         # change ``H0``
         # Note that H0 affects Ode0 because it changes Ogamma0
@@ -760,7 +799,7 @@ class FLRWSubclassTest(TestFLRW):
     # ===============================================================
     # Method & Attribute Tests
 
-    _FLRW_redshift_methods = get_redshift_methods(FLRW, include_private=True, include_z2=False)
+    _FLRW_redshift_methods = get_redshift_methods(FLRW, allow_private=True, allow_z2=False)
 
     @pytest.mark.skipif(not HAS_SCIPY, reason="scipy is not installed")
     @pytest.mark.parametrize("z, exc", invalid_zs)
@@ -838,6 +877,16 @@ class ParameterFlatOde0TestMixin(ParameterOde0TestMixin):
         # Ode0 is not in the signature
         with pytest.raises(TypeError, match="Ode0"):
             cosmo_cls(*ba.args, **ba.kwargs, Ode0=1)
+
+    def test_is_close_Ode0_also_changes(self, cosmo):
+        """Test :meth:`astropy.cosmology.FlatFLRWMixin.is_close` Ode0 weirdness."""
+        newcosmo = cosmo.clone(Om0=cosmo.Om0 + 1e-12)
+        assert not newcosmo.is_close(cosmo, tolerance=...)  # not close for dtype
+        assert newcosmo.is_close(cosmo, tolerance=1e-10)  # can be made "close"
+
+        # Watch out, because some parameters can influence each other!
+        assert not newcosmo.is_close(cosmo, tolerance=dict(Om0=1e-10))
+        assert newcosmo.is_close(cosmo, tolerance=dict(Om0=1e-10, Ode0=1e-10))
 
 
 class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
@@ -918,25 +967,6 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
 
     # ---------------------------------------------------------------
 
-    def test_clone_to_nonflat_change_param(self, cosmo):
-        """Test method ``.clone()`` changing a(many) Parameter(s)."""
-        super().test_clone_to_nonflat_change_param(cosmo)
-
-        # change Ode0, without non-flat
-        with pytest.raises(TypeError):
-            cosmo.clone(Ode0=1)
-
-        # change to non-flat
-        nc = cosmo.clone(to_nonflat=True, Ode0=cosmo.Ode0)
-        assert isinstance(nc, cosmo._nonflat_cls_)
-        assert nc == cosmo.nonflat
-
-        nc = cosmo.clone(to_nonflat=True, Ode0=1)
-        assert nc.Ode0 == 1.0
-        assert nc.name == cosmo.name + " (modified)"
-
-    # ---------------------------------------------------------------
-
     def test_is_equivalent(self, cosmo, nonflatcosmo):
         """Test :meth:`astropy.cosmology.FLRW.is_equivalent`."""
         super().test_is_equivalent(cosmo)  # pass to TestFLRW
@@ -946,7 +976,7 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
         assert not nonflatcosmo.is_equivalent(cosmo)
 
         # non-flat version of class
-        nonflat_cosmo_cls = cosmo._nonflat_cls_
+        nonflat_cosmo_cls = cosmo.__class__.mro()[3]
         # keys check in `test_is_equivalent_nonflat_class_different_params`
 
         # non-flat

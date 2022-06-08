@@ -18,6 +18,7 @@ from numpy import False_, True_, ndarray
 
 from astropy import table
 from astropy.cosmology.core import Cosmology
+from astropy.cosmology.utils import TolerancesT
 
 __all__ = []  # Nothing is scoped here
 
@@ -43,7 +44,7 @@ class _CosmologyWrapper:
     This should never be exposed to the user.
     """
 
-    __slots__ = ("wrapped", )
+    __slots__ = ("wrapped",)
     # Use less memory and speed up initilization.
 
     _cantbroadcast: Tuple[type, ...] = (table.Row, table.Table)
@@ -66,11 +67,12 @@ def _wrap_to_ufunc(nin: int, nout: int) -> Callable[[_CompFnT], np.ufunc]:
     def wrapper(pyfunc: _CompFnT) -> np.ufunc:
         ufunc = np.frompyfunc(pyfunc, 2, 1)
         return ufunc
+
     return wrapper
 
 
 @_wrap_to_ufunc(2, 1)
-def _parse_format(cosmo: Any, format: _FormatType, /,) -> Cosmology:
+def _parse_format(cosmo: Any, format: _FormatType, /) -> Cosmology:
     """Parse Cosmology-like input into Cosmologies, given a format hint.
 
     Parameters
@@ -104,12 +106,16 @@ def _parse_format(cosmo: Any, format: _FormatType, /,) -> Cosmology:
     # Shortcut if already a cosmology
     if isinstance(cosmo, Cosmology):
         if format not in _COSMO_AOK:
-            allowed = '/'.join(map(str, _COSMO_AOK))
-            raise ValueError(f"for parsing a Cosmology, 'format' must be {allowed}, not {format}")
+            allowed = "/".join(map(str, _COSMO_AOK))
+            raise ValueError(
+                f"for parsing a Cosmology, 'format' must be {allowed}, not {format}"
+            )
         return cosmo
     # Convert, if allowed.
     elif format == False_:  # catches False and False_
-        raise TypeError(f"if 'format' is False, arguments must be a Cosmology, not {cosmo}")
+        raise TypeError(
+            f"if 'format' is False, arguments must be a Cosmology, not {cosmo}"
+        )
     else:
         format = None if format == True_ else format  # str->str, None/True/True_->None
         out = Cosmology.from_format(cosmo, format=format)  # this can error!
@@ -152,7 +158,9 @@ def _parse_formats(*cosmos: object, format: _FormatsT) -> ndarray:
     # astropy.row cannot be used in an array, even if dtype=object
     # and will raise a segfault when used in a ufunc.
     towrap = (isinstance(cosmo, _CosmologyWrapper._cantbroadcast) for cosmo in cosmos)
-    wcosmos = [c if not wrap else _CosmologyWrapper(c) for c, wrap in zip(cosmos, towrap)]
+    wcosmos = [
+        c if not wrap else _CosmologyWrapper(c) for c, wrap in zip(cosmos, towrap)
+    ]
 
     return _parse_format(wcosmos, formats)
 
@@ -190,8 +198,10 @@ def _comparison_decorator(pyfunc: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(pyfunc)
     def wrapper(*cosmos: Any, format: _FormatsT = False, **kwargs: Any) -> bool:
         if len(cosmos) > nin:
-            raise TypeError(f"{wrapper.__wrapped__.__name__} takes {nin} positional"
-                            f" arguments but {len(cosmos)} were given")
+            raise TypeError(
+                f"{wrapper.__wrapped__.__name__} takes {nin} positional"
+                f" arguments but {len(cosmos)} were given"
+            )
         # Parse cosmologies to format. Only do specified number.
         cosmos = _parse_formats(*cosmos, format=format)
         # Evaluate pyfunc, erroring if didn't match specified number.
@@ -207,7 +217,168 @@ def _comparison_decorator(pyfunc: Callable[..., Any]) -> Callable[..., Any]:
 
 
 @_comparison_decorator
-def cosmology_equal(cosmo1: Any, cosmo2: Any, /, *, allow_equivalent: bool=False) -> bool:
+def cosmology_close(
+    cosmo1: Any, cosmo2: Any,
+    /,
+    *,
+    tolerance: TolerancesT = "dtype",
+    allow_equivalent: bool = False,
+) -> bool:
+    r"""Check closeness between two |Cosmology| instances.
+
+    In cosmology, what does "close" mean?
+    Different cosmological properties are differently sensitive to
+    different parameter values. In short, there's not really a good
+    "distance" metric in the space of cosmological parameters. Perhaps you
+    mean that the scale parameters evolve similarly. Or maybe you don't.
+    This method leaves this definition to the user by providing a tolerance
+    parameter which sets how close each cosmology parameter must be.
+    If not specified, this method defaults to the ``numpy.dtype``
+    resolution for each parameter.
+
+    Two cosmologies may be close even if not the same class, but only
+    if they are the flat and non-flat versions of the same class.
+    For example, an instance of ``LambdaCDM`` might have :math:`\Omega_0=1`
+    and :math:`\Omega_k=0` and therefore be flat, like ``FlatLambdaCDM``.
+
+    In future the notion of "closeness" might be extended so that any two
+    cosmologies may be compared, regardless of their class. But for now,
+    two cosmologies must be either the same class or of the flat-non-flat
+    pair.
+
+    .. versionadded:: 5.2
+
+    Parameters
+    ----------
+    cosmo1, cosmo2 : |Cosmology|-like
+        The objects to compare. Must be convertible to |Cosmology|, as specified
+        by ``format``.
+
+    tolerance : None or 'dtype' or Number or dict[str, number], optional keyword-only
+        The tolerance for each parameter to be considered equivalent.
+        If ``'dytpe'`` (default) the parameters can match to each
+        parameter's precision (set by the dtype).
+        If `None` the parameters must be equal.
+        If `numbers.Number` this is the tolerance for all parameters.
+        If `dict` each parameter's tolerance can be specified by key,
+        defaulting to ``'dytpe'`` for missing keys.
+
+    format : bool or None or str or tuple thereof, optional keyword-only
+        Whether to allow the arguments to be converted to a |Cosmology|. This
+        allows, e.g. a |Table| to be given instead a |Cosmology|. `False`
+        (default) will not allow conversion. `True` or `None` will, and will use
+        the auto-identification to try to infer the correct format. A `str` is
+        assumed to be the correct format to use when converting. Note ``format``
+        is broadcast as an object array to match the shape of ``cosmos`` so
+        ``format`` cannot determine the output shape.
+
+    allow_equivalent : bool, optional keyword-only
+        Whether to allow cosmologies to be close even if not of the same class.
+        For example, an instance of |LambdaCDM| might have :math:`\Omega_0=1`
+        and :math:`\Omega_k=0` and therefore be flat, like |FlatLambdaCDM|.
+
+    Returns
+    -------
+    bool
+        `True` if cosmologies are close, `False` otherwise.
+
+    Examples
+    --------
+    Assuming the following imports
+
+        >>> import astropy.units as u
+        >>> from astropy.cosmology import FlatLambdaCDM
+
+    Two cosmologies are close if their parameters are close.
+    The simplest case is that a cosmology is close to itself.
+
+        >>> cosmo1 = FlatLambdaCDM(70 * (u.km/u.s/u.Mpc), 0.3)
+        >>> cosmology_close(cosmo1, cosmo1)
+        True
+
+    In this case the tolerance may be set to exact equality, from it's
+    default setting of `numpy.dtype` precision. When the tolerance is set to
+    `None`, this is the same as `cosmology_equal`.
+
+        >>> cosmology_close(cosmo1, cosmo1, tolerance=None)
+        True
+
+    Two cosmologies may be close even if they are not of the same class.
+    In this examples the ``LambdaCDM`` has ``Ode0`` set to the same value
+    calculated in ``FlatLambdaCDM``.
+
+        >>> from astropy.cosmology import LambdaCDM
+        >>> cosmo2 = LambdaCDM(70 * (u.km/u.s/u.Mpc), 0.3, 0.7)
+        >>> cosmology_close(cosmo1, cosmo2, tolerance=None, allow_equivalent=True)
+        True
+
+    While in this example, ``Ode0`` is quite different, so the cosmologies
+    are not close.
+
+        >>> cosmo3 = FlatLambdaCDM(70 * (u.km/u.s/u.Mpc), 0.3, Tcmb0=3 * u.K)
+        >>> cosmology_close(cosmo2, cosmo3, allow_equivalent=True)
+        False
+
+    The tolerance argument can be used to specify how close two
+    parameters must be. All non-specified parameters must be close to
+    within that parameter's `numpy.dtype` precision.
+
+        >>> cosmo4 = cosmo2.clone(Ode0 = cosmo2.Ode0 + 1e-14)
+        >>> cosmology_close(cosmo4, cosmo2)
+        False
+
+        >>> cosmology_close(cosmo4, cosmo2, tolerance=dict(Ode0=1e-10))
+        True
+
+    Also, using the keyword argument, the notion of closeness is extended
+    to any Python object that can be converted to a |Cosmology|.
+
+        >>> from astropy.cosmology import Planck18
+        >>> tbl = Planck18.to_format("astropy.table")
+        >>> cosmology_close(Planck18, tbl, format=True)
+        True
+
+    The list of valid formats, e.g. the |Table| in this example, may be
+    checked with ``Cosmology.from_format.list_formats()``.
+
+    As can be seen in the list of formats, not all formats can be
+    auto-identified by ``Cosmology.from_format.registry``. Objects of
+    these kinds can still be checked for equivalence, but the correct
+    format string must be used.
+
+        >>> tbl = Planck18.to_format("yaml")
+        >>> cosmology_close(Planck18, tbl, format=(None, "yaml"))
+        True
+    """
+    # Note on checking parameter equivalence:
+    #
+    # The options are: 1) same class & parameters; 2) same class, different
+    # parameters; 3) different classes, equivalent parameters; 4) different
+    # classes, different parameters. (1) & (3) => True, (2) & (4) => False.
+
+    bln = (
+        cosmo1.__equiv__(cosmo2, tolerance=tolerance)
+        if allow_equivalent
+        else cosmo1.__eq__(cosmo2, tolerance=tolerance)
+    )
+    if bln is NotImplemented:  # that failed, try from 'other'
+        bln = (
+            cosmo2.__equiv__(cosmo1, tolerance=tolerance)
+            if allow_equivalent
+            else cosmo2.__eq__(cosmo1, tolerance=tolerance)
+        )
+
+    bln = False if bln is NotImplemented else bln
+
+    # TODO! include equality check of metadata
+
+    return bln
+
+
+@_comparison_decorator
+def cosmology_equal(
+    cosmo1: Any, cosmo2: Any, /, *, allow_equivalent: bool = False
+) -> bool:
     r"""Return element-wise equality check on the cosmologies.
 
     .. note::
@@ -301,28 +472,15 @@ def cosmology_equal(cosmo1: Any, cosmo2: Any, /, *, allow_equivalent: bool=False
         >>> cosmology_equal(mapping, yml, format=[True, "yaml"])
         True
     """
-    # Check parameter equality
-    if not allow_equivalent:
-        eq = (cosmo1 == cosmo2)
-
-    else:
-        # Check parameter equivalence
-        # The options are: 1) same class & parameters; 2) same class, different
-        # parameters; 3) different classes, equivalent parameters; 4) different
-        # classes, different parameters. (1) & (3) => True, (2) & (4) => False.
-        eq = cosmo1.__equiv__(cosmo2)
-        if eq is NotImplemented:
-            eq = cosmo2.__equiv__(cosmo1)  # that failed, try from 'other'
-
-        eq = False if eq is NotImplemented else eq
-
-    # TODO! include equality check of metadata
-
-    return eq
+    # TODO! it might eventually be worth the speed boost to implement some of
+    #       the internals of cosmology_close here, but for now it's a hassle.
+    return cosmology_close(cosmo1, cosmo2, tolerance=None, allow_equivalent=allow_equivalent)
 
 
 @_comparison_decorator
-def _cosmology_not_equal(cosmo1: Any, cosmo2: Any, /, *, allow_equivalent: bool=False) -> bool:
+def _cosmology_not_equal(
+    cosmo1: Any, cosmo2: Any, /, *, allow_equivalent: bool = False
+) -> bool:
     r"""Return element-wise cosmology non-equality check.
 
     .. note::

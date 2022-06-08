@@ -14,6 +14,7 @@ from astropy.utils.metadata import MetaData
 
 from .connect import CosmologyFromFormat, CosmologyRead, CosmologyToFormat, CosmologyWrite
 from .parameter import Parameter
+from .utils import TolerancesT, _parameters_close
 
 if TYPE_CHECKING:  # pragma: no cover
     from astropy.cosmology.funcs.comparison import _FormatType
@@ -138,14 +139,31 @@ class Cosmology(metaclass=abc.ABCMeta):
         """The name of the Cosmology instance."""
         return self._name
 
-    @property
     @abc.abstractmethod
-    def is_flat(self):
-        """
-        Return bool; `True` if the cosmology is flat.
+    def is_close_to_flat(self, *, tolerance: TolerancesT="dtype") -> bool:
+        """Return bool; `True` if the cosmology is close to flat.
+
         This is abstract and must be defined in subclasses.
+
+        .. versionadded:: 5.2
+
+        Parameters
+        ----------
+        tolerance : None or 'dtype' or Number or dict[str, number], optional
+            The tolerance for each parameter to be considered equivalent.
+            If ``'dtype'`` (default) the parameters can match to each
+            parameter's precision (set by the `numpy.dtype`).
+            If `None` the parameters must be equal.
+            If `numbers.Number` this is the tolerance for all parameters.
+            If `dict` each parameter's tolerance can be specified by key,
+            defaulting to ``'dtype'`` for missing keys.
         """
-        raise NotImplementedError("is_flat is not implemented")
+        raise NotImplementedError("'is_close_to_flat' is not implemented")
+
+    @property
+    def is_flat(self) -> bool:
+        """Return boolean; `True` if the cosmology is flat."""
+        return self.is_close_to_flat(tolerance=None)
 
     def clone(self, *, meta=None, **kwargs):
         """Returns a copy of this object with updated parameters, as specified.
@@ -190,8 +208,8 @@ class Cosmology(metaclass=abc.ABCMeta):
 
         # There are changed parameter or metadata values.
         # The name needs to be changed accordingly, if it wasn't already.
-        _modname = self.name + " (modified)"
-        kwargs.setdefault("name", (_modname if self.name is not None else None))
+        _modname = self.name + " (modified)" if self.name is not None else None
+        kwargs.setdefault("name", _modname)
 
         # mix new meta into existing, preferring the former.
         meta = meta if meta is not None else {}
@@ -302,13 +320,26 @@ class Cosmology(metaclass=abc.ABCMeta):
             # raising an Exception.
             return False
 
-    def __equiv__(self, other: Any, /) -> bool:
+    def __equiv__(self, other: Any, /, *, tolerance: TolerancesT="dtype") -> bool:
         """Cosmology equivalence. Use ``.is_equivalent()`` for actual check!
+
+        .. versionadded:: 5.0
 
         Parameters
         ----------
         other : `~astropy.cosmology.Cosmology` subclass instance, positional-only
             The object in which to compare.
+
+        tolerance : None or 'dtype' or Number or dict[str, number], optional keyword-only
+            The tolerance for each parameter to be considered equivalent.
+            If ``'dtype'`` (default) the parameters can match to each
+            parameter's precision (set by the dtype).
+            If `None` the parameters must be equal.
+            If `numbers.Number` this is the tolerance for all parameters.
+            If `dict` each parameter's tolerance can be specified by key,
+            defaulting to ``'dtype'`` for missing keys.
+
+            .. versionadded:: 5.2
 
         Returns
         -------
@@ -323,12 +354,16 @@ class Cosmology(metaclass=abc.ABCMeta):
 
         # Check all parameters in 'other' match those in 'self' and 'other' has
         # no extra parameters (latter part should never happen b/c same class)
-        params_eq = (set(self.__all_parameters__) == set(other.__all_parameters__)
-                     and all(np.all(getattr(self, k) == getattr(other, k))
-                             for k in self.__all_parameters__))
+        params_eq = (
+            set(self.__all_parameters__) == set(other.__all_parameters__)
+            and all(
+                _parameters_close(getattr(self, k), getattr(other, k),
+                                  tolerance=tolerance, name=k)
+                for k in self.__all_parameters__)
+        )
         return params_eq
 
-    def __eq__(self, other: Any, /) -> bool:
+    def __eq__(self, other: Any, /, *, tolerance: TolerancesT=None) -> bool:
         """Check equality between Cosmologies.
 
         Checks the Parameters and immutable fields (i.e. not "meta").
@@ -337,6 +372,17 @@ class Cosmology(metaclass=abc.ABCMeta):
         ----------
         other : `~astropy.cosmology.Cosmology` subclass instance, positional-only
             The object in which to compare.
+
+        tolerance : None or 'dtype' or Number or dict[str, number], optional keyword-only
+            The tolerance for each parameter to be considered equivalent.
+            If ``'dtype'`` (default) the parameters can match to each
+            parameter's precision (set by the dtype).
+            If `None` the parameters must be equal.
+            If `numbers.Number` this is the tolerance for all parameters.
+            If `dict` each parameter's tolerance can be specified by key,
+            defaulting to ``'dtype'`` for missing keys.
+
+            .. versionadded:: 5.2
 
         Returns
         -------
@@ -353,8 +399,10 @@ class Cosmology(metaclass=abc.ABCMeta):
             # has no extra parameters (latter part should never happen b/c same
             # class) TODO! element-wise when there are array cosmologies
             and set(self.__all_parameters__) == set(other.__all_parameters__)
-            and all(np.all(getattr(self, k) == getattr(other, k))
-                    for k in self.__all_parameters__)
+            and all(
+                _parameters_close(getattr(self, k), getattr(other, k),
+                                  tolerance=tolerance, name=k)
+                for k in self.__all_parameters__)
         )
 
         return eq
@@ -461,9 +509,16 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
 
     # ===============================================================
 
+    def is_close_to_flat(self, tolerance: TolerancesT="dtype") -> bool:
+        """Return `True` since the cosmology is guaranteed to be flat.
+
+        .. versionadded:: 5.2
+        """
+        return True
+
     @property
-    def is_flat(self):
-        """Return `True`, the cosmology is flat."""
+    def is_flat(self) -> bool:
+        """Return `True` since the cosmology is guaranteed to be flat."""
         return True
 
     @abc.abstractmethod
@@ -524,7 +579,7 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
 
     # ===============================================================
 
-    def __equiv__(self, other):
+    def __equiv__(self, other: Any, /, *, tolerance: TolerancesT="dtype") -> bool:
         """flat-|Cosmology| equivalence.
 
         Use `astropy.cosmology.funcs.cosmology_equal` with
@@ -534,6 +589,16 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
         ----------
         other : `~astropy.cosmology.Cosmology` subclass instance
             The object to which to compare for equivalence.
+        tolerance : None or 'dtype' or Number or dict[str, number], optional
+            The tolerance for each parameter to be considered equivalent.
+            If ``'dtype'`` (default) the parameters can match to each
+            parameter's precision (set by the dtype).
+            If `None` the parameters must be equal.
+            If `numbers.Number` this is the tolerance for all parameters.
+            If `dict` each parameter's tolerance can be specified by key,
+            defaulting to ``'dtype'`` for missing keys.
+
+            .. versionadded:: 5.2
 
         Returns
         -------
@@ -546,7 +611,7 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
             `NotImplemented` otherwise.
         """
         if isinstance(other, FlatCosmologyMixin):
-            return super().__equiv__(other)  # super gets from Cosmology
+            return super().__equiv__(other, tolerance=tolerance)  # super gets from Cosmology
 
         # check if `other` is the non-flat version of this class this makes the
         # assumption that any further subclass of a flat cosmo keeps the same
@@ -557,12 +622,12 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
         # Check if have equivalent parameters and all parameters in `other`
         # match those in `self`` and `other`` has no extra parameters.
         params_eq = (
-            set(self.__all_parameters__) == set(other.__all_parameters__)  # no extra
-            # equal
-            and all(np.all(getattr(self, k) == getattr(other, k))
+            set(self.__all_parameters__) == set(other.__all_parameters__)
+            and all(_parameters_close(getattr(self, k), getattr(other, k),
+                                      tolerance=tolerance, name=k)
                     for k in self.__parameters__)
             # flatness check
-            and other.is_flat
+            and other.is_close_to_flat(tolerance=tolerance)
         )
 
         return params_eq

@@ -10,7 +10,7 @@ import pytest
 from astropy.cosmology import Cosmology, FlatCosmologyMixin, Planck18, cosmology_equal
 from astropy.cosmology.connect import convert_registry
 from astropy.cosmology.funcs.comparison import (
-    _cosmology_not_equal, _CosmologyWrapper, _parse_format, _parse_formats)
+    _cosmology_not_equal, _CosmologyWrapper, _parse_format, _parse_formats, cosmology_close)
 from astropy.cosmology.io.tests.base import ToFromTestMixinBase
 
 
@@ -57,9 +57,13 @@ class ComparisonFunctionTestBase(ToFromTestMixinBase):
         return to_format(format)
 
     @pytest.fixture(scope="class")
-    def pert_cosmo(self, cosmo):
+    def pert_cosmo_param_name(self, cosmo):
+        return cosmo.__parameters__[0]
+
+    @pytest.fixture(scope="class")
+    def pert_cosmo(self, cosmo, pert_cosmo_param_name):
         # change one parameter
-        p = cosmo.__parameters__[0]
+        p = pert_cosmo_param_name
         v = getattr(cosmo, p)
         cosmo2 = cosmo.clone(**{p: v * 1.0001 if v != 0 else 0.001 * getattr(v, "unit", 1)})
         return cosmo2
@@ -159,6 +163,66 @@ class Test_parse_format(ComparisonFunctionTestBase):
             _parse_formats(cosmo, format=[None, None])
 
 
+class Test_cosmology_close(ComparisonFunctionTestBase):
+
+    def test_cosmology_close_too_many_cosmo(self, cosmo):
+        with pytest.raises(TypeError, match="cosmology_close takes 2 positional arguments"):
+            cosmology_close(cosmo, cosmo, cosmo)
+
+    def test_cosmology_close_simple(self, cosmo, pert_cosmo, pert_cosmo_param_name):
+        # equality
+        assert cosmology_close(cosmo, cosmo) is True
+
+        # not equal to perturbed cosmology
+        assert cosmology_close(cosmo, pert_cosmo) is False
+
+        # unless the tolerance is extended
+        p = pert_cosmo_param_name
+        tol = getattr(pert_cosmo, p) - getattr(cosmo, p)
+        assert cosmology_close(cosmo, pert_cosmo, tolerance=tol * 2) is True
+        assert cosmology_close(cosmo, pert_cosmo, tolerance={p: tol * 2}) is True
+
+    # def test_cosmology_close_tolerance(self, cosmo)
+
+    def test_cosmology_close_equivalent(self, cosmo, cosmo_eqvxflat,
+                                        pert_cosmo, pert_cosmo_eqvxflat):
+        # now need to check equivalent, but not equal, cosmologies.
+        assert cosmology_close(cosmo, cosmo_eqvxflat, allow_equivalent=True) is True
+        assert cosmology_close(cosmo, cosmo_eqvxflat, allow_equivalent=False) is False
+
+        assert cosmology_close(pert_cosmo, pert_cosmo_eqvxflat, allow_equivalent=True) is True
+        assert cosmology_close(pert_cosmo, pert_cosmo_eqvxflat, allow_equivalent=False) is False
+
+    # -----------------------
+    # format
+
+    def test_cosmology_close_format_error(self, cosmo, converted):
+        # Not converting `converted`
+        with pytest.raises(TypeError):
+            cosmology_close(cosmo, converted)
+
+        with pytest.raises(TypeError):
+            cosmology_close(cosmo, converted, format=False)
+
+    def test_cosmology_close_format_auto(self, cosmo, converted, xfail_cant_autoidentify):
+        # These tests only run if the format can autoidentify.
+        assert cosmology_close(cosmo, converted, format=None) is True
+        assert cosmology_close(cosmo, converted, format=True) is True
+
+    def test_cosmology_close_format_specify(self, cosmo, format, converted, pert_converted):
+        # equality
+        assert cosmology_close(cosmo, converted, format=[None, format]) is True
+        assert cosmology_close(converted, cosmo, format=[format, None]) is True
+
+        # non-equality
+        assert cosmology_close(cosmo, pert_converted, format=[None, format]) is False
+
+    def test_cosmology_close_equivalent_format_specify(self, format, converted, cosmo_eqvxflat):
+        # specifying the format
+        assert cosmology_close(cosmo_eqvxflat, converted, format=[None, format], allow_equivalent=True) is True
+        assert cosmology_close(converted, cosmo_eqvxflat, format=[format, None], allow_equivalent=True) is True
+
+
 class Test_cosmology_equal(ComparisonFunctionTestBase):
     """Test :func:`astropy.cosmology.comparison.cosmology_equal`"""
 
@@ -203,7 +267,7 @@ class Test_cosmology_equal(ComparisonFunctionTestBase):
         # non-equality
         assert cosmology_equal(cosmo, pert_converted, format=[None, format]) is False
 
-    def test_cosmology_equal_equivalent_format_specify(self, cosmo, format, converted, cosmo_eqvxflat):
+    def test_cosmology_equal_equivalent_format_specify(self, format, converted, cosmo_eqvxflat):
         # specifying the format
         assert cosmology_equal(cosmo_eqvxflat, converted, format=[None, format], allow_equivalent=True) is True
         assert cosmology_equal(converted, cosmo_eqvxflat, format=[format, None], allow_equivalent=True) is True
@@ -252,7 +316,7 @@ class Test_cosmology_not_equal(ComparisonFunctionTestBase):
         # equality
         assert _cosmology_not_equal(cosmo, converted, format=[None, format]) is False
 
-    def test_cosmology_not_equal_equivalent_format_specify(self, cosmo, format, converted, cosmo_eqvxflat):
+    def test_cosmology_not_equal_equivalent_format_specify(self, format, converted, cosmo_eqvxflat):
         # specifying the format
         assert _cosmology_not_equal(cosmo_eqvxflat, converted, format=[None, format], allow_equivalent=False) is True
         assert _cosmology_not_equal(cosmo_eqvxflat, converted, format=[None, format], allow_equivalent=True) is False

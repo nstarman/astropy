@@ -15,7 +15,8 @@ import astropy.constants as const
 import astropy.units as u
 from astropy.cosmology.core import Cosmology, FlatCosmologyMixin
 from astropy.cosmology.parameter import Parameter, _validate_non_negative, _validate_with_unit
-from astropy.cosmology.utils import aszarr, vectorize_redshift_method
+from astropy.cosmology.utils import (
+    TolerancesT, _parameters_close, aszarr, vectorize_redshift_method)
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 from astropy.utils.decorators import lazyproperty
 from astropy.utils.exceptions import AstropyUserWarning
@@ -266,10 +267,10 @@ class FLRW(Cosmology):
     # ---------------------------------------------------------------
     # properties
 
-    @property
-    def is_flat(self):
-        """Return bool; `True` if the cosmology is flat."""
-        return bool((self._Ok0 == 0.0) and (self.Otot0 == 1.0))
+    def is_close_to_flat(self, tolerance: TolerancesT="dtype") -> bool:
+        Ok0 = _parameters_close(self._Ok0, 0.0, tolerance=tolerance, name="Ok0")
+        Otot0 = _parameters_close(self.Otot0, 1.0, tolerance=tolerance, name="Otot0")
+        return bool(Ok0 and Otot0)
 
     @property
     def Otot0(self):
