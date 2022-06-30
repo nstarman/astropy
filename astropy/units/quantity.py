@@ -11,6 +11,7 @@ import operator
 import re
 import warnings
 from fractions import Fraction
+from typing import Any
 
 # THIRD PARTY
 import numpy as np
@@ -235,7 +236,22 @@ class QuantityInfo(QuantityInfoBase):
         return [self._parent]
 
 
-class Quantity(np.ndarray):
+class QuantityMeta(type):
+
+    _router = {}
+
+    def __call__(self, value, *args: Any, **kwds: Any) -> Any:
+
+        # Dispatch elsewhere
+        if self is Quantity:
+            for typ, cls in self._router.items():
+                if isinstance(value, typ):
+                    return cls(value, *args, **kwds)
+
+        return super().__call__(value, *args, **kwds)
+
+
+class Quantity(np.ndarray, metaclass=QuantityMeta):
     """A `~astropy.units.Quantity` represents a number with some associated unit.
 
     See also: https://docs.astropy.org/en/stable/units/quantity.html

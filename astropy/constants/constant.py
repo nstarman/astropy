@@ -7,14 +7,14 @@ import warnings
 import numpy as np
 
 from astropy.units.core import Unit, UnitsError
-from astropy.units.quantity import Quantity
+from astropy.units.quantity import Quantity, QuantityMeta
 from astropy.utils import lazyproperty
 from astropy.utils.exceptions import AstropyUserWarning
 
 __all__ = ['Constant', 'EMConstant']
 
 
-class ConstantMeta(type):
+class ConstantMeta(QuantityMeta):
     """Metaclass for `~astropy.constants.Constant`. The primary purpose of this
     is to wrap the double-underscore methods of `~astropy.units.Quantity`
     which is the superclass of `~astropy.constants.Constant`.
