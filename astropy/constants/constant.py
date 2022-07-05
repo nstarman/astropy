@@ -140,6 +140,10 @@ class Constant(Quantity, metaclass=ConstantMeta):
         inst._checked_units = False
         return inst
 
+    def __init__(cls, abbrev, name, value, unit, uncertainty,
+                 reference=None, system=None) -> None:
+        pass
+
     def __repr__(self):
         return ('<{} name={!r} value={} uncertainty={} unit={!r} '
                 'reference={!r}>'.format(self.__class__, self.name, self.value,
