@@ -124,6 +124,28 @@ class Mapping(FittableModel):
         inv._n_outputs = len(inv._outputs)
         return inv
 
+    def prepare_inputs(self, *inputs, model_set_axis=None, equivalencies=None,
+                       **kwargs):
+        """
+        This method is used in `~astropy.modeling.Model.__call__` to ensure
+        that all the inputs to the model can be broadcast into compatible
+        shapes (if one or both of them are input as arrays), particularly if
+        there are more than one parameter sets. This also makes sure that (if
+        applicable) the units of the input will be compatible with the evaluate
+        method.
+        """
+        if len(self) == 1:
+            return inputs, ([None] * self.n_outputs,)
+
+        else:  # FIXME
+            if model_set_axis is None:
+                # By default the model_set_axis for the input is assumed to be the
+                # same as that for the parameters the model was defined with
+                # TODO: Ensure that negative model_set_axis arguments are respected
+                model_set_axis = self.model_set_axis
+            params = [getattr(self, name) for name in self.param_names]
+            return self._prepare_inputs_model_set(params, inputs, model_set_axis, **kwargs)
+
 
 class Identity(Mapping):
     """

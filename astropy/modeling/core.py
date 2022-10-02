@@ -692,6 +692,10 @@ class Model(metaclass=_ModelMeta):
     _cov_matrix = None
     _stds = None
 
+    # Inputs with fixed shape that should not be broadcast
+    inputs_no_broadcast: tuple[int, ...] | None = None
+    params_no_broadcast: bool = False
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__()
 
@@ -997,7 +1001,7 @@ class Model(metaclass=_ModelMeta):
 
         return input_shape
 
-    def _validate_input_shapes(self, inputs, argnames, model_set_axis):
+    def _validate_input_shapes(self, inputs, argnames, model_set_axis, skip=()):
         """
         Perform basic validation of model inputs
             --that they are mutually broadcastable and that they have
@@ -1011,6 +1015,8 @@ class Model(metaclass=_ModelMeta):
 
         all_shapes = []
         for idx, _input in enumerate(inputs):
+            if idx in skip:
+                continue
             all_shapes.append(self._validate_input_shape(_input, idx, argnames,
                                                          model_set_axis, check_model_set_axis))
 
@@ -1023,7 +1029,7 @@ class Model(metaclass=_ModelMeta):
 
     def input_shape(self, inputs):
         """Get input shape for bounding_box evaluation"""
-        return self._validate_input_shapes(inputs, self._argnames, self.model_set_axis)
+        return self._validate_input_shapes(inputs, self._argnames, self.model_set_axis, skip=self.inputs_no_broadcast)
 
     def _generic_evaluate(self, evaluate, _inputs, fill_value, with_bbox):
         """
@@ -1861,8 +1867,14 @@ class Model(metaclass=_ModelMeta):
             return None
 
     def _prepare_inputs_single_model(self, params, inputs, **kwargs):
+        inputs_no_broadcast = self.inputs_no_broadcast or ()
+
         broadcasts = []
         for idx, _input in enumerate(inputs):
+            if idx in inputs_no_broadcast:
+                broadcasts.append(None)
+                continue
+
             input_shape = _input.shape
 
             # Ensure that array scalars are always upgrade to 1-D arrays for the
@@ -1896,6 +1908,7 @@ class Model(metaclass=_ModelMeta):
             broadcasts.append(max_broadcast)
 
         if self.n_outputs > self.n_inputs:
+            # Extend the broadcasts list to include shapes for all outputs
             extra_outputs = self.n_outputs - self.n_inputs
             if not broadcasts:
                 # If there were no inputs then the broadcasts list is empty
@@ -1925,6 +1938,10 @@ class Model(metaclass=_ModelMeta):
 
     def _prepare_inputs_model_set(self, params, inputs, model_set_axis_input,
                                   **kwargs):
+        inputs_no_broadcast = self.inputs_no_broadcast or ()
+        if inputs_no_broadcast:
+            raise Exception("TODO")
+
         reshaped = []
         pivots = []
 
@@ -2007,10 +2024,15 @@ class Model(metaclass=_ModelMeta):
             # TODO: Ensure that negative model_set_axis arguments are respected
             model_set_axis = self.model_set_axis
 
-        params = [getattr(self, name) for name in self.param_names]
-        inputs = [np.asanyarray(_input, dtype=float) for _input in inputs]
+        kwargs["inputs_no_broadcast"] = fsh = kwargs.get(
+            "inputs_no_broadcast", self.inputs_no_broadcast or []
+        )
 
-        self._validate_input_shapes(inputs, self.inputs, model_set_axis)
+        params = [getattr(self, name) for name in self.param_names]
+        inputs = [np.asanyarray(_input, dtype=float) if i not in fsh else _input
+                  for i, _input in enumerate(inputs)]
+
+        self._validate_input_shapes(inputs, self.inputs, model_set_axis, skip=fsh)
 
         inputs_map = kwargs.get('inputs_map', None)
 
@@ -2635,6 +2657,9 @@ class Model(metaclass=_ModelMeta):
             else:
                 all_shapes.append(param_shape)
 
+            if self.params_no_broadcast:
+                self._param_metrics[name]['broadcast_shape'] = False
+
         # Now check mutual broadcastability of all shapes
         try:
             check_broadcast(*all_shapes)
@@ -2674,12 +2699,13 @@ class Model(metaclass=_ModelMeta):
                 value = param.value
 
             broadcast_shape = self._param_metrics[name].get('broadcast_shape')
-            if broadcast_shape is not None:
+
+            if broadcast_shape not in (None, False):
                 value = value.reshape(broadcast_shape)
 
             shapes.append(np.shape(value))
 
-            if len(self) == 1:
+            if (len(self) == 1) and (broadcast_shape is not False):
                 # Add a single param set axis to the parameter's value (thus
                 # converting scalars to shape (1,) array values) for
                 # consistency
