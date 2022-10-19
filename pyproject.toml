@@ -44,6 +44,11 @@ archs = ["x86_64", "arm64"]
 [tool.cibuildwheel.linux]
 archs = ["auto", "aarch64"]
 
+
+[tool.codespell]
+skip = '*.hdr,*.xsd,*.sub,*.dat,./cextern,./astropy/extern'
+
+
 [tool.isort]
     extend_skip_glob = [
         "astropy/extern/*",
