@@ -46,7 +46,8 @@ archs = ["auto", "aarch64"]
 
 
 [tool.codespell]
-skip = '*.hdr,*.xsd,*.sub,*.dat,./cextern,./astropy/extern'
+skip = '*.py,*.hdr,*.xsd,*.sub,*.dat,./cextern,./astropy/extern,.tox,.hypothesis'
+ignore-words-list = 'lightyear'
 
 
 [tool.isort]

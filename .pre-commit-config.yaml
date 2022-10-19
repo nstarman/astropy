@@ -123,11 +123,9 @@ repos:
     rev: v2.2.2
     hooks:
       - id: codespell
-      - id: codespell
-        name: Codespell run in interactive mode
-        args:
-          - "--interactive --write-changes"
-        stages: [manual]
+        args: [
+          "-L lightyear,"
+        ]
 
   - repo: local
     hooks:
