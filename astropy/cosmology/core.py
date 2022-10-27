@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 import inspect
+import weakref
 from typing import TYPE_CHECKING, Any, Mapping, TypeVar
 
 import numpy as np
@@ -87,8 +88,8 @@ class Cosmology(metaclass=abc.ABCMeta):
 
     # ---------------------------------------------------------------
 
-    def __init_subclass__(cls):
-        super().__init_subclass__()
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
 
         # -------------------
         # Parameters
@@ -114,6 +115,22 @@ class Cosmology(metaclass=abc.ABCMeta):
         parameters = ordered + parameters  # place "unordered" at the end
         cls.__parameters__ = tuple(parameters)
         cls.__all_parameters__ = cls.__parameters__ + tuple(derived_parameters)
+
+        # -------------------
+        # Interpolation
+        # @Interpolated.register puts an attribute on wrapped method. The
+        # attribute should be moved to the corresponding Interpolated class and
+        # removed from the method before this class is created & instantiated.
+        from .interpolate import Interpolated
+
+        for f in (getattr(cls, n) for n in dir(cls) if not n.startswith("__")):
+            if not hasattr(f, "__interpinfo__"):
+                continue
+            # register with interpolation machinery
+            info = getattr(f, "__interpinfo__")
+            Interpolated._interp_func_info[cls.__qualname__][f.__name__] = info
+            # and remove info from here
+            del f.__interpinfo__
 
         # -------------------
         # register as a Cosmology subclass
@@ -166,8 +183,8 @@ class Cosmology(metaclass=abc.ABCMeta):
         -------
         newcosmo : `~astropy.cosmology.Cosmology` subclass instance
             A new instance of this class with updated parameters as specified.
-            If no arguments are given, then a reference to this object is
-            returned instead of copy.
+            If no modifications are requested, then a reference to this object
+            is returned instead of a copy.
 
         Examples
         --------
@@ -223,6 +240,35 @@ class Cosmology(metaclass=abc.ABCMeta):
         return kw
 
     # ---------------------------------------------------------------
+
+    def interpolate(self, zrange, **kwargs):
+        """Return an interpolated form of this cosmology.
+
+        If this is an interpolated Cosmology, returns self.
+
+        Parameters
+        ----------
+        zrange : tuple or array
+            If a tuple, must have a kwarg ``numz`` specifying
+        """
+        from .interpolate import InterpolatedCosmology
+
+        # check if already interpolated
+        if isinstance(self, InterpolatedCosmology):
+            return self
+
+        # Make interpolated Cosmology
+        # create arg/kwarg to initialize interpolated cosmology
+        ba = self._init_signature.bind_partial(**self._init_arguments)
+        # get interpolated class and create instance
+        ICosmo = InterpolatedCosmology(self.__class__)
+        icosmo = ICosmo(*ba.args, zrange=zrange, **ba.kwargs)
+        # on interpolated, store weakref to this uninterpolated instance
+        icosmo._uninterpolated_ = weakref.ref(self)
+
+        return icosmo
+
+    # -----------------------------------------------------
     # comparison methods
 
     def is_equivalent(self, other: Any, /, *, format: _FormatType = False) -> bool:
@@ -396,7 +442,7 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
     Mixin class for flat cosmologies. Do NOT instantiate directly.
     Note that all instances of ``FlatCosmologyMixin`` are flat, but not all
     flat cosmologies are instances of ``FlatCosmologyMixin``. As example,
-    ``LambdaCDM`` **may** be flat (for the a specific set of parameter values),
+    ``LambdaCDM`` **may** be flat (for a specific set of parameter values),
     but ``FlatLambdaCDM`` **will** be flat.
     """
 
@@ -567,7 +613,7 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
 
         return params_eq
 
-# -----------------------------------------------------------------------------
+##############################################################################
 
 
 def __getattr__(attr):

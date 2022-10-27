@@ -9,6 +9,7 @@ import numpy as np
 
 from astropy import stats
 from astropy import units as u
+from astropy.utils.collections import ClassWrapperMeta
 
 __all__ = ['Distribution']
 
@@ -18,7 +19,7 @@ __all__ = ['Distribution']
 SMAD_SCALE_FACTOR = 1.48260221850560203193936104071326553821563720703125
 
 
-class Distribution:
+class Distribution(metaclass=ClassWrapperMeta):
     """
     A scalar value or array values with associated uncertainty distribution.
 
@@ -36,40 +37,37 @@ class Distribution:
         sole dimension is used as the sampling axis (i.e., it is a scalar
         distribution).
     """
-    _generated_subclasses = {}
+    @classmethod
+    def _make_wrapper_subclass(cls, data_cls, base_cls):
+        # TODO: try to deal with this at the lower level.  The problem is
+        # that array2string does not allow one to override how structured
+        # arrays are typeset, leading to all samples to be shown.  It may
+        # be possible to hack oneself out by temporarily becoming a void.
+        return type(data_cls.__name__ + cls.__name__,
+                    (_DistributionRepr, data_cls, base_cls),
+                    {}, data_cls=data_cls)
 
-    def __new__(cls, samples):
-        if isinstance(samples, Distribution):
-            samples = samples.distribution
+    @classmethod
+    def _get_wrapper_subclass_instance(cls, data):
+        if isinstance(data, cls._wrapper_class_):
+            data = data.distribution
         else:
-            samples = np.asanyarray(samples, order='C')
-        if samples.shape == ():
+            data = np.asanyarray(data, order='C')
+
+        if data.shape == ():
             raise TypeError('Attempted to initialize a Distribution with a scalar')
 
         new_dtype = np.dtype({'names': ['samples'],
-                              'formats': [(samples.dtype, (samples.shape[-1],))]})
-        samples_cls = type(samples)
-        new_cls = cls._generated_subclasses.get(samples_cls)
-        if new_cls is None:
-            # Make a new class with the combined name, inserting Distribution
-            # itself below the samples class since that way Quantity methods
-            # like ".to" just work (as .view() gets intercepted).  However,
-            # repr and str are problems, so we put those on top.
-            # TODO: try to deal with this at the lower level.  The problem is
-            # that array2string does not allow one to override how structured
-            # arrays are typeset, leading to all samples to be shown.  It may
-            # be possible to hack oneself out by temporarily becoming a void.
-            new_name = samples_cls.__name__ + cls.__name__
-            new_cls = type(
-                new_name,
-                (_DistributionRepr, samples_cls, ArrayDistribution),
-                {'_samples_cls': samples_cls})
-            cls._generated_subclasses[samples_cls] = new_cls
-
-        self = samples.view(dtype=new_dtype, type=new_cls)
+                             'formats': [(data.dtype, (data.shape[-1],))]})
+        distr_cls = cls._get_wrapped_subclass(data.__class__)
+        self = data.view(dtype=new_dtype, type=distr_cls)
         # Get rid of trailing dimension of 1.
-        self.shape = samples.shape[:-1]
+        self.shape = data.shape[:-1]
         return self
+
+    @classmethod
+    def _make_wrapped__doc__(cls, data_cls):
+        return cls._wrapper_class_.__doc__
 
     @property
     def distribution(self):
@@ -257,7 +255,7 @@ class Distribution:
         return nhists.reshape(nh_shape), bin_edges.reshape(be_shape)
 
 
-class ScalarDistribution(Distribution, np.void):
+class ScalarDistribution(Distribution, np.void, base_cls=np.void, data_cls=np.void):
     """Scalar distribution.
 
     This class mostly exists to make `~numpy.array2print` possible for
@@ -266,11 +264,10 @@ class ScalarDistribution(Distribution, np.void):
     pass
 
 
-class ArrayDistribution(Distribution, np.ndarray):
+class ArrayDistribution(Distribution, np.ndarray, base_cls=np.ndarray):
     # This includes the important override of view and __getitem__
     # which are needed for all ndarray subclass Distributions, but not
     # for the scalar one.
-    _samples_cls = np.ndarray
 
     # Override view so that we stay a Distribution version of the new type.
     def view(self, dtype=None, type=None):
@@ -304,7 +301,7 @@ class ArrayDistribution(Distribution, np.ndarray):
         result = super().__getitem__(item)
         if item == 'samples':
             # Here, we need to avoid our own redefinition of view.
-            return super(ArrayDistribution, result).view(self._samples_cls)
+            return super(ArrayDistribution, result).view(self._wrapped_data_cls)
         elif isinstance(result, np.void):
             return result.view((ScalarDistribution, result.dtype))
         else:
@@ -339,9 +336,9 @@ class _DistributionRepr:
             return None
 
 
-class NdarrayDistribution(_DistributionRepr, ArrayDistribution):
+class NdarrayDistribution(_DistributionRepr, ArrayDistribution, data_cls=np.ndarray):
     pass
 
 
-# Ensure our base NdarrayDistribution is known.
-Distribution._generated_subclasses[np.ndarray] = NdarrayDistribution
+# # Ensure our base NdarrayDistribution is known.
+# Distribution._wrapper_generated_subclasses[np.ndarray] = NdarrayDistribution

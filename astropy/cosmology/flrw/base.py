@@ -14,6 +14,7 @@ from numpy import inf, sin
 import astropy.constants as const
 import astropy.units as u
 from astropy.cosmology.core import Cosmology, FlatCosmologyMixin
+from astropy.cosmology.interpolate import Interpolated
 from astropy.cosmology.parameter import Parameter, _validate_non_negative, _validate_with_unit
 from astropy.cosmology.utils import aszarr, vectorize_redshift_method
 from astropy.utils.compat.optional_deps import HAS_SCIPY
@@ -646,7 +647,8 @@ class FLRW(Cosmology):
         """
         return 1.0 + self.w(exp(ln1pz) - 1.0)
 
-    def de_density_scale(self, z):
+    @Interpolated.register(z=dict(bbox=[0, 1e6]))
+    def de_density_scale(self, z, /):
         r"""Evaluates the redshift dependence of the dark energy density.
 
         Parameters
@@ -723,6 +725,7 @@ class FLRW(Cosmology):
         return np.sqrt(zp1 ** 2 * ((Or * zp1 + self._Om0) * zp1 + self._Ok0) +
                        self._Ode0 * self.de_density_scale(z))
 
+    @Interpolated.register(z=dict(bbox=[0, 1100]))
     def inv_efunc(self, z):
         """Inverse of ``efunc``.
 
@@ -901,6 +904,7 @@ class FLRW(Cosmology):
         """
         return self._hubble_time * self._integral_lookback_time(z)
 
+    @Interpolated.register(z=dict(bbox=[0, 1100]))
     @vectorize_redshift_method
     def _integral_lookback_time(self, z, /):
         """Lookback time to redshift ``z``. Value in units of Hubble time.
@@ -976,6 +980,7 @@ class FLRW(Cosmology):
         """
         return self._hubble_time * self._integral_age(z)
 
+    @Interpolated.register(z=dict(bbox=[0, 1e6]))
     @vectorize_redshift_method
     def _integral_age(self, z, /):
         """Age of the universe at redshift ``z``. Value in units of Hubble time.
@@ -1053,6 +1058,7 @@ class FLRW(Cosmology):
         """
         return self._integral_comoving_distance_z1z2(z1, z2)
 
+    @Interpolated.register(z1=dict(bbox=[0, 1e6]), z2=dict(bbox=[0, 1e6]))
     @vectorize_redshift_method(nin=2)
     def _integral_comoving_distance_z1z2_scalar(self, z1, z2, /):
         """
@@ -1230,6 +1236,7 @@ class FLRW(Cosmology):
                           f"redshift(s) z1 ({z1}).", AstropyUserWarning)
         return self._comoving_transverse_distance_z1z2(z1, z2) / (z2 + 1.0)
 
+    @Interpolated.register(z=dict(bbox=[0, 1e6]))
     @vectorize_redshift_method
     def absorption_distance(self, z, /):
         """Absorption distance at redshift ``z``.
@@ -1257,6 +1264,7 @@ class FLRW(Cosmology):
         """
         return quad(self._abs_distance_integrand_scalar, 0, z)[0]
 
+    @Interpolated.register(z=dict(bbox=[0, 1e6]))
     def distmod(self, z):
         """Distance modulus at redshift ``z``.
 

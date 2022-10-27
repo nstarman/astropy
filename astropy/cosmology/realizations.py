@@ -25,6 +25,10 @@ def __getattr__(name):
     """Make specific realizations from data files with lazy import from
     `PEP 562 <https://www.python.org/dev/peps/pep-0562/>`_.
 
+    Returns
+    -------
+    `astropy.cosmology.Cosmology` instance
+
     Raises
     ------
     AttributeError

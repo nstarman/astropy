@@ -19,6 +19,7 @@ import builtins
 
 import numpy as np
 
+from astropy.utils.collections import ClassWrapperMeta
 from astropy.utils.compat import NUMPY_LT_1_22
 from astropy.utils.data_info import ParentDtypeInfo
 from astropy.utils.shapes import NDArrayShapeMethods
@@ -36,7 +37,8 @@ as for `{0.__module__}.{0.__name__}`.
 """.format
 
 
-class Masked(NDArrayShapeMethods):
+class Masked(NDArrayShapeMethods, metaclass=ClassWrapperMeta,
+             default_wrapped_class="MaskedNDArray"):
     """A scalar value or array of values with associated mask.
 
     The resulting instance will take its exact type from whatever the
@@ -51,57 +53,7 @@ class Masked(NDArrayShapeMethods):
         The initial mask to assign.  If not given, taken from the data.
     copy : bool
         Whether the data and mask should be copied. Default: `False`.
-
     """
-
-    _base_classes = {}
-    """Explicitly defined masked classes keyed by their unmasked counterparts.
-
-    For subclasses of these unmasked classes, masked counterparts can be generated.
-    """
-
-    _masked_classes = {}
-    """Masked classes keyed by their unmasked data counterparts."""
-
-    def __new__(cls, *args, **kwargs):
-        if cls is Masked:
-            # Initializing with Masked itself means we're in "factory mode".
-            if not kwargs and len(args) == 1 and isinstance(args[0], type):
-                # Create a new masked class.
-                return cls._get_masked_cls(args[0])
-            else:
-                return cls._get_masked_instance(*args, **kwargs)
-        else:
-            # Otherwise we're a subclass and should just pass information on.
-            return super().__new__(cls, *args, **kwargs)
-
-    def __init_subclass__(cls, base_cls=None, data_cls=None, **kwargs):
-        """Register a Masked subclass.
-
-        Parameters
-        ----------
-        base_cls : type, optional
-            If given, it is taken to mean that ``cls`` can be used as
-            a base for masked versions of all subclasses of ``base_cls``,
-            so it is registered as such in ``_base_classes``.
-        data_cls : type, optional
-            If given, ``cls`` should will be registered as the masked version of
-            ``data_cls``.  Will set the private ``cls._data_cls`` attribute,
-            and auto-generate a docstring if not present already.
-        **kwargs
-            Passed on for possible further initialization by superclasses.
-
-        """
-        if base_cls is not None:
-            Masked._base_classes[base_cls] = cls
-
-        if data_cls is not None:
-            cls._data_cls = data_cls
-            cls._masked_classes[data_cls] = cls
-            if cls.__doc__ is None:
-                cls.__doc__ = get__doc__(data_cls)
-
-        super().__init_subclass__(**kwargs)
 
     # This base implementation just uses the class initializer.
     # Subclasses can override this in case the class does not work
@@ -112,16 +64,27 @@ class Masked(NDArrayShapeMethods):
         return cls(data, mask=mask, copy=copy)
 
     @classmethod
-    def _get_masked_instance(cls, data, mask=None, copy=False):
+    def _get_wrapper_subclass_instance(cls, data, mask=None, copy=False):
         data, data_mask = cls._get_data_and_mask(data)
         if mask is None:
             mask = False if data_mask is None else data_mask
 
-        masked_cls = cls._get_masked_cls(data.__class__)
+        masked_cls = cls._get_wrapped_subclass(data.__class__)
         return masked_cls.from_unmasked(data, mask, copy)
 
     @classmethod
-    def _get_masked_cls(cls, data_cls):
+    def _make_wrapped__doc__(cls, data_cls):
+        return (f"Masked version of {data_cls.__name__}.\n\n"
+                "Except for the ability to pass in a ``mask``, parameters are\n"
+                f"as for `{data_cls.__module__}.{data_cls.__name__}`.")
+
+    @classmethod
+    def _make_wrapper_subclass(cls, data_cls, base_cls):
+        return type('Masked' + data_cls.__name__,
+                    (data_cls, base_cls), {}, data_cls=data_cls)
+
+    @classmethod
+    def _get_wrapped_subclass(cls, data_cls):
         """Get the masked wrapper for a given data class.
 
         If the data class does not exist yet but is a subclass of any of the
@@ -129,34 +92,10 @@ class Masked(NDArrayShapeMethods):
         (except we skip `~numpy.ma.MaskedArray` subclasses, since then the
         masking mechanisms would interfere).
         """
-        if issubclass(data_cls, (Masked, np.ma.MaskedArray)):
+        if issubclass(data_cls, np.ma.MaskedArray):
             return data_cls
 
-        masked_cls = cls._masked_classes.get(data_cls)
-        if masked_cls is None:
-            # Walk through MRO and find closest base data class.
-            # Note: right now, will basically always be ndarray, but
-            # one could imagine needing some special care for one subclass,
-            # which would then get its own entry.  E.g., if MaskedAngle
-            # defined something special, then MaskedLongitude should depend
-            # on it.
-            for mro_item in data_cls.__mro__:
-                base_cls = cls._base_classes.get(mro_item)
-                if base_cls is not None:
-                    break
-            else:
-                # Just hope that MaskedNDArray can handle it.
-                # TODO: this covers the case where a user puts in a list or so,
-                # but for those one could just explicitly do something like
-                # _masked_classes[list] = MaskedNDArray.
-                return MaskedNDArray
-
-            # Create (and therefore register) new Masked subclass for the
-            # given data_cls.
-            masked_cls = type('Masked' + data_cls.__name__,
-                              (data_cls, base_cls), {}, data_cls=data_cls)
-
-        return masked_cls
+        return type(cls)._get_wrapped_subclass(cls, data_cls)  # TODO! use super
 
     @classmethod
     def _get_data_and_mask(cls, data, allow_ma_masked=False):
@@ -367,7 +306,7 @@ class MaskedArraySubclassInfo(MaskedInfoBase):
         # so that we do not have to store all possible masked classes
         # in astropy.table.serialize.__construct_mixin_classes.
         out = super()._represent_as_dict()
-        data_cls = self._parent._data_cls
+        data_cls = self._parent._wrapped_data_cls
         out.setdefault('__class__',
                        data_cls.__module__ + '.' + data_cls.__name__)
         return out
@@ -462,7 +401,7 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
         return self
 
     def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(cls, **kwargs)
+        super().__init_subclass__(**kwargs)
         # For all subclasses we should set a default __new__ that passes on
         # arguments other than mask to the data class, and then sets the mask.
         if '__new__' not in cls.__dict__:
@@ -477,8 +416,8 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
                 return self
             cls.__new__ = __new__
 
-        if 'info' not in cls.__dict__ and hasattr(cls._data_cls, 'info'):
-            data_info = cls._data_cls.info
+        if 'info' not in cls.__dict__ and hasattr(cls._wrapped_data_cls, 'info'):
+            data_info = cls._wrapped_data_cls.info
             attr_names = data_info.attr_names | {'serialize_method'}
             new_info = type(cls.__name__+'Info',
                             (MaskedArraySubclassInfo, data_info.__class__),
@@ -497,17 +436,17 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
 
     @property
     def unmasked(self):
-        return super().view(self._data_cls)
+        return super().view(self._wrapped_data_cls)
 
     @classmethod
-    def _get_masked_cls(cls, data_cls):
+    def _get_wrapped_subclass(cls, data_cls):
         # Short-cuts
         if data_cls is np.ndarray:
             return MaskedNDArray
         elif data_cls is None:  # for .view()
             return cls
 
-        return super()._get_masked_cls(data_cls)
+        return super()._get_wrapped_subclass(data_cls)
 
     @property
     def flat(self):
@@ -528,7 +467,7 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
         is used to initialize (or viewed as) a `~numpy.ma.MaskedArray`.
 
         """
-        return self._data_cls
+        return self._wrapped_data_cls
 
     def view(self, dtype=None, type=None):
         """New view of the masked array.
@@ -537,10 +476,10 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
         """
         if type is None and (isinstance(dtype, builtins.type)
                              and issubclass(dtype, np.ndarray)):
-            return super().view(self._get_masked_cls(dtype))
+            return super().view(self._get_wrapped_subclass(dtype))
 
         if dtype is None:
-            return super().view(self._get_masked_cls(type))
+            return super().view(self._get_wrapped_subclass(type))
 
         dtype = np.dtype(dtype)
         if not (dtype.itemsize == self.dtype.itemsize
@@ -550,7 +489,7 @@ class MaskedNDArray(Masked, np.ndarray, base_cls=np.ndarray, data_cls=np.ndarray
                 f"{self.__class__} cannot be viewed with a dtype with a "
                 f"with a different number of fields or size.")
 
-        return super().view(dtype, self._get_masked_cls(type))
+        return super().view(dtype, self._get_wrapped_subclass(type))
 
     def __array_finalize__(self, obj):
         # If we're a new object or viewing an ndarray, nothing has to be done.
