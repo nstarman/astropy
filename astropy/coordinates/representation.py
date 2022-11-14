@@ -9,9 +9,11 @@ import functools
 import inspect
 import operator
 import warnings
+from typing import ClassVar
 
 import numpy as np
 from erfa import ufunc as erfa_ufunc
+from overload_numpy import NPArrayOverloadMixin, NumPyOverloader
 
 import astropy.units as u
 from astropy.utils import ShapedLikeNDArray, classproperty
@@ -43,6 +45,9 @@ DUPLICATE_REPRESENTATIONS = set()
 
 # a hash for the content of the above two dicts, cached for speed.
 _REPRDIFF_HASH = None
+
+# NumPy (u)funcs overides for representations and differentials.
+NP_OVERLOADS = NumPyOverloader()
 
 
 def _fqn_class(cls):
@@ -160,7 +165,7 @@ class BaseRepresentationOrDifferentialInfo(MixinInfo):
         return out
 
 
-class BaseRepresentationOrDifferential(ShapedLikeNDArray):
+class BaseRepresentationOrDifferential(NPArrayOverloadMixin, ShapedLikeNDArray):
     """3D coordinate representations and differentials.
 
     Parameters
@@ -178,6 +183,7 @@ class BaseRepresentationOrDifferential(ShapedLikeNDArray):
     __array_priority__ = 50000
 
     info = BaseRepresentationOrDifferentialInfo()
+    NP_OVERLOADS: ClassVar[NumPyOverloader] = NP_OVERLOADS
 
     def __init__(self, *args, **kwargs):
         # make argument a list, so we can pop them off.
