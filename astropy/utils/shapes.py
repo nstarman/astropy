@@ -172,7 +172,7 @@ class ShapedLikeNDArray(NDArrayShapeMethods, metaclass=abc.ABCMeta):
         """The shape of the underlying data."""
 
     @abc.abstractmethod
-    def _apply(method, *args, **kwargs):
+    def _apply(self, method, *args, **kwargs):
         """Create a new instance, with ``method`` applied to underlying data.
 
         The method is any of the shape-changing methods for `~numpy.ndarray`
