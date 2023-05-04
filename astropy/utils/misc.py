@@ -17,6 +17,9 @@ import threading
 import traceback
 import unicodedata
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
+from typing import Any, AnyStr, Callable, Iterator, Literal, Sequence
+import numpy as np
 
 __all__ = [
     "isiterable",
@@ -31,6 +34,16 @@ __all__ = [
     "dtype_bytes_or_chars",
 ]
 
+if TYPE_CHECKING:
+    from typing import Union
+    from typing_extensions import TypeAlias
+
+    PathLike = Union[str, bytes, os.PathLike]
+    NumPyNumberLike: TypeAlias = np.dtype[
+        Union[np.bool_, np.integer[Any], np.floating[Any]]
+    ]
+    NumberLike: TypeAlias = Union[bool, int, float, NumPyNumberLike]
+
 NOT_OVERWRITING_MSG = (
     "File {} already exists. If you mean to replace it "
     'then use the argument "overwrite=True".'
@@ -43,7 +56,7 @@ _NOT_OVERWRITING_MSG_MATCH = (
 )
 
 
-def isiterable(obj):
+def isiterable(obj: Any) -> bool:  # TODO? use TypeGuard
     """Returns `True` if the given object is iterable."""
     try:
         iter(obj)
@@ -52,7 +65,7 @@ def isiterable(obj):
         return False
 
 
-def indent(s, shift=1, width=4):
+def indent(s: str, shift: int = 1, width: int = 4) -> str:
     """Indent a block of text.  The indentation is applied to each line."""
     indented = "\n".join(" " * (width * shift) + l if l else "" for l in s.splitlines())
     if s[-1] == "\n":
@@ -64,12 +77,12 @@ def indent(s, shift=1, width=4):
 class _DummyFile:
     """A noop writeable object."""
 
-    def write(self, s):
+    def write(self, s: Any) -> None:
         pass
 
 
 @contextlib.contextmanager
-def silence():
+def silence() -> Iterator[None]:
     """A context manager that silences sys.stdout and sys.stderr."""
     old_stdout = sys.stdout
     old_stderr = sys.stderr
@@ -80,7 +93,7 @@ def silence():
     sys.stderr = old_stderr
 
 
-def format_exception(msg, *args, **kwargs):
+def format_exception(msg: str, *args: Any, **kwargs: Any) -> str:
     """Fill in information about the exception that occurred.
 
     Given an exception message string, uses new-style formatting arguments
@@ -147,22 +160,23 @@ class NumpyRNGContext:
 
     """
 
-    def __init__(self, seed):
+    def __init__(self, seed: NumberLike) -> None:
         self.seed = seed
 
-    def __enter__(self):
-        from numpy import random
-
-        self.startstate = random.get_state()
+    def __enter__(self) -> None:
+        self.startstate = np.random.get_state()
         random.seed(self.seed)
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        from numpy import random
-
-        random.set_state(self.startstate)
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        np.random.set_state(self.startstate)
 
 
-def find_api_page(obj, version=None, openinbrowser=True, timeout=None):
+def find_api_page(
+    obj: object,
+    version: str | None = None,
+    openinbrowser: bool = True,
+    timeout: float | None = None,
+) -> str:
     """
     Determines the URL of the API page for the specified object, and
     optionally open that page in a web browser.
@@ -288,7 +302,7 @@ def find_api_page(obj, version=None, openinbrowser=True, timeout=None):
     return resurl
 
 
-def signal_number_to_name(signum):
+def signal_number_to_name(signum: int) -> str:
     """
     Given an OS signal number, returns a signal name.  If the signal
     number is unknown, returns ``'UNKNOWN'``.
@@ -306,7 +320,7 @@ def signal_number_to_name(signum):
 if sys.platform == "win32":
     import ctypes
 
-    def _has_hidden_attribute(filepath):
+    def _has_hidden_attribute(filepath: PathLike) -> bool:
         """
         Returns True if the given filepath has the hidden attribute on
         MS-Windows.  Based on a post here:
@@ -323,17 +337,17 @@ if sys.platform == "win32":
 
 else:
 
-    def _has_hidden_attribute(filepath):
+    def _has_hidden_attribute(filepath: Any) -> Literal[False]:
         return False
 
 
-def is_path_hidden(filepath):
+def is_path_hidden(filepath: PathLike) -> bool:
     """
     Determines if a given file or directory is hidden.
 
     Parameters
     ----------
-    filepath : str
+    filepath : str, bytes
         The path to a file or directory
 
     Returns
@@ -342,14 +356,20 @@ def is_path_hidden(filepath):
         Returns `True` if the file is hidden
     """
     name = os.path.basename(os.path.abspath(filepath))
-    if isinstance(name, bytes):
+    if isinstance(name, bytes):  # TODO: is this Python 2 leftover?
         is_dotted = name.startswith(b".")
     else:
         is_dotted = name.startswith(".")
     return is_dotted or _has_hidden_attribute(filepath)
 
 
-def walk_skip_hidden(top, onerror=None, followlinks=False):
+def walk_skip_hidden(
+    top: GenericPath[AnyStr],
+    onerror: Callable[[Any], None] | None = None,
+    followlinks: bool = False,
+) -> Iterator[
+    tuple[GenericPath[AnyStr], list[GenericPath[AnyStr]], list[GenericPath[AnyStr]]]
+]:
     """
     A wrapper for `os.walk` that skips hidden files and directories.
 
@@ -394,9 +414,7 @@ class JsonCustomEncoder(json.JSONEncoder):
 
     """
 
-    def default(self, obj):
-        import numpy as np
-
+    def default(self, obj: Any) -> Any:
         from astropy import units as u
 
         if isinstance(obj, u.Quantity):
@@ -418,7 +436,7 @@ class JsonCustomEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def strip_accents(s):
+def strip_accents(s: str) -> str:
     """
     Remove accents from a Unicode string.
 
@@ -429,7 +447,13 @@ def strip_accents(s):
     )
 
 
-def did_you_mean(s, candidates, n=3, cutoff=0.8, fix=None):
+def did_you_mean(
+    s: str,
+    candidates: Sequence[str] | dict[str, Any],
+    n: int = 3,
+    cutoff: float = 0.8,
+    fix: Callable[[str], Sequence[str]] | None = None,
+):
     """
     When a string isn't found in a set of candidates, we can be nice
     to provide a list of alternatives in the exception.  This
@@ -511,7 +535,7 @@ LOCALE_LOCK = threading.Lock()
 
 
 @contextmanager
-def _set_locale(name):
+def _set_locale(name: str) -> Iterator[None]:
     """
     Context manager to temporarily set the locale to ``name``.
 
@@ -544,7 +568,7 @@ def _set_locale(name):
                 locale.setlocale(locale.LC_ALL, saved)
 
 
-def dtype_bytes_or_chars(dtype):
+def dtype_bytes_or_chars(dtype: np.dtype[Any]) -> int | None:
     """
     Parse the number out of a dtype.str value like '<U5' or '<f8'.
 
