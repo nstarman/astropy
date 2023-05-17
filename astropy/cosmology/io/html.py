@@ -6,23 +6,7 @@ from astropy.cosmology.parameter import Parameter
 from astropy.table import QTable
 
 from .table import from_table, to_table
-
-# Format look-up for conversion, {original_name: new_name}
-# TODO! move this information into the Parameters themselves
-_FORMAT_TABLE = {
-    "H0": "$$H_{0}$$",
-    "Om0": "$$\\Omega_{m,0}$$",
-    "Ode0": "$$\\Omega_{\\Lambda,0}$$",
-    "Tcmb0": "$$T_{0}$$",
-    "Neff": "$$N_{eff}$$",
-    "m_nu": "$$m_{nu}$$",
-    "Ob0": "$$\\Omega_{b,0}$$",
-    "w0": "$$w_{0}$$",
-    "wa": "$$w_{a}$$",
-    "wz": "$$w_{z}$$",
-    "wp": "$$w_{p}$$",
-    "zp": "$$z_{p}$$",
-}
+from .utils import _FORMAT_TABLE
 
 
 def read_html_table(
