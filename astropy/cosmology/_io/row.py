@@ -34,7 +34,7 @@ For more information on the argument options, see :ref:`cosmology_io_builtin-tab
 import copy
 from collections import defaultdict
 
-from astropy.cosmology.connect import convert_registry
+from astropy.cosmology._connect import convert_registry
 from astropy.cosmology.core import Cosmology
 from astropy.table import QTable, Row
 

@@ -7,6 +7,7 @@ import pytest
 
 from astropy import cosmology
 from astropy.cosmology import Cosmology, w0wzCDM
+from astropy.cosmology._connect import readwrite_registry
 from astropy.cosmology._io.tests import (
     test_cosmology,
     test_ecsv,
@@ -19,7 +20,6 @@ from astropy.cosmology._io.tests import (
     test_table,
     test_yaml,
 )
-from astropy.cosmology.connect import readwrite_registry
 from astropy.table import QTable, Row
 from astropy.utils.compat.optional_deps import HAS_BS4
 

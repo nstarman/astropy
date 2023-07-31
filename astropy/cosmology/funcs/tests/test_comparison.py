@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 
 from astropy.cosmology import Cosmology, FlatCosmologyMixin, Planck18, cosmology_equal
+from astropy.cosmology._connect import convert_registry
 from astropy.cosmology._io.tests.base import ToFromTestMixinBase
-from astropy.cosmology.connect import convert_registry
 from astropy.cosmology.funcs.comparison import (
     _CANT_BROADCAST,
     _cosmology_not_equal,

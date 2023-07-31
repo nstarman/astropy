@@ -156,7 +156,7 @@ not match the class' parameter names.
 
 import numpy as np
 
-from astropy.cosmology.connect import convert_registry
+from astropy.cosmology._connect import convert_registry
 from astropy.cosmology.core import Cosmology
 from astropy.table import Column, QTable, Table
 
