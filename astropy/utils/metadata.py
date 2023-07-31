@@ -7,6 +7,7 @@ import warnings
 from collections import OrderedDict
 from collections.abc import Mapping
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import wraps
 
 import numpy as np
@@ -402,6 +403,7 @@ def merge(
     return out
 
 
+@dataclass(frozen=True, slots=True)
 class MetaData:
     """
     A descriptor for classes that have a ``meta`` property.
@@ -437,20 +439,10 @@ class MetaData:
         .. versionadded:: 6.0
     """
 
-    __slots__ = ("doc", "copy", "is_dataclass_field", "use_obj_setter")
-
-    def __init__(
-        self,
-        doc="",
-        copy=True,
-        is_dataclass_field=False,
-        use_obj_setter=False,
-    ):
-        self.doc = doc
-        self.copy = copy
-        # for dataclasses
-        self.is_dataclass_field = is_dataclass_field
-        self.use_obj_setter = use_obj_setter
+    doc: str = ""
+    copy: bool = True
+    is_dataclass_field: bool = False
+    use_obj_setter: bool = False
 
     @property
     def __doc__(self):
