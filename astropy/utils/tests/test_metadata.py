@@ -1,5 +1,5 @@
-import abc
 from collections import OrderedDict
+from dataclasses import dataclass
 
 import numpy as np
 import pytest
@@ -20,8 +20,6 @@ class OrderedDictSubclass(OrderedDict):
 
 
 class MetaBaseTest:
-    __metaclass__ = abc.ABCMeta
-
     def test_none(self):
         d = self.test_class(*self.args)
         assert isinstance(d.meta, OrderedDict)
@@ -74,6 +72,28 @@ class ExampleData:
 
 class TestMetaExampleData(MetaBaseTest):
     test_class = ExampleData
+    args = ()
+
+
+@dataclass
+class ExampleDataclass:
+    meta: MetaData = MetaData(is_dataclass_field=True)  # noqa: RUF009
+
+
+class TestMetaExampleDataclass(MetaBaseTest):
+    test_class = ExampleDataclass
+    args = ()
+
+
+@dataclass(frozen=True)
+class ExampleFrozenDataclass:
+    meta: MetaData = MetaData(  # noqa: RUF009
+        is_dataclass_field=True, use_obj_setter=True
+    )
+
+
+class TestMetaExampleFrozenDataclass(MetaBaseTest):
+    test_class = ExampleFrozenDataclass
     args = ()
 
 

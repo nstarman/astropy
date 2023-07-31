@@ -412,27 +412,27 @@ class MetaData:
 
     Parameters
     ----------
-    doc : `str`, optional
+    doc : str, optional
         Documentation for the attribute of the class.
         Default is ``""``.
 
         .. versionadded:: 1.2
 
-    copy : `bool`, optional
+    copy : bool, optional
         If ``True`` the the value is deepcopied before setting, otherwise it
         is saved as reference.
         Default is ``True``.
 
         .. versionadded:: 1.2
 
-    is_dataclass_field : `bool`, optional
+    is_dataclass_field : bool, optional
         If `True` then the ``meta`` attribute is an instance-only attribute and not also
         a class attribute, returning an instance of this class. Python's dataclasses
         require this to be `True` for ``meta`` to be a dataclass field.
 
         .. versionadded:: 6.0
 
-    use_obj_setter : `bool`, optional
+    use_obj_setter : bool, optional
         If `True` then the ``meta`` attribute can be set on a frozen object.
         This is required for ``meta`` to be a dataclass field on a frozen dataclass.
 
