@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-"""Testing :mod:`astropy.cosmology.flrw.lambdacdm`."""
+"""Testing :mod:`astropy.cosmology._flrw.lambdacdm`."""
 
 import pathlib
 
@@ -11,7 +11,7 @@ import astropy.constants as const
 import astropy.cosmology.units as cu
 import astropy.units as u
 from astropy.cosmology import FlatLambdaCDM, LambdaCDM
-from astropy.cosmology.flrw.lambdacdm import ellipkinc, hyp2f1
+from astropy.cosmology._flrw.lambdacdm import ellipkinc, hyp2f1
 from astropy.cosmology.tests.helper import get_redshift_methods
 from astropy.cosmology.tests.test_core import invalid_zs, valid_zs
 from astropy.table import QTable

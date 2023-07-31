@@ -5,21 +5,6 @@ import numpy as np
 from astropy.modeling import Parameter as ModelParameter
 from astropy.table import Column
 
-FULLQUALNAME_SUBSTITUTIONS = {
-    "astropy.cosmology.flrw.base.FLRW": "astropy.cosmology.flrw.FLRW",
-    "astropy.cosmology.flrw.lambdacdm.LambdaCDM": "astropy.cosmology.flrw.LambdaCDM",
-    "astropy.cosmology.flrw.lambdacdm.FlatLambdaCDM": (
-        "astropy.cosmology.flrw.FlatLambdaCDM"
-    ),
-    "astropy.cosmology.flrw.w0wacdm.w0waCDM": "astropy.cosmology.flrw.w0waCDM",
-    "astropy.cosmology.flrw.w0wacdm.Flatw0waCDM": "astropy.cosmology.flrw.Flatw0waCDM",
-    "astropy.cosmology.flrw.w0wzcdm.w0wzCDM": "astropy.cosmology.flrw.w0wzCDM",
-    "astropy.cosmology.flrw.w0cdm.wCDM": "astropy.cosmology.flrw.wCDM",
-    "astropy.cosmology.flrw.w0cdm.FlatwCDM": "astropy.cosmology.flrw.FlatwCDM",
-    "astropy.cosmology.flrw.wpwazpcdm.wpwaCDM": "astropy.cosmology.flrw.wpwaCDM",
-}
-"""Substitutions mapping the actual qualified name to its preferred value."""
-
 
 def convert_parameter_to_column(parameter, value, meta=None):
     """Convert a |Cosmology| Parameter to a Table |Column|.

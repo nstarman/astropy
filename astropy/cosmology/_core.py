@@ -26,7 +26,7 @@ from ._utils import all_cls_vars
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from astropy.cosmology.funcs.comparison import _FormatType
+    from astropy.cosmology._funcs.comparison import _FormatType
 
 # Originally authored by Andrew Becker (becker@astro.washington.edu),
 # and modified by Neil Crighton (neilcrighton@gmail.com), Roban Kramer

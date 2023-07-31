@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-"""Testing :mod:`astropy.cosmology.flrw.base`."""
+"""Testing :mod:`astropy.cosmology._flrw.base`."""
 
 import abc
 import copy
@@ -12,8 +12,13 @@ import astropy.constants as const
 import astropy.units as u
 from astropy.cosmology import FLRW, FlatLambdaCDM, LambdaCDM, Parameter, Planck18
 from astropy.cosmology._core import _COSMOLOGY_CLASSES
+from astropy.cosmology._flrw.base import (
+    _a_B_c2,
+    _critdens_const,
+    _H0units_to_invs,
+    quad,
+)
 from astropy.cosmology._parameter.core import MISSING
-from astropy.cosmology.flrw.base import _a_B_c2, _critdens_const, _H0units_to_invs, quad
 from astropy.cosmology.tests.helper import get_redshift_methods
 from astropy.cosmology.tests.test_core import (
     CosmologyTest,
@@ -682,7 +687,7 @@ class FLRWTest(
             )
 
     def test_Otot0(self, cosmo):
-        """Test :attr:`astropy.cosmology.FLRW.Otot0`."""
+        """Test :attr:`astropy.cosmology._flrw.Otot0`."""
         assert (
             cosmo.Otot0
             == cosmo.Om0 + cosmo.Ogamma0 + cosmo.Onu0 + cosmo.Ode0 + cosmo.Ok0
@@ -706,7 +711,7 @@ class FLRWTest(
     @pytest.mark.parametrize("z", valid_zs)
     @abc.abstractmethod
     def test_w(self, cosmo, z):
-        """Test :meth:`astropy.cosmology.FLRW.w`.
+        """Test :meth:`astropy.cosmology._flrw.w`.
 
         Since ``w`` is abstract, each test class needs to define further tests.
         """
@@ -719,7 +724,7 @@ class FLRWTest(
 
     @pytest.mark.parametrize("z", valid_zs)
     def test_Otot(self, cosmo, z):
-        """Test :meth:`astropy.cosmology.FLRW.Otot`."""
+        """Test :meth:`astropy.cosmology._flrw.Otot`."""
         # super().test_Otot(cosmo)  # NOT b/c abstract `w(z)`
         assert np.allclose(
             cosmo.Otot(z),
@@ -816,7 +821,7 @@ class FLRWTest(
         assert not u.allclose(c.Tcmb0.value, cosmo.Tcmb0.value)
 
     def test_is_equivalent(self, cosmo):
-        """Test :meth:`astropy.cosmology.FLRW.is_equivalent`."""
+        """Test :meth:`astropy.cosmology._flrw.is_equivalent`."""
         super().test_is_equivalent(cosmo)  # pass to CosmologyTest
 
         # test against a FlatFLRWMixin
@@ -865,7 +870,7 @@ class FLRWTest(
 
 
 class TestFLRW(FLRWTest):
-    """Test :class:`astropy.cosmology.FLRW`."""
+    """Test :class:`astropy.cosmology._flrw`."""
 
     abstract_w = True
 
@@ -892,12 +897,12 @@ class TestFLRW(FLRWTest):
     # Methods
 
     def test_w(self, cosmo):
-        """Test abstract :meth:`astropy.cosmology.FLRW.w`."""
+        """Test abstract :meth:`astropy.cosmology._flrw.w`."""
         with pytest.raises(NotImplementedError, match="not implemented"):
             cosmo.w(1)
 
     def test_Otot(self, cosmo):
-        """Test :meth:`astropy.cosmology.FLRW.Otot`."""
+        """Test :meth:`astropy.cosmology._flrw.Otot`."""
         exception = NotImplementedError if HAS_SCIPY else ModuleNotFoundError
         with pytest.raises(exception):
             assert cosmo.Otot(1)
@@ -1041,7 +1046,7 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
         assert cosmo.Ok0 == 0.0
 
     def test_Otot0(self, cosmo):
-        """Test :attr:`astropy.cosmology.FLRW.Otot0`. Should always be 1."""
+        """Test :attr:`astropy.cosmology._flrw.Otot0`. Should always be 1."""
         super().test_Otot0(cosmo)
 
         # for flat cosmologies, Otot0 is not *close* to 1, it *is* 1
@@ -1049,7 +1054,7 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
 
     @pytest.mark.parametrize("z", valid_zs)
     def test_Otot(self, cosmo, z):
-        """Test :meth:`astropy.cosmology.FLRW.Otot`. Should always be 1."""
+        """Test :meth:`astropy.cosmology._flrw.Otot`. Should always be 1."""
         super().test_Otot(cosmo, z)
 
         # for flat cosmologies, Otot is 1, within precision.
@@ -1084,7 +1089,7 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
     # ---------------------------------------------------------------
 
     def test_is_equivalent(self, cosmo, nonflatcosmo):
-        """Test :meth:`astropy.cosmology.FLRW.is_equivalent`."""
+        """Test :meth:`astropy.cosmology._flrw.is_equivalent`."""
         super().test_is_equivalent(cosmo)  # pass to TestFLRW
 
         # against non-flat Cosmology

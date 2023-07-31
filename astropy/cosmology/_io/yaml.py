@@ -24,9 +24,37 @@ from astropy.cosmology._core import _COSMOLOGY_CLASSES, Cosmology
 from astropy.io.misc.yaml import AstropyDumper, AstropyLoader, dump, load
 
 from .mapping import from_mapping
-from .utils import FULLQUALNAME_SUBSTITUTIONS as QNS
 
 __all__ = []  # nothing is publicly scoped
+
+
+FULLQUALNAME_SUBSTITUTIONS = {
+    # Making 'flrw' private
+    "astropy.cosmology._flrw.base.FLRW": "astropy.cosmology.FLRW",
+    "astropy.cosmology._flrw.lambdacdm.LambdaCDM": "astropy.cosmology.LambdaCDM",
+    "astropy.cosmology._flrw.lambdacdm.FlatLambdaCDM": "astropy.cosmology.FlatLambdaCDM",
+    "astropy.cosmology._flrw.w0wacdm.w0waCDM": "astropy.cosmology.w0waCDM",
+    "astropy.cosmology._flrw.w0wacdm.Flatw0waCDM": "astropy.cosmology.Flatw0waCDM",
+    "astropy.cosmology._flrw.w0wzcdm.w0wzCDM": "astropy.cosmology.w0wzCDM",
+    "astropy.cosmology._flrw.w0wzcdm.Flatw0wzCDM": "astropy.cosmology.Flatw0wzCDM",
+    "astropy.cosmology._flrw.w0cdm.wCDM": "astropy.cosmology.wCDM",
+    "astropy.cosmology._flrw.w0cdm.FlatwCDM": "astropy.cosmology.FlatwCDM",
+    "astropy.cosmology._flrw.wpwazpcdm.wpwaCDM": "astropy.cosmology.wpwaCDM",
+    "astropy.cosmology._flrw.wpwazpcdm.FlatwpwaCDM": "astropy.cosmology.FlatwpwaCDM",
+    # Pre-private 'flrw'
+    "astropy.cosmology.flrw.base.FLRW": "astropy.cosmology.FLRW",
+    "astropy.cosmology.flrw.lambdacdm.LambdaCDM": "astropy.cosmology.LambdaCDM",
+    "astropy.cosmology.flrw.lambdacdm.FlatLambdaCDM": "astropy.cosmology.FlatLambdaCDM",
+    "astropy.cosmology.flrw.w0wacdm.w0waCDM": "astropy.cosmology.w0waCDM",
+    "astropy.cosmology.flrw.w0wacdm.Flatw0waCDM": "astropy.cosmology.Flatw0waCDM",
+    "astropy.cosmology.flrw.w0wzcdm.w0wzCDM": "astropy.cosmology.w0wzCDM",
+    "astropy.cosmology.flrw.w0wzcdm.Flatw0wzCDM": "astropy.cosmology.Flatw0wzCDM",
+    "astropy.cosmology.flrw.w0cdm.wCDM": "astropy.cosmology.wCDM",
+    "astropy.cosmology.flrw.w0cdm.FlatwCDM": "astropy.cosmology.FlatwCDM",
+    "astropy.cosmology.flrw.wpwazpcdm.wpwaCDM": "astropy.cosmology.wpwaCDM",
+    "astropy.cosmology.flrw.wpwazpcdm.FlatwpwaCDM": "astropy.cosmology.FlatwpwaCDM",
+}
+"""Substitutions mapping the actual qualified name to its preferred value."""
 
 
 ##############################################################################
@@ -56,7 +84,7 @@ def yaml_representer(tag):
         Parameters
         ----------
         dumper : `~astropy.io.misc.yaml.AstropyDumper`
-        obj : `~astropy.cosmology.Cosmology`
+        obj : |Cosmology|
 
         Returns
         -------
@@ -83,7 +111,7 @@ def yaml_constructor(cls):
     Parameters
     ----------
     cls : type
-        The class type, e.g. `~astropy.cosmology.LambdaCDM`.
+        The class type, e.g. :class:`~astropy.cosmology.LambdaCDM`.
 
     Returns
     -------
@@ -102,7 +130,7 @@ def yaml_constructor(cls):
 
         Returns
         -------
-        `~astropy.cosmology.Cosmology` subclass instance
+        |Cosmology| subclass instance
         """
         # create mapping from YAML node
         map = loader.construct_mapping(node)
@@ -121,12 +149,12 @@ def register_cosmology_yaml(cosmo_cls):
 
     Parameters
     ----------
-    cosmo_cls : `~astropy.cosmology.Cosmology` class
+    cosmo_cls : |Cosmology| class
+        Cosmology class.
     """
     fqn = f"{cosmo_cls.__module__}.{cosmo_cls.__qualname__}"
-    tag = "!" + QNS.get(
-        fqn, fqn
-    )  # Possibly sub fully qualified name for a preferred path
+    # Possibly sub fully qualified name for a preferred path
+    tag = "!" + FULLQUALNAME_SUBSTITUTIONS.get(fqn, fqn)
 
     AstropyDumper.add_representer(cosmo_cls, yaml_representer(tag))
     AstropyLoader.add_constructor(tag, yaml_constructor(cosmo_cls))

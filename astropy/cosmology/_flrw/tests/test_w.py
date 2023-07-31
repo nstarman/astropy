@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-"""Testing :mod:`astropy.cosmology.flrw.lambdacdm`."""
+"""Testing :mod:`astropy.cosmology._flrw.lambdacdm`."""
 
 import numpy as np
 import pytest
