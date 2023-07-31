@@ -6,9 +6,9 @@ import os
 import pytest
 
 import astropy.units as u
+from astropy.cosmology import Cosmology
 from astropy.cosmology import units as cu
 from astropy.cosmology._connect import readwrite_registry
-from astropy.cosmology.core import Cosmology
 
 from .base import ReadWriteDirectTestBase, ReadWriteTestMixinBase
 

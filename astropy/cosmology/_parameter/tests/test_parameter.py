@@ -9,12 +9,12 @@ import pytest
 
 import astropy.units as u
 from astropy.cosmology import Cosmology, Parameter
+from astropy.cosmology._core import _COSMOLOGY_CLASSES
 from astropy.cosmology._parameter.converter import (
     _REGISTRY_FVALIDATORS,
     _validate_with_unit,
 )
 from astropy.cosmology._parameter.core import MISSING
-from astropy.cosmology.core import _COSMOLOGY_CLASSES
 
 ##############################################################################
 # TESTS

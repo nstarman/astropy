@@ -20,7 +20,7 @@ require YAML serialization.
 import astropy.cosmology.units as cu
 import astropy.units as u
 from astropy.cosmology._connect import convert_registry
-from astropy.cosmology.core import _COSMOLOGY_CLASSES, Cosmology
+from astropy.cosmology._core import _COSMOLOGY_CLASSES, Cosmology
 from astropy.io.misc.yaml import AstropyDumper, AstropyLoader, dump, load
 
 from .mapping import from_mapping

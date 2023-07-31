@@ -8,8 +8,8 @@ See the :ref:`astropy-cosmology` for more detailed usage examples and references
 """
 
 from . import realizations, units
+from ._core import Cosmology, CosmologyError, FlatCosmologyMixin
 from ._parameter import Parameter
-from .core import Cosmology, CosmologyError, FlatCosmologyMixin
 from .flrw import (
     FLRW,
     FlatFLRWMixin,

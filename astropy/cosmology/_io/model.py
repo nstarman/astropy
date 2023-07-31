@@ -34,7 +34,7 @@ import inspect
 import numpy as np
 
 from astropy.cosmology._connect import convert_registry
-from astropy.cosmology.core import Cosmology
+from astropy.cosmology._core import Cosmology
 from astropy.modeling import FittableModel, Model
 from astropy.utils.decorators import classproperty
 

@@ -17,7 +17,7 @@ import numpy as np
 from numpy import False_, True_, ndarray
 
 from astropy import table
-from astropy.cosmology.core import Cosmology
+from astropy.cosmology._core import Cosmology
 
 __all__: list[str] = []  # Nothing is scoped here
 

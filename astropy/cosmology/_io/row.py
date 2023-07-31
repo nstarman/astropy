@@ -35,7 +35,7 @@ import copy
 from collections import defaultdict
 
 from astropy.cosmology._connect import convert_registry
-from astropy.cosmology.core import Cosmology
+from astropy.cosmology._core import Cosmology
 from astropy.table import QTable, Row
 
 from .mapping import from_mapping
