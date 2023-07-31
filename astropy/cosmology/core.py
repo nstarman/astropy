@@ -13,6 +13,8 @@ from astropy.io.registry import UnifiedReadWriteMethod
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
+from ._parameter import Parameter
+from ._parameter.descriptors import ParametersAttribute
 from ._utils import all_cls_vars
 from .connect import (
     CosmologyFromFormat,
@@ -20,8 +22,6 @@ from .connect import (
     CosmologyToFormat,
     CosmologyWrite,
 )
-from .parameter import Parameter
-from .parameter._descriptors import ParametersAttribute
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
