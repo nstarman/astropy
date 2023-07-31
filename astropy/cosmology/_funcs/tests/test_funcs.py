@@ -29,7 +29,7 @@ from astropy.cosmology import (
     wpwaCDM,
     z_at_value,
 )
-from astropy.cosmology.funcs.optimize import _z_at_scalar_value
+from astropy.cosmology._funcs.optimize import _z_at_scalar_value
 from astropy.tests.helper import PYTEST_LT_8_0
 from astropy.units import allclose
 from astropy.utils.compat.optional_deps import HAS_SCIPY

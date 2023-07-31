@@ -9,14 +9,14 @@ import pytest
 
 from astropy.cosmology import Cosmology, FlatCosmologyMixin, Planck18, cosmology_equal
 from astropy.cosmology._connect import convert_registry
-from astropy.cosmology._io.tests.base import ToFromTestMixinBase
-from astropy.cosmology.funcs.comparison import (
+from astropy.cosmology._funcs.comparison import (
     _CANT_BROADCAST,
     _cosmology_not_equal,
     _CosmologyWrapper,
     _parse_format,
     _parse_formats,
 )
+from astropy.cosmology._io.tests.base import ToFromTestMixinBase
 
 
 class ComparisonFunctionTestBase(ToFromTestMixinBase):

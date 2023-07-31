@@ -9,6 +9,7 @@ See the :ref:`astropy-cosmology` for more detailed usage examples and references
 
 from . import realizations, units
 from ._core import Cosmology, CosmologyError, FlatCosmologyMixin
+from ._funcs import cosmology_equal, z_at_value
 from ._parameter import Parameter
 from .flrw import (
     FLRW,
@@ -24,7 +25,6 @@ from .flrw import (
     wCDM,
     wpwaCDM,
 )
-from .funcs import cosmology_equal, z_at_value
 from .realizations import available, default_cosmology
 
 __all__ = [

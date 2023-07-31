@@ -321,7 +321,7 @@ class Cosmology(metaclass=abc.ABCMeta):
             >>> Planck18.is_equivalent(tbl, format="yaml")
             True
         """
-        from .funcs import cosmology_equal
+        from astropy.cosmology._funcs import cosmology_equal
 
         try:
             return cosmology_equal(
