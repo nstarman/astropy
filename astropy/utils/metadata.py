@@ -422,30 +422,56 @@ class MetaData:
         Default is ``True``.
 
         .. versionadded:: 1.2
+
+    is_dataclass_field : `bool`, optional
+        If `True` then the ``meta`` attribute is an instance-only attribute and not also
+        a class attribute, returning an instance of this class. Python's dataclasses
+        require this to be `True` for ``meta`` to be a dataclass field.
+
+        .. versionadded:: 6.0
+
+    use_obj_setter : `bool`, optional
+        If `True` then the ``meta`` attribute can be set on a frozen object.
+        This is required for ``meta`` to be a dataclass field on a frozen dataclass.
+
+        .. versionadded:: 6.0
     """
 
-    def __init__(self, doc="", copy=True):
+    def __init__(
+        self,
+        doc="",
+        copy=True,
+        is_dataclass_field=False,
+        use_obj_setter=False,
+    ):
         self.__doc__ = doc
         self.copy = copy
+        # for dataclasses
+        self.is_dataclass_field = is_dataclass_field
+        self.use_obj_setter = use_obj_setter
 
     def __get__(self, instance, owner):
         if instance is None:
+            if self.is_dataclass_field:
+                raise AttributeError(f"{owner!r} object has no attribute 'meta'")
             return self
         if not hasattr(instance, "_meta"):
-            instance._meta = OrderedDict()
+            self._set_on(instance, OrderedDict())
         return instance._meta
 
     def __set__(self, instance, value):
         if value is None:
-            instance._meta = OrderedDict()
+            self._set_on(instance, OrderedDict())
+        elif not isinstance(value, Mapping):
+            raise TypeError("meta attribute must be dict-like")
         else:
-            if isinstance(value, Mapping):
-                if self.copy:
-                    instance._meta = deepcopy(value)
-                else:
-                    instance._meta = value
-            else:
-                raise TypeError("meta attribute must be dict-like")
+            self._set_on(instance, deepcopy(value) if self.copy else value)
+
+    def _set_on(self, instance, value, /):
+        if self.use_obj_setter:
+            object.__setattr__(instance, "_meta", value)
+        else:
+            instance._meta = value
 
 
 class MetaAttribute:
