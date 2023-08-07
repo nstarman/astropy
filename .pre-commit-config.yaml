@@ -60,6 +60,7 @@ repos:
     hooks:
       - id: codespell
         args: ["--write-changes"]
+        exclude: ".*(CITATION.cff)$"
         additional_dependencies:
           - tomli
 
