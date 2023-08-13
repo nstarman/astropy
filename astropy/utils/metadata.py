@@ -437,6 +437,8 @@ class MetaData:
         .. versionadded:: 6.0
     """
 
+    __slots__ = ("doc", "copy", "is_dataclass_field", "use_obj_setter")
+
     def __init__(
         self,
         doc="",
@@ -444,11 +446,15 @@ class MetaData:
         is_dataclass_field=False,
         use_obj_setter=False,
     ):
-        self.__doc__ = doc
+        self.doc = doc
         self.copy = copy
         # for dataclasses
         self.is_dataclass_field = is_dataclass_field
         self.use_obj_setter = use_obj_setter
+
+    @property
+    def __doc__(self):
+        return self.doc if hasattr(self, "doc") else self.__class__.__doc__
 
     def __get__(self, instance, owner):
         if instance is None:
