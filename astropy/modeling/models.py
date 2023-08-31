@@ -6,15 +6,47 @@ Creates a common namespace for all pre-defined models.
 
 from . import math_functions as math  # noqa: F401
 from .core import custom_model, fix_inputs, hide_inverse  # noqa: F401
-from .functional_models import *
-from .mappings import *
-from .physical_models import *
-from .polynomial import *
-from .powerlaws import *
-from .projections import *
-from .rotations import *
-from .spline import *
-from .tabular import *
+from .functional_models import (
+    AiryDisk2D,
+    ArcCosine1D,
+    ArcSine1D,
+    ArcTangent1D,
+    Box1D,
+    Box2D,
+    Const1D,
+    Const2D,
+    Cosine1D,
+    Disk2D,
+    Ellipse2D,
+    Gaussian1D,
+    Gaussian2D,
+    KingProjectedAnalytic1D,
+    Linear1D,
+    Lorentz1D,
+    Moffat1D,
+    Moffat2D,
+    RickerWavelet1D,
+    RickerWavelet2D,
+    Sersic1D,
+    Sersic2D,
+    Sine1D,
+    Tangent1D,
+    Trapezoid1D,
+    TrapezoidDisk2D,
+    Voigt1D,
+)
+from .physical_models import NFW
+from .polynomial import (
+    Chebyshev1D,
+    Chebyshev2D,
+    Hermite1D,
+    Hermite2D,
+    Legendre1D,
+    Legendre2D,
+    Polynomial1D,
+    Polynomial2D,
+)
+from .powerlaws import PowerLaw1D
 
 # Attach a docstring explaining constraints to all models which support them.
 # Note: add new models to this list
