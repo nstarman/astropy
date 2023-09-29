@@ -77,7 +77,7 @@ def aszarr(z):
     return Quantity(z, cu.redshift).value
 
 
-def all_cls_vars(cls: object | type) -> dict[str, Any]:
+def all_cls_vars(obj: object | type, /) -> dict[str, Any]:
     """Return all variables in the whole class hierarchy."""
-    cls = cls if isinstance(cls, type) else cls.__class__
+    cls = obj if isinstance(obj, type) else obj.__class__
     return functools.reduce(operator.__or__, map(vars, cls.mro()[::-1]))

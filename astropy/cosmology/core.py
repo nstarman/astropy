@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import abc
 import inspect
-from itertools import chain
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
@@ -112,16 +111,13 @@ class Cosmology(metaclass=abc.ABCMeta):
         # -------------------
         # Parameters
 
-        params = {}
-        derived_params = {}
-        for n, v in all_cls_vars(cls).items():
-            if not isinstance(v, Parameter):
-                continue
-            if v.derived:
-                derived_params[n] = v
-            else:
-                params[n] = v
+        params = {
+            k: v for k, v in all_cls_vars(cls).items() if isinstance(v, Parameter)
+        }
+        cls._parameters_all = frozenset(params.keys())
 
+        # Separate the derived from the rest
+        derived = {k: params.pop(k) for k, v in tuple(params.items()) if v.derived}
         # reorder to match signature, placing "unordered" at the end
         ordered = {
             n: params.pop(n)
@@ -129,10 +125,7 @@ class Cosmology(metaclass=abc.ABCMeta):
             if n in params
         }
         cls._parameters_ = MappingProxyType(ordered | params)
-        cls._parameters_derived_ = MappingProxyType(derived_params)
-        cls._parameters_all = frozenset(
-            chain(cls.parameters.keys(), cls.derived_parameters.keys())
-        )
+        cls._parameters_derived_ = MappingProxyType(derived)
 
         # -------------------
         # Registration

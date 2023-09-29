@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 
 from astropy.cosmology import utils
-from astropy.cosmology._utils import all_cls_vars, aszarr, vectorize_redshift_method
+from astropy.cosmology._utils import (
+    all_cls_vars,
+    aszarr,
+    vectorize_redshift_method,
+)
 from astropy.utils.exceptions import AstropyDeprecationWarning
 
 from .test_core import invalid_zs, valid_zs, z_arr
