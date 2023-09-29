@@ -46,7 +46,7 @@ def get_redshift_methods(cosmology, include_private=True, include_z2=True):
     for n in dir(cosmology):
         try:  # get method, some will error on ABCs
             m = getattr(cosmology, n)
-        except NotImplementedError:
+        except (NotImplementedError, AttributeError):
             continue
 
         # Add anything callable, optionally excluding private methods.

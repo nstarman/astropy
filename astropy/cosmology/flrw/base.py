@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
+from itertools import chain
 from math import exp, floor, log, pi, sqrt
 from numbers import Number
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -96,6 +97,12 @@ class _ScaleFactorMixin:
             Returns `float` if the input is scalar.
         """
         return 1.0 / (aszarr(z) + 1.0)
+
+
+ParameterOde0 = Parameter(
+    doc="Omega dark energy; dark energy density/critical density at z=0.",
+    fvalidate="float",
+)
 
 
 class FLRW(Cosmology, _ScaleFactorMixin):
@@ -1483,7 +1490,7 @@ class FlatFLRWMixin(FlatCosmologyMixin):
     parameter values), but ``FlatLambdaCDM`` **will** be flat.
     """
 
-    Ode0 = FLRW.Ode0.clone(derived=True)  # same as FLRW, but now a derived param.
+    Ode0 = ParameterOde0.clone(derived=True)  # same as FLRW, but derived.
 
     def __init_subclass__(cls):
         super().__init_subclass__()
@@ -1508,7 +1515,7 @@ class FlatFLRWMixin(FlatCosmologyMixin):
         # Make new instance, respecting args vs kwargs
         inst = self.__nonflatclass__(*ba.args, **ba.kwargs)
         # Because of machine precision, make sure parameters exactly match
-        for n in inst.__all_parameters__ + ("Ok0",):
+        for n in chain(inst._parameters_all, ("Ok0",)):
             setattr(inst, "_" + n, getattr(self, n))
 
         return inst
