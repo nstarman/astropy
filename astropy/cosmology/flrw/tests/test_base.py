@@ -30,6 +30,7 @@ from astropy.cosmology.tests.test_core import (
     valid_zs,
 )
 from astropy.utils.compat.optional_deps import HAS_SCIPY
+from astropy.utils.exceptions import AstropyDeprecationWarning
 
 ##############################################################################
 # SETUP / TEARDOWN
@@ -402,7 +403,8 @@ class ParameterOb0TestMixin(ParameterTestMixin):
         assert "Omega baryon;" in cosmo_cls.Ob0.__doc__
 
         # validation
-        assert cosmo_cls.Ob0.validate(cosmo, None) is None
+        with pytest.warns(AstropyDeprecationWarning, match="passing None for Ob0"):
+            assert cosmo_cls.Ob0.validate(cosmo, None) == 0
         assert cosmo_cls.Ob0.validate(cosmo, 0.1) == 0.1
         assert cosmo_cls.Ob0.validate(cosmo, 0.1 * u.one) == 0.1
         with pytest.raises(ValueError, match="Ob0 cannot be negative"):
@@ -445,19 +447,8 @@ class ParameterOb0TestMixin(ParameterTestMixin):
         with pytest.raises(ValueError, match="baryonic density can not be larger"):
             cosmo_cls(*tba.args, **tba.kwargs)
 
-        # No baryons specified means baryon-specific methods fail.
-        tba = copy.copy(ba)
-        tba.arguments.pop("Ob0", None)
-        cosmo = cosmo_cls(*tba.args, **tba.kwargs)
-        with pytest.raises(ValueError):
-            cosmo.Ob(1)
-
-        # also means DM fraction is undefined
-        with pytest.raises(ValueError):
-            cosmo.Odm(1)
-
-        # The default value is None
-        assert cosmo_cls._init_signature.parameters["Ob0"].default is None
+        # The default value is 0
+        assert cosmo_cls._init_signature.parameters["Ob0"].default == 0
 
 
 class FLRWTest(

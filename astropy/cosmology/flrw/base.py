@@ -22,7 +22,7 @@ from astropy.cosmology.parameter._converter import (
 )
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 from astropy.utils.decorators import lazyproperty
-from astropy.utils.exceptions import AstropyUserWarning
+from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyUserWarning
 
 __all__ = ["FLRW", "FlatFLRWMixin"]
 
@@ -136,10 +136,9 @@ class FLRW(Cosmology, _ScaleFactorMixin):
         provide three neutrino masses unless you are considering something like
         a sterile neutrino.
 
-    Ob0 : float or None, optional
+    Ob0 : float, optional
         Omega baryons: density of baryonic matter in units of the critical
-        density at z=0.  If this is set to None (the default), any computation
-        that requires its value will raise an exception.
+        density at z=0. Default is 0, which is an all dark matter cosmology.
 
     name : str or None (optional, keyword-only)
         Name for this cosmological object.
@@ -192,7 +191,7 @@ class FLRW(Cosmology, _ScaleFactorMixin):
         Tcmb0=0.0 * u.K,
         Neff=3.04,
         m_nu=0.0 * u.eV,
-        Ob0=None,
+        Ob0=0.0,
         *,
         name=None,
         meta=None,
@@ -209,8 +208,8 @@ class FLRW(Cosmology, _ScaleFactorMixin):
         self.Ob0 = Ob0  # (must be after Om0)
 
         # Derived quantities:
-        # Dark matter density; matter - baryons, if latter is not None.
-        self._Odm0 = None if Ob0 is None else (self._Om0 - self._Ob0)
+        # Dark matter density; matter - baryons
+        self._Odm0 = self._Om0 - self._Ob0
 
         # 100 km/s/Mpc * h = H0 (so h is dimensionless)
         self._h = self._H0.value / 100.0
@@ -292,9 +291,14 @@ class FLRW(Cosmology, _ScaleFactorMixin):
 
     @Ob0.validator
     def Ob0(self, param, value):
-        """Validate baryon density to None or positive float > matter density."""
+        """Validate baryon density to non-negative float < matter density."""
+        # For backwards compatibility we support None -> 0
         if value is None:
-            return value
+            warnings.warn(
+                "passing None for Ob0 is deprecated, use 0 instead.",
+                category=AstropyDeprecationWarning,
+            )
+            return 0
 
         value = _validate_non_negative(self, param, value)
         if value > self.Om0:
@@ -479,14 +483,7 @@ class FLRW(Cosmology, _ScaleFactorMixin):
             The density of baryonic matter relative to the critical density at
             each redshift.
             Returns `float` if the input is scalar.
-
-        Raises
-        ------
-        ValueError
-            If ``Ob0`` is `None`.
         """
-        if self._Ob0 is None:
-            raise ValueError("Baryon density not set for this cosmology")
         z = aszarr(z)
         return self._Ob0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
 
@@ -505,21 +502,11 @@ class FLRW(Cosmology, _ScaleFactorMixin):
             critical density at each redshift.
             Returns `float` if the input is scalar.
 
-        Raises
-        ------
-        ValueError
-            If ``Ob0`` is `None`.
-
         Notes
         -----
         This does not include neutrinos, even if non-relativistic at the
         redshift of interest.
         """
-        if self._Odm0 is None:
-            raise ValueError(
-                "Baryonic density not set for this cosmology, "
-                "unclear meaning of dark matter density"
-            )
         z = aszarr(z)
         return self._Odm0 * (z + 1.0) ** 3 * self.inv_efunc(z) ** 2
 

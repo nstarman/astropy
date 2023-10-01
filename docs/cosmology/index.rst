@@ -81,7 +81,7 @@ classes::
   >>> cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
   >>> cosmo  # doctest: +FLOAT_CMP
   FlatLambdaCDM(H0=70.0 km / (Mpc s), Om0=0.3, Tcmb0=2.725 K,
-                Neff=3.04, m_nu=[0. 0. 0.] eV, Ob0=None)
+                Neff=3.04, m_nu=[0. 0. 0.] eV, Ob0=0)
 
 Note the presence of additional cosmological parameters (e.g., ``Neff``, the
 number of effective neutrino species) with default values; these can also be
@@ -133,7 +133,7 @@ parameter and Omega matter (both at z=0)::
   >>> cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
   >>> cosmo
   FlatLambdaCDM(H0=70.0 km / (Mpc s), Om0=0.3, Tcmb0=0.0 K,
-                Neff=3.04, m_nu=None, Ob0=None)
+                Neff=3.04, m_nu=None, Ob0=0)
 
 This can also be done more explicitly using units, which is recommended::
 
@@ -228,7 +228,7 @@ describe the cosmology::
   >>> cosmo = FlatwCDM(name='SNLS3+WMAP7', H0=71.58, Om0=0.262, w0=-1.016)
   >>> cosmo
   FlatwCDM(name="SNLS3+WMAP7", H0=71.58 km / (Mpc s), Om0=0.262,
-           w0=-1.016, Tcmb0=0.0 K, Neff=3.04, m_nu=None, Ob0=None)
+           w0=-1.016, Tcmb0=0.0 K, Neff=3.04, m_nu=None, Ob0=0)
 
 ..
   EXAMPLE END

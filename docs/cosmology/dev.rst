@@ -102,7 +102,7 @@ the definition of |FLRW|.
         Ob0 = Parameter(doc="Omega baryon; baryonic matter density/critical density at z=0.")
 
         def __init__(self, H0, Om0, Ode0, Tcmb0=0.0*u.K, Neff=3.04, m_nu=0.0*u.eV,
-                     Ob0=None, *, name=None, meta=None):
+                     Ob0=0, name=None, meta=None):
             self.H0 = H0
             ...  # for each Parameter in turn
 
