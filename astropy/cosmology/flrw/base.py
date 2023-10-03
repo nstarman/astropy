@@ -10,7 +10,7 @@ from abc import abstractmethod
 from dataclasses import field
 from math import exp, floor, log, pi, sqrt
 from numbers import Number
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from numpy import inf, sin
@@ -28,6 +28,9 @@ from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 from astropy.utils.decorators import lazyproperty
 from astropy.utils.exceptions import AstropyUserWarning
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 # isort: split
 if HAS_SCIPY:
@@ -1576,3 +1579,9 @@ class FlatFLRWMixin(FlatCosmologyMixin):
         return (
             1.0 if isinstance(z, (Number, np.generic)) else np.ones_like(z, subok=False)
         )
+
+    def clone(self, *, meta: Mapping | None = None, to_nonflat: bool = False, **kwargs):
+        if kwargs.get("Ode0", None) is not None and not to_nonflat:
+            msg = "Cannot set 'Ode0' in clone unless 'to_nonflat=True'. "
+            raise ValueError(msg)
+        return super().clone(meta=meta, to_nonflat=to_nonflat, **kwargs)

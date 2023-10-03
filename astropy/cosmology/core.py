@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import inspect
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
@@ -17,7 +17,7 @@ from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
-from ._utils import all_cls_vars, all_parameters
+from ._utils import _init_signature, all_cls_vars, all_parameters
 from .connect import (
     CosmologyFromFormat,
     CosmologyRead,
@@ -262,14 +262,17 @@ class Cosmology(metaclass=abc.ABCMeta):
 
         # mix new meta into existing, preferring the former.
         meta = meta if meta is not None else {}
-        new_meta = {**self.meta, **meta}
-        # Mix kwargs into initial arguments, preferring the former.
-        new_init = {**self.parameters, "meta": new_meta, **kwargs}
-        # Create BoundArgument to handle args versus kwargs.
-        # This also handles all errors from mismatched arguments
-        ba = self._init_signature.bind_partial(**new_init)
-        # Instantiate, respecting args vs kwargs
-        cloned = type(self)(*ba.args, **ba.kwargs)
+        if not PYTHON_LT_3_10:
+            cloned = replace(self, meta=self.meta | meta, **kwargs)
+        else:
+            new_meta = {**self.meta, **meta}
+            # Mix kwargs into initial arguments, preferring the former.
+            new_init = {**self.parameters, "meta": new_meta, **kwargs}
+            # Create BoundArgument to handle args versus kwargs.
+            # This also handles all errors from mismatched arguments
+            ba = _init_signature(self).bind_partial(**new_init)
+            # Instantiate, respecting args vs kwargs
+            cloned = type(self)(*ba.args, **ba.kwargs)
 
         # Check if nothing has changed.
         # TODO! or should return self?
