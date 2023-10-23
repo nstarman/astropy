@@ -59,7 +59,7 @@ _FlatCosmoT = TypeVar("_FlatCosmoT", bound="FlatCosmologyMixin")
 
 # dataclass
 dataclass_decorator = (
-    dataclass(frozen=True, repr=False, eq=False, init=True)
+    dataclass(frozen=True, repr=True, eq=False, init=True)
     if not PYTHON_LT_3_10
     else lambda x: x
 )

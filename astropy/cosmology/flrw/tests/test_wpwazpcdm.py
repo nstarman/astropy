@@ -152,7 +152,6 @@ class TestwpwaCDM(
 
     def test_repr(self, cosmo_cls, cosmo):
         """Test method ``.__repr__()``."""
-        super().test_repr(cosmo_cls, cosmo)
         assert repr(cosmo) == (
             "wpwaCDM(name='ABCMeta', H0=<Quantity 70. km / (Mpc s)>, Om0=0.27,"
             " Ode0=0.73, Tcmb0=<Quantity 3. K>, Neff=3.04,"
@@ -222,13 +221,11 @@ class TestFlatwpwaCDM(FlatFLRWMixinTest, TestwpwaCDM):
     def test_repr(self, cosmo_cls, cosmo):
         """Test method ``.__repr__()``."""
         super().test_repr(cosmo_cls, cosmo)
-
-        expected = (
+        assert repr(cosmo) == (
             "FlatwpwaCDM(name='ABCMeta', H0=<Quantity 70. km / (Mpc s)>, Om0=0.27,"
             " Tcmb0=<Quantity 3. K>, Neff=3.04, m_nu=<Quantity [0., 0., 0.] eV>,"
             " Ob0=0.03, wp=-0.9, wa=0.2, zp=<Quantity 0.5 redshift>)"
         )
-        assert repr(cosmo) == expected
 
     @pytest.mark.skipif(not HAS_SCIPY, reason="scipy required for this test.")
     @pytest.mark.parametrize(

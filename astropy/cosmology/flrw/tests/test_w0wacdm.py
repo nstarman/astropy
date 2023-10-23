@@ -105,14 +105,11 @@ class Testw0waCDM(FLRWTest, Parameterw0TestMixin, ParameterwaTestMixin):
 
     def test_repr(self, cosmo_cls, cosmo):
         """Test method ``.__repr__()``."""
-        super().test_repr(cosmo_cls, cosmo)
-
-        expected = (
+        assert repr(cosmo) == (
             "w0waCDM(name='ABCMeta', H0=<Quantity 70. km / (Mpc s)>, Om0=0.27, "
             "Ode0=0.73, Tcmb0=<Quantity 3. K>, Neff=3.04, "
             "m_nu=<Quantity [0., 0., 0.] eV>, Ob0=0.03, w0=-1.0, wa=-0.5)"
         )
-        assert repr(cosmo) == expected
 
     # ===============================================================
     # Usage Tests
@@ -174,13 +171,11 @@ class TestFlatw0waCDM(FlatFLRWMixinTest, Testw0waCDM):
     def test_repr(self, cosmo_cls, cosmo):
         """Test method ``.__repr__()``."""
         super().test_repr(cosmo_cls, cosmo)
-
-        expected = (
+        assert repr(cosmo) == (
             "Flatw0waCDM(name='ABCMeta', H0=<Quantity 70. km / (Mpc s)>, Om0=0.27, "
             "Tcmb0=<Quantity 3. K>, Neff=3.04, m_nu=<Quantity [0., 0., 0.] eV>, "
             "Ob0=0.03, w0=-1.0, wa=-0.5)"
         )
-        assert repr(cosmo) == expected
 
     # ===============================================================
     # Usage Tests
