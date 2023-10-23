@@ -2,19 +2,14 @@
 
 """Testing :mod:`astropy.cosmology.parameter`."""
 
-##############################################################################
-# IMPORTS
-
-# STDLIB
 from typing import Callable
 
-# THIRD PARTY
 import numpy as np
 import pytest
 
-# LOCAL
 import astropy.units as u
 from astropy.cosmology import Cosmology, Parameter
+from astropy.cosmology._utils import all_cls_vars
 from astropy.cosmology.core import _COSMOLOGY_CLASSES
 from astropy.cosmology.parameter._converter import (
     _REGISTRY_FVALIDATORS,
@@ -22,8 +17,6 @@ from astropy.cosmology.parameter._converter import (
 )
 from astropy.cosmology.parameter._core import MISSING
 
-##############################################################################
-# TESTS
 ##############################################################################
 
 
@@ -231,8 +224,8 @@ class ParameterTestMixin:
         class Example(cosmo_cls):
             param = Parameter(unit=u.eV, equivalencies=u.mass_energy())
 
-            def __init__(self, param, *, name=None, meta=None):
-                self.param = param
+            def __init__(self, param, *args, **kwargs):
+                all_cls_vars(self)["param"].__set__(self, param)
 
             @property
             def is_flat(self):
@@ -316,7 +309,7 @@ class TestParameter(ParameterTestMixin):
         assert param.__doc__ == "Description of example parameter."
 
         # custom from init
-        assert param._unit == u.m
+        assert param.unit == u.m
         assert param.equivalencies == u.mass_energy()
         assert param.derived == np.False_
 
