@@ -5,7 +5,7 @@ from __future__ import annotations
 __all__ = ["Parameter"]
 
 import copy
-from dataclasses import dataclass, field, fields, replace
+from dataclasses import dataclass, field, fields, is_dataclass, replace
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
@@ -192,6 +192,18 @@ class Parameter:
     def __get__(self, cosmology, cosmo_cls=None):
         # Get from class
         if cosmology is None:
+            # If the Parameter is being set as part of a dataclass constructor, then we
+            # raise an AttributeError if the default is MISSING. This is to prevent the
+            # Parameter from being set as the default value of the dataclass field and
+            # erroneously included in the class' __init__ signature.
+            if not PYTHON_LT_3_10 and (
+                self.default is MISSING
+                and (
+                    not is_dataclass(cosmo_cls)
+                    or self.name not in cosmo_cls.__dataclass_fields__
+                )
+            ):
+                raise AttributeError
             return self
         # Get from instance
         return getattr(cosmology, self._attr_name)
