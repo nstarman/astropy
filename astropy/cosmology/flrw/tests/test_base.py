@@ -4,16 +4,15 @@
 
 import abc
 import copy
+import re
 
 import numpy as np
 import pytest
 
 import astropy.constants as const
-
-# LOCAL
 import astropy.units as u
 from astropy.cosmology import FLRW, FlatLambdaCDM, LambdaCDM, Parameter, Planck18
-from astropy.cosmology.core import _COSMOLOGY_CLASSES
+from astropy.cosmology.core import _COSMOLOGY_CLASSES, dataclass_decorator
 from astropy.cosmology.flrw.base import _a_B_c2, _critdens_const, _H0units_to_invs, quad
 from astropy.cosmology.parameter._core import MISSING
 from astropy.cosmology.tests.helper import get_redshift_methods
@@ -25,6 +24,7 @@ from astropy.cosmology.tests.test_core import (
     valid_zs,
 )
 from astropy.tests.helper import assert_quantity_allclose
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 
 from .conftest import filter_keys_from_items
@@ -33,6 +33,7 @@ from .conftest import filter_keys_from_items
 # SETUP / TEARDOWN
 
 
+@dataclass_decorator
 class SubFLRW(FLRW):
     def w(self, z):
         return super().w(z)
@@ -990,14 +991,30 @@ class FlatFLRWMixinTest(FlatCosmologyMixinTest, ParameterFlatOde0TestMixin):
     # ---------------------------------------------------------------
     # class-level
 
+    @pytest.mark.skipif(PYTHON_LT_3_10, reason="requires python 3.10+")
     def test_init_subclass(self, cosmo_cls):
         """Test initializing subclass, mostly that can't have Ode0 in init."""
         super().test_init_subclass(cosmo_cls)
 
         with pytest.raises(TypeError, match="subclasses of"):
 
+            @dataclass_decorator
             class HASOde0SubClass(cosmo_cls):
                 def __init__(self, Ode0):
+                    pass
+
+            _COSMOLOGY_CLASSES.pop(HASOde0SubClass.__qualname__, None)
+
+    @pytest.mark.skipif(not PYTHON_LT_3_10, reason="requires python 3.9-")
+    def test_init_subclass_PY39(self, cosmo_cls):
+        """Test initializing subclass, mostly that can't have Ode0 in init."""
+        super().test_init_subclass(cosmo_cls)
+
+        msg = "subclasses of `FlatFLRWMixin` cannot have `Ode0` in `__init__`"
+        with pytest.raises(TypeError, match=re.escape(msg)):
+
+            class HASOde0SubClass(cosmo_cls):
+                def __init__(self, *args, Ode0=None, **kwargs):
                     pass
 
             _COSMOLOGY_CLASSES.pop(HASOde0SubClass.__qualname__, None)
