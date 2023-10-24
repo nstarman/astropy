@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import abc
 import inspect
+import sys
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
@@ -30,6 +31,9 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Mapping
 
     from astropy.cosmology.funcs.comparison import _FormatType
+
+if not PYTHON_LT_3_10:
+    from dataclasses import KW_ONLY
 
 # Originally authored by Andrew Becker (becker@astro.washington.edu),
 # and modified by Neil Crighton (neilcrighton@gmail.com), Roban Kramer
@@ -59,12 +63,26 @@ dataclass_decorator = (
     if not PYTHON_LT_3_10
     else lambda x: x
 )
+_dataclass_kwargs = dict(slots=True) if sys.version_info >= (3, 10) else dict()
 
 ##############################################################################
 
 
 class CosmologyError(Exception):
     pass
+
+
+@dataclass(frozen=True, **_dataclass_kwargs)
+class _NameField:
+    default: str | None = None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.default
+        return instance._name
+
+    def __set__(self, instance, value: str | None):
+        object.__setattr__(instance, "_name", None if value is None else str(value))
 
 
 @dataclass_decorator
@@ -95,6 +113,11 @@ class Cosmology(metaclass=abc.ABCMeta):
     and with various I/O methods. To turn off or change this registration,
     override the ``_register_cls`` classmethod in the subclass.
     """
+
+    if not PYTHON_LT_3_10:
+        _: KW_ONLY
+    name: _NameField = _NameField()
+    """The name of the cosmology realization, e.g. 'Planck2018' or `None`."""
 
     meta = MetaData()
 
@@ -182,13 +205,8 @@ class Cosmology(metaclass=abc.ABCMeta):
     # ---------------------------------------------------------------
 
     def __init__(self, name=None, meta=None):
-        self._name = str(name) if name is not None else name
+        all_cls_vars(self)["name"].__set__(self, name)
         self.meta.update(meta or {})
-
-    @property
-    def name(self):
-        """The name of the Cosmology instance."""
-        return self._name
 
     @property
     @abc.abstractmethod

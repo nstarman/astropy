@@ -11,9 +11,8 @@ import pytest
 
 import astropy.cosmology.units as cu
 import astropy.units as u
-from astropy.cosmology import Cosmology, FlatCosmologyMixin
+from astropy.cosmology import Cosmology, FlatCosmologyMixin, Parameter
 from astropy.cosmology.core import _COSMOLOGY_CLASSES, dataclass_decorator
-from astropy.cosmology.parameter import Parameter
 from astropy.cosmology.parameter.tests.test_descriptors import (
     ParametersAttributeTestMixin,
 )
@@ -23,7 +22,6 @@ from astropy.cosmology.tests.test_connect import (
     ToFromFormatTestMixin,
 )
 from astropy.table import Column, QTable, Table
-from astropy.utils.compat import PYTHON_LT_3_11
 
 ##############################################################################
 # SETUP / TEARDOWN
@@ -209,18 +207,14 @@ class CosmologyTest(
 
     def test_name(self, cosmo):
         """Test property ``name``."""
-        assert cosmo.name is cosmo._name  # accesses private attribute
         assert cosmo.name is None or isinstance(cosmo.name, str)  # type
         assert cosmo.name == self.cls_kwargs["name"]  # test has expected value
 
-        # immutable
-        match = (
-            "can't set"
-            if PYTHON_LT_3_11
-            else f"property 'name' of {cosmo.__class__.__name__!r} object has no setter"
-        )
-        with pytest.raises(AttributeError, match=match):
-            cosmo.name = None
+        # mutable, for now
+
+    def test_name_on_cls(self, cosmo_cls):
+        """Test accessing :attr:`~astropy.cosmology.Cosmology.name` from the class."""
+        assert cosmo_cls.name is None
 
     @abc.abstractmethod
     def test_is_flat(self, cosmo_cls, cosmo):
