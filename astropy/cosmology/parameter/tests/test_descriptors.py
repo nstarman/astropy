@@ -38,5 +38,6 @@ class ParametersAttributeTestMixin:
     @pytest.mark.parametrize("name", ["parameters", "derived_parameters"])
     def test_parameters_cannot_set_on_instance(self, cosmo, name):
         """Test descriptor ``parameters`` cannot be set on the instance."""
-        with pytest.raises(AttributeError, match=f"cannot set {name!r} of"):
+        msg = f"cannot assign to field {name!r}"
+        with pytest.raises(AttributeError, match=msg):
             setattr(cosmo, name, {})

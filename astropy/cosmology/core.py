@@ -1,15 +1,18 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+# ruff: noqa: RUF009
 
 from __future__ import annotations
 
 import abc
 import inspect
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import numpy as np
 
 from astropy.io.registry import UnifiedReadWriteMethod
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
@@ -50,6 +53,13 @@ _COSMOLOGY_CLASSES = dict()
 _CosmoT = TypeVar("_CosmoT", bound="Cosmology")
 _FlatCosmoT = TypeVar("_FlatCosmoT", bound="FlatCosmologyMixin")
 
+# dataclass
+dataclass_decorator = (
+    dataclass(frozen=False, repr=False, eq=False, init=False)
+    if not PYTHON_LT_3_10
+    else lambda x: x
+)
+
 ##############################################################################
 
 
@@ -57,6 +67,7 @@ class CosmologyError(Exception):
     pass
 
 
+@dataclass_decorator
 class Cosmology(metaclass=abc.ABCMeta):
     """Base-class for all Cosmologies.
 
@@ -88,12 +99,12 @@ class Cosmology(metaclass=abc.ABCMeta):
     meta = MetaData()
 
     # Unified I/O object interchange methods
-    from_format = UnifiedReadWriteMethod(CosmologyFromFormat)
-    to_format = UnifiedReadWriteMethod(CosmologyToFormat)
+    from_format: ClassVar = UnifiedReadWriteMethod(CosmologyFromFormat)
+    to_format: ClassVar = UnifiedReadWriteMethod(CosmologyToFormat)
 
     # Unified I/O read and write methods
-    read = UnifiedReadWriteMethod(CosmologyRead)
-    write = UnifiedReadWriteMethod(CosmologyWrite)
+    read: ClassVar = UnifiedReadWriteMethod(CosmologyRead)
+    write: ClassVar = UnifiedReadWriteMethod(CosmologyWrite)
 
     # Parameters
     parameters = ParametersAttribute()
@@ -251,6 +262,20 @@ class Cosmology(metaclass=abc.ABCMeta):
             cloned._name = self.name
 
         return cloned
+
+    # ---------------------------------------------------------------
+
+    if PYTHON_LT_3_10:
+
+        def __setattr__(self, name, value):
+            if not hasattr(self, f"_{name}") and hasattr(
+                all_cls_vars(type(self)).get(name), "__set__"
+            ):
+                pass
+            elif not name.startswith("_"):
+                msg = f"cannot assign to field {name!r}"
+                raise AttributeError(msg)
+            super().__setattr__(name, value)
 
     # ---------------------------------------------------------------
     # comparison methods
@@ -429,6 +454,7 @@ class Cosmology(metaclass=abc.ABCMeta):
         return self.to_format("astropy.table", cls=cls, **kwargs)
 
 
+@dataclass_decorator
 class FlatCosmologyMixin(metaclass=abc.ABCMeta):
     """Mixin class for flat cosmologies.
 
