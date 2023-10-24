@@ -210,6 +210,9 @@ class Cosmology(metaclass=abc.ABCMeta):
         all_vars["name"].__set__(self, name)
         all_vars["meta"].__set__(self, OrderedDict(meta or {}))
 
+    def __post_init__(self):  # noqa: B027
+        """Post-initialization, for subclasses to override."""
+
     @property
     @abc.abstractmethod
     def is_flat(self):
@@ -500,6 +503,9 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
         # Determine the non-flat class.
         # This will raise a TypeError if the MRO is inconsistent.
         cls.__nonflatclass__  # noqa: B018
+
+    def __post_init__(self):
+        super().__post_init__()
 
     # ===============================================================
 
