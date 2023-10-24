@@ -17,7 +17,7 @@ from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
-from ._utils import all_cls_vars
+from ._utils import all_cls_vars, all_parameters
 from .connect import (
     CosmologyFromFormat,
     CosmologyRead,
@@ -158,25 +158,14 @@ class Cosmology(metaclass=abc.ABCMeta):
         # -------------------
         # Parameters
 
-        params = {}
-        derived_params = {}
-        for n, v in all_cls_vars(cls).items():
-            if not isinstance(v, Parameter):
-                continue
-            if v.derived:
-                derived_params[n] = v
-            else:
-                params[n] = v
-
-        # reorder to match signature, placing "unordered" at the end
-        ordered = {
-            n: params.pop(n)
-            for n in cls._init_signature.parameters.keys()
-            if n in params
-        }
-        cls._parameters = MappingProxyType(ordered | params)
-        cls._derived_parameters = MappingProxyType(derived_params)
-        cls._parameters_all = frozenset(cls.parameters).union(cls.derived_parameters)
+        all_params = all_parameters(cls)
+        cls._parameters = MappingProxyType(
+            {k: v for k, v in all_params.items() if not v.derived}
+        )
+        cls._derived_parameters = MappingProxyType(
+            {k: v for k, v in all_params.items() if v.derived}
+        )
+        cls._parameters_all = frozenset(all_params.keys())
 
         # -------------------
         # Registration
