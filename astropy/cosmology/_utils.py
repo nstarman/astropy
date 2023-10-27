@@ -8,7 +8,7 @@ import functools
 import operator
 from dataclasses import Field
 from numbers import Number
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, overload
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from . import units as cu
 
 if TYPE_CHECKING:
     from astropy.cosmology import Parameter
+    from astropy.cosmology.core import Cosmology
 
 
 def vectorize_redshift_method(func=None, nin=1):
@@ -111,3 +112,37 @@ def all_parameters(obj: object | type, /) -> dict[str, Field | Parameter]:
             or (isinstance(v, Field) and isinstance(v.default, Parameter))
         )
     }
+
+
+R = TypeVar("R")
+
+
+class NonDataDescriptor(Generic[R]):
+    # __slots__ = ("fget", "name")  # TODO: when __doc__ is supported by __slots__
+
+    def __init__(self, fget: Callable[[Cosmology], R]) -> None:
+        self.fget = fget
+        self.__doc__ = fget.__doc__
+
+    def __set_name__(self, cosmo_cls: type[Cosmology], name: str) -> None:
+        self.name: str = name
+
+    @overload
+    def __get__(self, cosmo: None, cosmo_cls: Any) -> NonDataDescriptor[R]:
+        ...
+
+    @overload
+    def __get__(self, cosmo: Cosmology, cosmo_cls: Any) -> R:
+        ...
+
+    def __get__(
+        self, cosmo: Cosmology | None, cosmo_cls: type[Cosmology] | None
+    ) -> R | NonDataDescriptor[R]:
+        # Accessed from the class, return the descriptor itself
+        if cosmo is None:
+            return self
+
+        if self.name not in cosmo.__dict__:
+            cosmo.__dict__[self.name] = self.fget(cosmo)
+
+        return cosmo.__dict__[self.name]
