@@ -17,7 +17,7 @@ from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.decorators import classproperty
 from astropy.utils.metadata import MetaData
 
-from ._utils import _init_signature, all_cls_vars, all_parameters
+from ._utils import all_cls_vars, all_parameters
 from .connect import (
     CosmologyFromFormat,
     CosmologyRead,
@@ -173,14 +173,6 @@ class Cosmology(metaclass=abc.ABCMeta):
         if not inspect.isabstract(cls):  # skip abstract classes
             cls._register_cls()
 
-    @classproperty(lazy=False)
-    def _init_signature(cls):
-        """Initialization signature (without 'self')."""
-        # get signature, dropping "self" by taking arguments [1:]
-        sig = inspect.signature(cls.__init__)
-        sig = sig.replace(parameters=list(sig.parameters.values())[1:])
-        return sig
-
     @classmethod
     def _register_cls(cls):
         # register class
@@ -270,7 +262,7 @@ class Cosmology(metaclass=abc.ABCMeta):
             new_init = {**self.parameters, "meta": new_meta, **kwargs}
             # Create BoundArgument to handle args versus kwargs.
             # This also handles all errors from mismatched arguments
-            ba = _init_signature(self).bind_partial(**new_init)
+            ba = inspect.signature(type(self)).bind_partial(**new_init)
             # Instantiate, respecting args vs kwargs
             cloned = type(self)(*ba.args, **ba.kwargs)
 
@@ -280,6 +272,13 @@ class Cosmology(metaclass=abc.ABCMeta):
             object.__setattr__(cloned, "name", self.name)
 
         return cloned
+
+    @classproperty
+    def _init_has_kwargs(self):
+        return (
+            next(reversed(inspect.signature(self.__init__).parameters.values())).kind
+            == inspect.Parameter.VAR_KEYWORD
+        )
 
     # ---------------------------------------------------------------
 

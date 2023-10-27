@@ -5,6 +5,7 @@ from __future__ import annotations
 
 __all__ = ["FLRW", "FlatFLRWMixin"]
 
+import inspect
 import warnings
 from abc import abstractmethod
 from dataclasses import field
@@ -1525,7 +1526,7 @@ class FlatFLRWMixin(FlatCosmologyMixin):
 
         # Check that Ode0 is not in __init__
         if PYTHON_LT_3_10:
-            if "Ode0" in cls._init_signature.parameters:
+            if "Ode0" in inspect.signature(cls).parameters:
                 msg = "subclasses of `FlatFLRWMixin` cannot have `Ode0` in `__init__`"
                 raise TypeError(msg)
         elif getattr(
@@ -1547,7 +1548,7 @@ class FlatFLRWMixin(FlatCosmologyMixin):
     def nonflat(self: _FlatFLRWMixinT) -> _FLRWT:
         # Create BoundArgument to handle args versus kwargs.
         # This also handles all errors from mismatched arguments
-        ba = self.__nonflatclass__._init_signature.bind_partial(
+        ba = inspect.signature(self.__nonflatclass__).bind_partial(
             **dict(self.parameters), Ode0=self.Ode0, name=self.name
         )
         # Make new instance, respecting args vs kwargs
