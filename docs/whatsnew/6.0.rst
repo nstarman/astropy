@@ -211,7 +211,7 @@ with information about the parameter used when setting up the cosmology::
     >>> FlatLambdaCDM.parameters["H0"]
     Parameter(derived=False, unit=Unit("km / (Mpc s)"), equivalencies=[], ...)
     >>> FlatLambdaCDM.derived_parameters["Ode0"]
-    Parameter(derived=True, unit=None, equivalencies=[], ...)
+    Parameter(default=0, derived=True, unit=None, equivalencies=[], ...)
 
 
 :class:`~astropy.cosmology.Parameter` as a :func:`~dataclasses.dataclass`

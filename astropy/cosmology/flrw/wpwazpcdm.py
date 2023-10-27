@@ -9,6 +9,7 @@ from astropy.cosmology import units as cu
 from astropy.cosmology._utils import aszarr
 from astropy.cosmology.core import dataclass_decorator
 from astropy.cosmology.parameter import Parameter
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 
 from . import scalar_inv_efuncs
 from .base import FLRW, FlatFLRWMixin
@@ -118,39 +119,40 @@ class wpwaCDM(FLRW):
         unit=cu.redshift,
     )
 
-    def __init__(
-        self,
-        H0,
-        Om0,
-        Ode0,
-        wp=-1.0,
-        wa=0.0,
-        zp=0.0 * cu.redshift,
-        Tcmb0=0.0 * u.K,
-        Neff=3.04,
-        m_nu=0.0 * u.eV,
-        Ob0=None,
-        *,
-        name=None,
-        meta=None,
-    ):
-        super().__init__(
-            H0=H0,
-            Om0=Om0,
-            Ode0=Ode0,
-            Tcmb0=Tcmb0,
-            Neff=Neff,
-            m_nu=m_nu,
-            Ob0=Ob0,
-            name=name,
-            meta=meta,
-        )
-        params = self.__class__.parameters
-        params["wp"].__set__(self, wp)
-        params["wa"].__set__(self, wa)
-        params["zp"].__set__(self, zp)
+    if PYTHON_LT_3_10:
 
-        self.__post_init__()
+        def __init__(
+            self,
+            H0,
+            Om0,
+            Ode0,
+            Tcmb0=0.0 * u.K,
+            Neff=3.04,
+            m_nu=0.0 * u.eV,
+            Ob0=None,
+            wp=-1.0,
+            wa=0.0,
+            zp=0.0 * cu.redshift,
+            *,
+            name=None,
+            meta=None,
+        ):
+            params = self.__class__.parameters
+            params["wp"].__set__(self, wp)
+            params["wa"].__set__(self, wa)
+            params["zp"].__set__(self, zp)
+
+            super().__init__(
+                H0=H0,
+                Om0=Om0,
+                Ode0=Ode0,
+                Tcmb0=Tcmb0,
+                Neff=Neff,
+                m_nu=m_nu,
+                Ob0=Ob0,
+                name=name,
+                meta=meta,
+            )
 
     def __post_init__(self):
         super().__post_init__()
@@ -335,36 +337,37 @@ class FlatwpwaCDM(FlatFLRWMixin, wpwaCDM):
         of Merit Science Working Group. arXiv e-prints, arXiv:0901.0721.
     """
 
-    def __init__(
-        self,
-        H0,
-        Om0,
-        wp=-1.0,
-        wa=0.0,
-        zp=0.0,
-        Tcmb0=0.0 * u.K,
-        Neff=3.04,
-        m_nu=0.0 * u.eV,
-        Ob0=None,
-        *,
-        name=None,
-        meta=None,
-    ):
-        super().__init__(
-            H0=H0,
-            Om0=Om0,
-            Ode0=0.0,
-            wp=wp,
-            wa=wa,
-            zp=zp,
-            Tcmb0=Tcmb0,
-            Neff=Neff,
-            m_nu=m_nu,
-            Ob0=Ob0,
-            name=name,
-            meta=meta,
-        )
-        self.__post_init__()
+    if PYTHON_LT_3_10:
+
+        def __init__(
+            self,
+            H0,
+            Om0,
+            Tcmb0=0.0 * u.K,
+            Neff=3.04,
+            m_nu=0.0 * u.eV,
+            Ob0=None,
+            wp=-1.0,
+            wa=0.0,
+            zp=0.0,
+            *,
+            name=None,
+            meta=None,
+        ):
+            super().__init__(
+                H0=H0,
+                Om0=Om0,
+                Ode0=0.0,
+                wp=wp,
+                wa=wa,
+                zp=zp,
+                Tcmb0=Tcmb0,
+                Neff=Neff,
+                m_nu=m_nu,
+                Ob0=Ob0,
+                name=name,
+                meta=meta,
+            )
 
     def __post_init__(self):
         super().__post_init__()

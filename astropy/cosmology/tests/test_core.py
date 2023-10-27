@@ -22,6 +22,7 @@ from astropy.cosmology.tests.test_connect import (
     ToFromFormatTestMixin,
 )
 from astropy.table import Column, QTable, Table
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 
 ##############################################################################
 # SETUP / TEARDOWN
@@ -68,12 +69,16 @@ class SubCosmology(Cosmology):
     Tcmb0: Parameter = Parameter(default=0 * u.K, unit=u.K)
     m_nu: Parameter = Parameter(default=0 * u.eV, unit=u.eV)
 
-    def __init__(self, H0, Tcmb0=0 * u.K, m_nu=0 * u.eV, name=None, meta=None):
-        super().__init__(name=name, meta=meta)
-        params = self.__class__.parameters
-        params["H0"].__set__(self, H0)
-        params["Tcmb0"].__set__(self, Tcmb0)
-        params["m_nu"].__set__(self, m_nu)
+    if PYTHON_LT_3_10:
+
+        def __init__(
+            self, H0, Tcmb0=0 * u.K, m_nu=0 * u.eV, *, name=None, meta=None
+        ) -> None:
+            params = self.__class__.parameters
+            params["H0"].__set__(self, H0)
+            params["Tcmb0"].__set__(self, Tcmb0)
+            params["m_nu"].__set__(self, m_nu)
+            super().__init__(name=name, meta=meta)
 
     @property
     def is_flat(self):
@@ -538,9 +543,6 @@ def test__nonflatclass__multiple_nonflat_inheritance():
     # Define a non-operable minimal subclass of Cosmology.
     @dataclass_decorator
     class SubCosmology2(Cosmology):
-        def __init__(self, H0, Tcmb0=0 * u.K, m_nu=0 * u.eV, name=None, meta=None):
-            super().__init__(name=name, meta=meta)
-
         @property
         def is_flat(self):
             return False

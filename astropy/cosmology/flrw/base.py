@@ -7,6 +7,7 @@ __all__ = ["FLRW", "FlatFLRWMixin"]
 
 import warnings
 from abc import abstractmethod
+from dataclasses import field
 from math import exp, floor, log, pi, sqrt
 from numbers import Number
 from typing import TypeVar
@@ -23,6 +24,7 @@ from astropy.cosmology.parameter._converter import (
     _validate_non_negative,
     _validate_with_unit,
 )
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 from astropy.utils.compat.optional_deps import HAS_SCIPY
 from astropy.utils.decorators import lazyproperty
 from astropy.utils.exceptions import AstropyUserWarning
@@ -193,35 +195,37 @@ class FLRW(Cosmology, _ScaleFactorMixin):
         doc="Omega baryon; baryonic matter density/critical density at z=0.",
     )
 
-    def __init__(
-        self,
-        H0,
-        Om0,
-        Ode0,
-        Tcmb0=0.0 * u.K,
-        Neff=3.04,
-        m_nu=0.0 * u.eV,
-        Ob0=None,
-        *,
-        name=None,
-        meta=None,
-    ):
-        super().__init__(name=name, meta=meta)
+    if PYTHON_LT_3_10:
 
-        # Assign (and validate) Parameters
-        cls = type(self)
-        cls.H0.__set__(self, H0)
-        cls.Om0.__set__(self, Om0)
-        cls.Ode0.__set__(self, Ode0)  # often a derived parameter
-        cls.Tcmb0.__set__(self, Tcmb0)
-        cls.Neff.__set__(self, Neff)
-        cls.m_nu.__set__(self, m_nu)
-        cls.Ob0.__set__(self, Ob0)  # (must be after Om0)
+        def __init__(
+            self,
+            H0,
+            Om0,
+            Ode0,
+            Tcmb0=0.0 * u.K,
+            Neff=3.04,
+            m_nu=0.0 * u.eV,
+            Ob0=None,
+            *,
+            name=None,
+            meta=None,
+        ):
+            # Assign (and validate) Parameters
+            cls = type(self)
+            cls.H0.__set__(self, H0)
+            cls.Om0.__set__(self, Om0)
+            cls.Ode0.__set__(self, Ode0)  # often a derived parameter
+            cls.Tcmb0.__set__(self, Tcmb0)
+            cls.Neff.__set__(self, Neff)
+            cls.m_nu.__set__(self, m_nu)
+            cls.Ob0.__set__(self, Ob0)  # (must be after Om0)
+            super().__init__(name=name, meta=meta)
 
+    def __post_init__(self):
         # Derived quantities:
         # Dark matter density; matter - baryons, if latter is not None.
         object.__setattr__(
-            self, "_Odm0", None if Ob0 is None else (self._Om0 - self._Ob0)
+            self, "_Odm0", None if self._Ob0 is None else (self._Om0 - self._Ob0)
         )
 
         # 100 km/s/Mpc * h = H0 (so h is dimensionless)
@@ -314,10 +318,6 @@ class FLRW(Cosmology, _ScaleFactorMixin):
         #  more efficient scalar versions of inv_efunc.
         object.__setattr__(self, "_inv_efunc_scalar", self.inv_efunc)
         object.__setattr__(self, "_inv_efunc_scalar_args", ())
-
-    def __post_init__(self):
-        """Post-initialization, for subclasses to override."""
-        super().__post_init__()
 
     # ---------------------------------------------------------------
     # Parameter details
@@ -1509,25 +1509,36 @@ class FlatFLRWMixin(FlatCosmologyMixin):
     parameter values), but ``FlatLambdaCDM`` **will** be flat.
     """
 
-    Ode0: Parameter = ParameterOde0.clone(derived=True)  # same as FLRW, but derived.
+    if PYTHON_LT_3_10:
+        Ode0: Parameter = ParameterOde0.clone(default=0, derived=True)
+    else:
+        Ode0: Parameter = field(  # now a derived param.
+            default=ParameterOde0.clone(default=0, derived=True),
+            init=False,
+        )
 
     def __init_subclass__(cls):
         super().__init_subclass__()
-        if "Ode0" in cls._init_signature.parameters:
-            raise TypeError(
-                "subclasses of `FlatFLRWMixin` cannot have `Ode0` in `__init__`"
-            )
 
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)  # guaranteed not to have `Ode0`
+        # Check that Ode0 is not in __init__
+        if PYTHON_LT_3_10:
+            if "Ode0" in cls._init_signature.parameters:
+                msg = "subclasses of `FlatFLRWMixin` cannot have `Ode0` in `__init__`"
+                raise TypeError(msg)
+        elif getattr(
+            vars(cls).get("Ode0", cls.__dataclass_fields__.get("Ode0")), "init", True
+        ):
+            msg = "subclasses of `FlatFLRWMixin` cannot have `Ode0` in `__init__`"
+            raise TypeError(msg)
+
+    def __post_init__(self):
+        object.__setattr__(self, "_Ode0", 0)
+        super().__post_init__()
         # Do some twiddling after the fact to get flatness
         object.__setattr__(self, "_Ok0", 0.0)
         object.__setattr__(
             self, "_Ode0", 1.0 - (self._Om0 + self._Ogamma0 + self._Onu0 + self._Ok0)
         )
-
-    def __post_init__(self):
-        super().__post_init__()
 
     @lazyproperty
     def nonflat(self: _FlatFLRWMixinT) -> _FLRWT:

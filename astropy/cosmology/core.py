@@ -6,7 +6,6 @@ from __future__ import annotations
 import abc
 import inspect
 import sys
-from collections import OrderedDict
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
@@ -60,7 +59,7 @@ _FlatCosmoT = TypeVar("_FlatCosmoT", bound="FlatCosmologyMixin")
 
 # dataclass
 dataclass_decorator = (
-    dataclass(frozen=True, repr=False, eq=False, init=False)
+    dataclass(frozen=True, repr=False, eq=False, init=True)
     if not PYTHON_LT_3_10
     else lambda x: x
 )
@@ -185,7 +184,7 @@ class Cosmology(metaclass=abc.ABCMeta):
         if not inspect.isabstract(cls):  # skip abstract classes
             cls._register_cls()
 
-    @classproperty(lazy=True)
+    @classproperty(lazy=False)
     def _init_signature(cls):
         """Initialization signature (without 'self')."""
         # get signature, dropping "self" by taking arguments [1:]
@@ -205,10 +204,14 @@ class Cosmology(metaclass=abc.ABCMeta):
 
     # ---------------------------------------------------------------
 
-    def __init__(self, name=None, meta=None):
-        all_vars = all_cls_vars(self)
-        all_vars["name"].__set__(self, name)
-        all_vars["meta"].__set__(self, OrderedDict(meta or {}))
+    if PYTHON_LT_3_10:
+
+        def __init__(self, name=None, meta=None):
+            allvars = all_cls_vars(self)
+            allvars["name"].__set__(self, name)
+            allvars["meta"].__set__(self, meta)
+
+            self.__post_init__()
 
     def __post_init__(self):  # noqa: B027
         """Post-initialization, for subclasses to override."""
@@ -446,9 +449,11 @@ class Cosmology(metaclass=abc.ABCMeta):
 
     # ---------------------------------------------------------------
 
-    def __repr__(self):
-        fmtps = (f"{k}={v!r}" for k, v in self.parameters.items())
-        return f"{type(self).__qualname__}(name={self.name!r}, {', '.join(fmtps)})"
+    if PYTHON_LT_3_10:
+
+        def __repr__(self):
+            fmtps = (f"{k}={v!r}" for k, v in self.parameters.items())
+            return f"{type(self).__qualname__}(name={self.name!r}, {', '.join(fmtps)})"
 
     def __str__(self):
         """Return a string representation of the cosmology."""
@@ -503,9 +508,6 @@ class FlatCosmologyMixin(metaclass=abc.ABCMeta):
         # Determine the non-flat class.
         # This will raise a TypeError if the MRO is inconsistent.
         cls.__nonflatclass__  # noqa: B018
-
-    def __post_init__(self):
-        super().__post_init__()
 
     # ===============================================================
 

@@ -8,6 +8,7 @@ import astropy.units as u
 from astropy.cosmology._utils import aszarr
 from astropy.cosmology.core import dataclass_decorator
 from astropy.cosmology.parameter import Parameter
+from astropy.utils.compat.misc import PYTHON_LT_3_10
 
 from . import scalar_inv_efuncs
 from .base import FLRW, FlatFLRWMixin
@@ -95,37 +96,38 @@ class w0wzCDM(FLRW):
         fvalidate="float",
     )
 
-    def __init__(
-        self,
-        H0,
-        Om0,
-        Ode0,
-        w0=-1.0,
-        wz=0.0,
-        Tcmb0=0.0 * u.K,
-        Neff=3.04,
-        m_nu=0.0 * u.eV,
-        Ob0=None,
-        *,
-        name=None,
-        meta=None,
-    ):
-        super().__init__(
-            H0=H0,
-            Om0=Om0,
-            Ode0=Ode0,
-            Tcmb0=Tcmb0,
-            Neff=Neff,
-            m_nu=m_nu,
-            Ob0=Ob0,
-            name=name,
-            meta=meta,
-        )
-        params = type(self).parameters
-        params["w0"].__set__(self, w0)
-        params["wz"].__set__(self, wz)
+    if PYTHON_LT_3_10:
 
-        self.__post_init__()
+        def __init__(
+            self,
+            H0,
+            Om0,
+            Ode0,
+            Tcmb0=0.0 * u.K,
+            Neff=3.04,
+            m_nu=0.0 * u.eV,
+            Ob0=None,
+            w0=-1.0,
+            wz=0.0,
+            *,
+            name=None,
+            meta=None,
+        ):
+            params = self.__class__.parameters
+            params["w0"].__set__(self, w0)
+            params["wz"].__set__(self, wz)
+
+            super().__init__(
+                H0=H0,
+                Om0=Om0,
+                Ode0=Ode0,
+                Tcmb0=Tcmb0,
+                Neff=Neff,
+                m_nu=m_nu,
+                Ob0=Ob0,
+                name=name,
+                meta=meta,
+            )
 
     def __post_init__(self):
         super().__post_init__()
@@ -290,34 +292,35 @@ class Flatw0wzCDM(FlatFLRWMixin, w0wzCDM):
     <Quantity 1849.74726272 Mpc>
     """
 
-    def __init__(
-        self,
-        H0,
-        Om0,
-        w0=-1.0,
-        wz=0.0,
-        Tcmb0=0.0 * u.K,
-        Neff=3.04,
-        m_nu=0.0 * u.eV,
-        Ob0=None,
-        *,
-        name=None,
-        meta=None,
-    ):
-        super().__init__(
-            H0=H0,
-            Om0=Om0,
-            Ode0=0.0,
-            w0=w0,
-            wz=wz,
-            Tcmb0=Tcmb0,
-            Neff=Neff,
-            m_nu=m_nu,
-            Ob0=Ob0,
-            name=name,
-            meta=meta,
-        )
-        self.__post_init__()
+    if PYTHON_LT_3_10:
+
+        def __init__(
+            self,
+            H0,
+            Om0,
+            Tcmb0=0.0 * u.K,
+            Neff=3.04,
+            m_nu=0.0 * u.eV,
+            Ob0=None,
+            w0=-1.0,
+            wz=0.0,
+            *,
+            name=None,
+            meta=None,
+        ):
+            super().__init__(
+                H0=H0,
+                Om0=Om0,
+                Ode0=0.0,
+                w0=w0,
+                wz=wz,
+                Tcmb0=Tcmb0,
+                Neff=Neff,
+                m_nu=m_nu,
+                Ob0=Ob0,
+                name=name,
+                meta=meta,
+            )
 
     def __post_init__(self):
         super().__post_init__()
