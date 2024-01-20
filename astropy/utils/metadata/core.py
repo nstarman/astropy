@@ -1,13 +1,31 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Classes for handling metadata."""
 
+from __future__ import annotations
+
 import inspect
 from collections import OrderedDict
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import is_dataclass
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from typing import Any
 
 __all__ = ["MetaData", "MetaAttribute"]
+
+
+class SupportsPrivateMeta(Protocol):
+    """Protocol for classes that have a private ``_meta`` attribute."""
+
+    _meta: Mapping
+
+
+class SupportsMeta(Protocol):
+    """Protocol for classes that have a ``meta`` attribute."""
+
+    meta: dict
 
 
 class MetaData:
@@ -79,16 +97,22 @@ class MetaData:
         None
     """
 
-    def __init__(self, doc="", copy=True, *, default_factory=OrderedDict):
-        self.__doc__ = doc
-        self.copy = copy
-        self._default_factory = default_factory
+    def __init__(
+        self,
+        doc: str = "",
+        copy: bool = True,
+        *,
+        default_factory: type[Mapping] = OrderedDict,
+    ) -> None:
+        self.__doc__: str = doc
+        self.copy: bool = copy
+        self._default_factory: type[Mapping] = default_factory
 
     @property
-    def default_factory(self):
+    def default_factory(self) -> type[Mapping]:
         return self._default_factory
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: Any | None, owner: Any) -> Mapping[Any, Any] | None:
         # class attribute access. Often, descriptors just return `self`, but if the
         # owning class is a `dataclass`, the expectation is that the default is
         # returned. In our case, this is None, triggering the creation of a dict-like in
@@ -100,7 +124,9 @@ class MetaData:
             self.__set__(instance, None)
         return instance._meta
 
-    def __set__(self, instance, value):
+    def __set__(
+        self, instance: SupportsPrivateMeta, value: Mapping[Any, Any] | None
+    ) -> None:
         # The 'default' value is `None`, but we want to set it to an empty `Mapping`
         # if it is `None` so that we can always assume it is a `Mapping` and not have
         # to check for `None` everywhere.
@@ -150,10 +176,10 @@ class MetaAttribute:
 
     """
 
-    def __init__(self, default=None):
+    def __init__(self, default: Any = None) -> None:
         self.default = default
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: SupportsMeta | None, owner: Any) -> Any:
         # When called without an instance, return self to allow access
         # to descriptor attributes.
         if instance is None:
@@ -179,12 +205,12 @@ class MetaAttribute:
             value = attributes.get(self.name)
         return value
 
-    def __set__(self, instance, value):
+    def __set__(self, instance: SupportsMeta, value: Any) -> None:
         # Get the __attributes__ dict and create if not there already.
         attributes = instance.meta.setdefault("__attributes__", {})
         attributes[self.name] = value
 
-    def __delete__(self, instance):
+    def __delete__(self, instance: SupportsMeta) -> None:
         # Remove this attribute from meta['__attributes__'] if it exists.
         if "__attributes__" in instance.meta:
             attrs = instance.meta["__attributes__"]
@@ -194,7 +220,7 @@ class MetaAttribute:
             if not attrs:
                 del instance.meta["__attributes__"]
 
-    def __set_name__(self, owner, name):
+    def __set_name__(self, owner: type, name: str) -> None:
         params = [
             param.name
             for param in inspect.signature(owner).parameters.values()
@@ -208,5 +234,5 @@ class MetaAttribute:
 
         self.name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name} default={self.default}>"
