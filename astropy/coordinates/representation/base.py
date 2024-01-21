@@ -12,6 +12,7 @@ import astropy.units as u
 from astropy.coordinates.angles import Angle
 from astropy.utils import ShapedLikeNDArray, classproperty
 from astropy.utils.data_info import MixinInfo
+from astropy.utils.decorators import deprecated
 from astropy.utils.exceptions import DuplicateRepresentationWarning
 
 # Module-level dict mapping representation string alias names to classes.
@@ -248,8 +249,10 @@ class BaseRepresentationOrDifferential(ShapedLikeNDArray):
         for component, attr in zip(components, attrs):
             setattr(self, "_" + component, attr)
 
-    @classmethod
-    def get_name(cls):
+    # -----------------------------------------------------------------
+
+    @classproperty
+    def name(cls) -> str:
         """Name of the representation or differential.
 
         In lower case, with any trailing 'representation' or 'differential'
@@ -265,6 +268,17 @@ class BaseRepresentationOrDifferential(ShapedLikeNDArray):
             name = name[:-12]
 
         return name
+
+    @deprecated("v6.1", alternative="name")
+    @classmethod
+    def get_name(cls):
+        """Name of the representation or differential.
+
+        See `name` for details.
+        """
+        return cls.name
+
+    # -----------------------------------------------------------------
 
     # The two methods that any subclass has to define.
     @classmethod
@@ -615,7 +629,7 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
                 'Representations must have an "attr_classes" class attribute.'
             )
 
-        repr_name = cls.get_name()
+        repr_name = cls.name
         # first time a duplicate is added
         # remove first entry and add both using their qualnames
         if repr_name in REPRESENTATION_CLASSES:
@@ -755,7 +769,7 @@ class BaseRepresentation(BaseRepresentationOrDifferential):
 
     @classproperty
     def _compatible_differentials(cls):
-        return [DIFFERENTIAL_CLASSES[cls.get_name()]]
+        return [DIFFERENTIAL_CLASSES[cls.name]]
 
     @property
     def differentials(self):
@@ -1297,7 +1311,7 @@ class BaseDifferential(BaseRepresentationOrDifferential):
             base_attr_classes = cls.base_representation.attr_classes
             cls.attr_classes = {"d_" + c: u.Quantity for c in base_attr_classes}
 
-        repr_name = cls.get_name()
+        repr_name = cls.name
         if repr_name in DIFFERENTIAL_CLASSES:
             raise ValueError(f"Differential class {repr_name} already defined")
 

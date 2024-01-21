@@ -95,7 +95,7 @@ def _get_repr_classes(base, **differentials):
     for name, differential_type in differentials.items():
         if differential_type == "base":
             # We don't want to fail for this case.
-            differential_type = r.DIFFERENTIAL_CLASSES.get(base.get_name(), None)
+            differential_type = r.DIFFERENTIAL_CLASSES.get(base.name, None)
 
         elif differential_type in r.DIFFERENTIAL_CLASSES:
             differential_type = r.DIFFERENTIAL_CLASSES[differential_type]

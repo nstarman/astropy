@@ -33,7 +33,7 @@ def icrs_to_cirs(icrs_coo, cirs_frame):
     astrom = erfa_astrom.get().apco(cirs_frame)
 
     if (
-        icrs_coo.data.get_name() == "unitspherical"
+        icrs_coo.data.name == "unitspherical"
         or icrs_coo.data.to_cartesian().x.unit == u.one
     ):
         # if no distance, just do the infinite-distance/no parallax calculation
@@ -76,7 +76,7 @@ def cirs_to_icrs(cirs_coo, icrs_frame):
     i_ra, i_dec = aticq(srepr.without_differentials(), astrom)
 
     if (
-        cirs_coo.data.get_name() == "unitspherical"
+        cirs_coo.data.name == "unitspherical"
         or cirs_coo.data.to_cartesian().x.unit == u.one
     ):
         # if no distance, just use the coordinate direction to yield the
@@ -116,7 +116,7 @@ def icrs_to_gcrs(icrs_coo, gcrs_frame):
     astrom = erfa_astrom.get().apcs(gcrs_frame)
 
     if (
-        icrs_coo.data.get_name() == "unitspherical"
+        icrs_coo.data.name == "unitspherical"
         or icrs_coo.data.to_cartesian().x.unit == u.one
     ):
         # if no distance, just do the infinite-distance/no parallax calculation
@@ -161,7 +161,7 @@ def gcrs_to_icrs(gcrs_coo, icrs_frame):
     i_ra, i_dec = aticq(srepr.without_differentials(), astrom)
 
     if (
-        gcrs_coo.data.get_name() == "unitspherical"
+        gcrs_coo.data.name == "unitspherical"
         or gcrs_coo.data.to_cartesian().x.unit == u.one
     ):
         # if no distance, just use the coordinate direction to yield the
@@ -211,7 +211,7 @@ def gcrs_to_hcrs(gcrs_coo, hcrs_frame):
     i_ra = u.Quantity(i_ra, u.radian, copy=False)
     i_dec = u.Quantity(i_dec, u.radian, copy=False)
     if (
-        gcrs_coo.data.get_name() == "unitspherical"
+        gcrs_coo.data.name == "unitspherical"
         or gcrs_coo.data.to_cartesian().x.unit == u.one
     ):
         # if no distance, just use the coordinate direction to yield the

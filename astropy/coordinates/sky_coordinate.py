@@ -104,7 +104,7 @@ class SkyCoordInfo(MixinInfo):
 
         out = super()._represent_as_dict(attrs)
 
-        out["representation_type"] = sc.representation_type.get_name()
+        out["representation_type"] = sc.representation_type.name
         out["frame"] = sc.frame.name
         # Note that sc.info.unit is a fake composite unit (e.g. 'deg,deg,None'
         # or None,None,m) and is not stored.  The individual attributes have
