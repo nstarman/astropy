@@ -222,7 +222,6 @@ lint.unfixable = [
 ]
 "astropy/cosmology/*" = [
     "PLC0415",  # import-outside-top-level
-    "PT019",   # pytest-fixture-param-without-value
     "PT031",  # pytest-warns-with-multiple-statements
 ]
 "astropy/io/*" = [
