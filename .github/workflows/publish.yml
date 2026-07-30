@@ -26,7 +26,7 @@ jobs:
     # or if triggered manually via the workflow dispatch, or for a tag.
     permissions:
       contents: none
-    uses: nstarman/github-actions-workflows/.github/workflows/publish.yml@4de3bf74180318629a68a8f4d69cc2b86806861e # TEST ONLY
+    uses: neutrinoceros/github-actions-workflows/.github/workflows/publish.yml@7fff85ec85bc1238d8544570c1aa751a39745e06 # TEST ONLY: head of OpenAstronomy PR 404
     if: |
       github.repository == 'nstarman/astropy' && (
         startsWith(github.ref, 'refs/tags/v') ||
