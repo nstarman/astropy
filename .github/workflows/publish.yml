@@ -26,9 +26,9 @@ jobs:
     # or if triggered manually via the workflow dispatch, or for a tag.
     permissions:
       contents: none
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@8c8bb6c6c962542921f993d47d26df38dccd50b1 # v3.0.2
+    uses: nstarman/github-actions-workflows/.github/workflows/publish.yml@4de3bf74180318629a68a8f4d69cc2b86806861e # TEST ONLY
     if: |
-      github.repository == 'astropy/astropy' && (
+      github.repository == 'nstarman/astropy' && (
         startsWith(github.ref, 'refs/tags/v') ||
         github.event_name == 'schedule' ||
         github.event_name == 'workflow_dispatch' ||
@@ -36,10 +36,12 @@ jobs:
       )
     with:
 
+      sdist: false
+
       # We use trusted publishing so the upload is handled in a separate job below
       upload_to_pypi: false
       save_artifacts: true
-      upload_to_anaconda: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+      upload_to_anaconda: false
       anaconda_user: astropy
       anaconda_package: astropy
       anaconda_keep_n_latest: 10
@@ -53,23 +55,8 @@ jobs:
       # packages being installed, which it isn't always.
       test_command: pytest -Wdefault --astropy-header -m "not hypothesis" -k "not test_data_out_of_range and not test_set_locale and not TestQuantityTyping" --strict-markers --pyargs astropy
       targets: |
-        # Linux wheels
-        - cp3*-manylinux_x86_64
-        - target: cp3*-manylinux_aarch64
-          runs-on: ubuntu-24.04-arm
-
-        # Note that following wheels are not currently tested:
-        - cp3*-musllinux_x86_64
-
-        # MacOS X wheels - as noted in https://github.com/astropy/astropy/pull/12379 we deliberately
-        # do not build universal2 wheels.
-        - cp3*-macosx_x86_64
-        - cp3*-macosx_arm64
-
-        # Windows wheels
-        - cp3*-win32
-        - cp3*-win_amd64
-        - cp3*-win_arm64
+        - cp313-manylinux_x86_64
+        - cp3*-pyodide_wasm32
 
     secrets:
       anaconda_token: ${{ secrets.anaconda_token }}
